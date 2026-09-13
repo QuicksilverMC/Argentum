@@ -56,7 +56,8 @@ public abstract class GuiItemRendererMixin {
         }
 
         BakedModel model = this.modelShaper.getModel(item);
-        if (model.isCustomRenderer()) {
+        if (model.isCustomRenderer() || (item.hasEnchantmentGlint()
+                && (model.isGui3d() || model.getParticleIcon() == null))) {
             GuiItemIcons.flush();
             original.call(item, x, y);
             return;
@@ -69,6 +70,12 @@ public abstract class GuiItemRendererMixin {
         }
 
         GuiItemIcons.draw(slot, x, y, this.zOffset);
+        if (item.hasEnchantmentGlint()) GuiItemIcons.drawGlint(slot, x, y, this.zOffset, model);
+    }
+
+    @WrapMethod(method = "renderEnchantmentGlint")
+    private void argentum$skipGlintWhileBaking(BakedModel model, Operation<Void> original) {
+        if (!GuiItemIcons.baking()) original.call(model);
     }
 
     @Inject(method = "renderGuiItemDecorations(Lnet/minecraft/client/render/TextRenderer;Lnet/minecraft/item/ItemStack;IILjava/lang/String;)V", at = @At("HEAD"))

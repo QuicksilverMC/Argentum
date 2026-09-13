@@ -17,6 +17,7 @@ public final class GuiItemIcons {
 
     private static final GuiItemAtlas ATLAS = new GuiItemAtlas();
     private static final HudRecorder RECORDER = new HudRecorder();
+    private static final GuiItemGlints GLINTS = new GuiItemGlints();
 
     private static boolean initialized;
     private static int readyTick;
@@ -38,7 +39,7 @@ public final class GuiItemIcons {
     }
 
     public static boolean canBake(ItemStack item) {
-        return item != null && item.getItem() != null && !item.hasEnchantmentGlint();
+        return item != null && item.getItem() != null;
     }
 
     public static void invalidate() {
@@ -100,19 +101,25 @@ public final class GuiItemIcons {
                 100.0F + zOffset, 0xFFFFFFFF, 0xFFFFFFFF);
     }
 
+    public static void drawGlint(int slot, int x, int y, float zOffset, BakedModel model) {
+        GLINTS.quad(slot, x, y, 100.0F + zOffset, ATLAS.uvExtent(), model.getParticleIcon());
+    }
+
     public static void warnIfPending() {
-        if (RECORDER.isEmpty() || warned) return;
+        if (RECORDER.isEmpty() && GLINTS.isEmpty() || warned) return;
         warned = true;
         Argentum.LOGGER.warn("GUI item icons were recorded but never flushed; they will draw late and misplaced. "
                 + "A screen is rendering items past every GuiItemIcons.flush() call site.", new Throwable());
     }
 
     public static void flush() {
-        if (baking || RECORDER.isEmpty()) return;
+        if (baking || RECORDER.isEmpty() && GLINTS.isEmpty()) return;
 
         GlStateManager.disableLighting();
         RECORDER.flush();
+        GLINTS.flush(ATLAS.getTexture());
         GlStateManager.blendFuncSeparate(770, 771, 1, 0);
         Minecraft.getInstance().getTextureManager().bind(TextureAtlas.BLOCKS_LOCATION);
     }
+
 }

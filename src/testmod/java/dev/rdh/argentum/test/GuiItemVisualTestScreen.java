@@ -3,6 +3,7 @@ package dev.rdh.argentum.test;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.render.platform.Lighting;
+import net.minecraft.enchantment.Enchantment;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -20,8 +21,11 @@ public class GuiItemVisualTestScreen extends Screen {
     private static final int[] DYES = {0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00};
 
     private final String variant = System.getProperty("argentum.itemTestVariant", "atlas");
+    private final boolean glint = Boolean.getBoolean("argentum.itemTestGlint");
     private final List<ItemStack> stacks = new ArrayList<>();
     private int ticks;
+    private long renderNanos;
+    private int renderFrames;
 
     private void collect() {
         for (int id = 1; id < 512 && this.stacks.size() < BLOCK_COUNT; id++) {
@@ -42,10 +46,13 @@ public class GuiItemVisualTestScreen extends Screen {
             ((ArmorItem) stack.getItem()).setColor(stack, color);
             this.stacks.add(stack);
         }
+
+        if (this.glint) this.stacks.forEach(stack -> stack.addEnchantment(Enchantment.SHARPNESS, 1));
     }
 
     @Override
     public void render(int mouseX, int mouseY, float tickDelta) {
+        long start = this.glint ? System.nanoTime() : 0;
         if (this.stacks.isEmpty()) this.collect();
 
         fill(0, 0, this.width, this.height, 0xFF202020);
@@ -61,16 +68,26 @@ public class GuiItemVisualTestScreen extends Screen {
         }
 
         Lighting.turnOff();
+        if (this.glint && this.ticks >= 20) {
+            this.renderNanos += System.nanoTime() - start;
+            this.renderFrames++;
+        }
     }
 
     @Override
     public void tick() {
         this.ticks++;
-        if (this.ticks == 5) {
+        if (this.glint && this.ticks == 140) {
+            System.out.printf("GUI glint %s: %.3f ms/frame%n", this.variant,
+                    this.renderNanos / (double) this.renderFrames / 1_000_000.0);
+            this.minecraft.stop();
+            return;
+        }
+        if (!this.glint && this.ticks == 5) {
             this.takeScreenshot("first");
-        } else if (this.ticks == 15) {
+        } else if (!this.glint && this.ticks == 15) {
             this.takeScreenshot("second");
-        } else if (this.ticks == 16) {
+        } else if (!this.glint && this.ticks == 16) {
             this.minecraft.stop();
         }
     }

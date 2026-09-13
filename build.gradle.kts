@@ -49,6 +49,7 @@ loom {
             displayName = "GUI Item Visual Test (Atlas)"
             jvmArguments.add("-XstartOnFirstThread")
             systemProperties.put("argentum.itemTestVariant", "atlas")
+            systemProperties.put("argentum.itemTestGlint", findProperty("itemTestGlint")?.toString() ?: "false")
         }
         create("itemTestVanillaClient") {
             inherit(getByName("client"))
@@ -56,6 +57,7 @@ loom {
             displayName = "GUI Item Visual Test (Vanilla)"
             jvmArguments.add("-XstartOnFirstThread")
             systemProperties.put("argentum.itemTestVariant", "vanilla")
+            systemProperties.put("argentum.itemTestGlint", findProperty("itemTestGlint")?.toString() ?: "false")
         }
         create("guiBenchmarkBatchedClient") {
             inherit(getByName("client"))
