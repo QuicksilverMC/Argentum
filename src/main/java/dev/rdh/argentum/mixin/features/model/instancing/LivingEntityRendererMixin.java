@@ -115,9 +115,11 @@ public abstract class LivingEntityRendererMixin {
             float yaw, float pitch, float scale) {
         EntityCapture active = EntityCapture.current();
         boolean capture = active != null && active.beginLayer(layer, entity);
+        EntityInstancing.beginLayerRender();
         try {
             layer.render(entity, walkAnimationProgress, walkAnimationSpeed, tickDelta, bob, yaw, pitch, scale);
         } finally {
+            EntityInstancing.endLayerRender();
             if (capture) {
                 active.endLayer();
             }

@@ -42,6 +42,7 @@ public final class EntityInstancing {
     }
 
     private static boolean overlayPassDetected;
+    private static int layerDepth;
 
     public static boolean overlayPassDetected() {
         return overlayPassDetected;
@@ -133,10 +134,24 @@ public final class EntityInstancing {
         return capture;
     }
 
+    public static void beginLayerRender() {
+        layerDepth++;
+    }
+
+    public static void endLayerRender() {
+        layerDepth--;
+    }
+
     public boolean recordArrow(ArrowEntity arrow, double x, double y, double z, float tickDelta,
             Identifier texture, int packedLight) {
         if (this.activeCapture != null && this.activeCapture.isModelActive()) {
             return this.activeCapture.recordArrow(arrow, x, y, z, tickDelta, texture);
+        }
+        // A layer renders its arrows at the origin and puts the placement in the matrix stack instead. Without a
+        // capture tracking that stack there is nothing here to place them by, and the identity matrix below would
+        // drop them at the camera entity's feet, so leave those to the fixed function pipeline.
+        if (layerDepth > 0) {
+            return false;
         }
         if (!this.backend.isBatchActive()) {
             return false;
