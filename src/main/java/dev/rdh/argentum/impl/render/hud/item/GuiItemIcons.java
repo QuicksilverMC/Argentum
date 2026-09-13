@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.Window;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.texture.TextureAtlas;
+import net.minecraft.client.render.texture.TextureAtlasSprite;
 import net.minecraft.client.resource.model.BakedModel;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
@@ -37,7 +38,7 @@ public final class GuiItemIcons {
     }
 
     public static boolean canBake(ItemStack item) {
-        return item != null && item.getItem() != null;
+        return item != null && item.getItem() != null && !item.hasEnchantmentGlint();
     }
 
     public static void invalidate() {
@@ -45,7 +46,7 @@ public final class GuiItemIcons {
     }
 
     public static int acquire(BakedModel model, ItemStack item, Runnable bake) {
-        return ATLAS.acquire(GuiItemAtlas.keyFor(model, item), currentTick(), iconPixels(), () -> {
+        return ATLAS.acquire(GuiItemAtlas.keyFor(model, item), sourceVersion(model), iconPixels(), () -> {
             GlStateManager.pushMatrix();
             GlStateManager.matrixMode(GL11.GL_PROJECTION);
             GlStateManager.pushMatrix();
@@ -80,6 +81,11 @@ public final class GuiItemIcons {
     private static int currentTick() {
         var world = Minecraft.getInstance().world;
         return world != null ? (int) world.getTime() : (int) (System.nanoTime() / 50_000_000L);
+    }
+
+    private static int sourceVersion(BakedModel model) {
+        TextureAtlasSprite sprite = model.getParticleIcon();
+        return sprite != null && sprite.isAnimated() ? currentTick() : 0;
     }
 
     public static void draw(int slot, int x, int y, float zOffset) {

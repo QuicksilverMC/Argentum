@@ -12,6 +12,7 @@ import net.minecraft.client.resource.model.BakedModel;
 import net.minecraft.client.render.TextRenderer;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.item.ItemStack;
+import net.minecraft.client.resource.manager.ResourceManager;
 
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -44,12 +45,22 @@ public abstract class GuiItemRendererMixin {
 
     @WrapMethod(method = "renderGuiItemModel")
     private void argentum$bakeGuiItem(ItemStack item, int x, int y, Operation<Void> original) {
-        if (!GuiItemIcons.enabled() || !GuiItemIcons.canBake(item)) {
+        if (!GuiItemIcons.enabled()) {
+            original.call(item, x, y);
+            return;
+        }
+        if (!GuiItemIcons.canBake(item)) {
+            GuiItemIcons.flush();
             original.call(item, x, y);
             return;
         }
 
         BakedModel model = this.modelShaper.getModel(item);
+        if (model.isCustomRenderer()) {
+            GuiItemIcons.flush();
+            original.call(item, x, y);
+            return;
+        }
         int slot = GuiItemIcons.acquire(model, item, () -> original.call(item, 0, 0));
 
         if (slot < 0) {
@@ -65,5 +76,10 @@ public abstract class GuiItemRendererMixin {
         if (item != null && (item.size != 1 || stackSizeText != null || item.isDamaged())) {
             GuiItemIcons.flush();
         }
+    }
+
+    @Inject(method = "reload", at = @At("RETURN"))
+    private void argentum$invalidateOnReload(ResourceManager resourceManager, CallbackInfo ci) {
+        GuiItemIcons.invalidate();
     }
 }

@@ -39,7 +39,7 @@ public final class GuiItemAtlas {
 
     private int bakedPixels = -1;
 
-    private final int[] bakedAtTick = new int[CAPACITY];
+    private final int[] bakedAtVersion = new int[CAPACITY];
     private int used;
 
     public boolean initialize() {
@@ -99,7 +99,7 @@ public final class GuiItemAtlas {
         return SLOT_SIZE;
     }
 
-    public int acquire(Key key, int tick, int pixels, Runnable render) {
+    public int acquire(Key key, int version, int pixels, Runnable render) {
         if (!this.supported) return NO_SLOT;
         if (pixels != this.bakedPixels) {
             this.invalidate();
@@ -115,18 +115,18 @@ public final class GuiItemAtlas {
                 slot = this.slots.removeFirstInt();
             }
             this.slots.putAndMoveToLast(key, slot);
-            this.bakedAtTick[slot] = Integer.MIN_VALUE;
+            this.bakedAtVersion[slot] = Integer.MIN_VALUE;
         }
 
-        if (this.bakedAtTick[slot] != tick) {
-            this.bake(slot, pixels, render);
-            this.bakedAtTick[slot] = tick;
+        if (this.bakedAtVersion[slot] != version) {
+            if (!this.bake(slot, pixels, render)) return NO_SLOT;
+            this.bakedAtVersion[slot] = version;
         }
 
         return slot;
     }
 
-    private void bake(int slot, int pixels, Runnable render) {
+    private boolean bake(int slot, int pixels, Runnable render) {
         int previousFramebuffer = this.core
                 ? GL11.glGetInteger(GL30C.GL_FRAMEBUFFER_BINDING)
                 : GL11.glGetInteger(EXTFramebufferObject.GL_FRAMEBUFFER_BINDING_EXT);
@@ -140,7 +140,7 @@ public final class GuiItemAtlas {
         if (!this.isComplete()) {
             this.bindFramebuffer(previousFramebuffer);
             this.supported = false;
-            return;
+            return false;
         }
 
         int x = (slot % SLOTS_PER_AXIS) * SLOT_SIZE;
@@ -160,6 +160,7 @@ public final class GuiItemAtlas {
 
         try {
             render.run();
+            return true;
         } finally {
             this.bindFramebuffer(previousFramebuffer);
             GL11.glViewport(this.viewport.get(0), this.viewport.get(1), this.viewport.get(2), this.viewport.get(3));
