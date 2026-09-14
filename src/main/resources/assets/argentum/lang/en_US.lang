@@ -86,6 +86,10 @@ celeritas.cpu_render_ahead_limit.value=%s frame(s)
 argentum.check_gl_errors.name=OpenGL Error Checks
 argentum.check_gl_errors.tooltip=Checks for OpenGL errors during the game loop. Useful for debugging, but slower.
 
+argentum.gui.restart_required.title=Restart Required
+argentum.gui.restart_required.message=Some of the options you changed will only take effect after restarting the game.
+argentum.gui.restart_required.skip=Skip For Now
+
 argentum.options.value.shadows_only=Shadows Only
 argentum.options.value.everything=Everything
 argentum.options.value.auto=Auto

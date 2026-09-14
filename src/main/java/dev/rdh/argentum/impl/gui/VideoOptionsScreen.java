@@ -22,12 +22,17 @@ public final class VideoOptionsScreen extends Screen {
             protected void applyFlagSideEffects(Set<OptionFlag> flags) {
                 super.applyFlagSideEffects(flags);
                 Minecraft minecraft = Minecraft.getInstance();
-                if (minecraft.world != null && (flags.contains(OptionFlag.REQUIRES_RENDERER_RELOAD)
-                        || flags.contains(OptionFlag.REQUIRES_RENDERER_UPDATE))) {
+                if (flags.contains(OptionFlag.REQUIRES_RENDERER_RELOAD)) {
                     minecraft.worldRenderer.reload();
+                }
+                if (flags.contains(OptionFlag.REQUIRES_RENDERER_UPDATE)) {
+                    minecraft.worldRenderer.onViewChanged();
                 }
                 if (flags.contains(OptionFlag.REQUIRES_ASSET_RELOAD)) {
                     minecraft.reloadResources();
+                }
+                if (flags.contains(OptionFlag.REQUIRES_GAME_RESTART)) {
+                    minecraft.openScreen(new RestartRequiredScreen(VideoOptionsScreen.this));
                 }
             }
         };
