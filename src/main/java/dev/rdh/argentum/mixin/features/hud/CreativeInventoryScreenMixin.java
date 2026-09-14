@@ -1,11 +1,11 @@
 package dev.rdh.argentum.mixin.features.hud;
 
-import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.hud.HudBatch;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiElement;
 import net.minecraft.client.gui.screen.inventory.menu.CreativeInventoryScreen;
+import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.resource.Identifier;
 
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
@@ -47,13 +47,15 @@ public abstract class CreativeInventoryScreenMixin extends GuiElement {
 
     @Inject(method = "renderMenuBackground", at = @At("HEAD"))
     private void argentum$openTabBatch(float tickDelta, int mouseX, int mouseY, CallbackInfo ci) {
-        this.argentum$batchingTabs = !Argentum.CONFIG.guiItemAtlas;
+        this.argentum$batchingTabs = true;
     }
 
     @Inject(method = "renderMenuBackground", at = @At(value = "INVOKE", ordinal = 1, target = "Lnet/minecraft/client/render/texture/TextureManager;bind(Lnet/minecraft/resource/Identifier;)V"))
     private void argentum$drawTabBatch(float tickDelta, int mouseX, int mouseY, CallbackInfo ci) {
         this.argentum$batchingTabs = false;
         if (this.argentum$tabBatch != null) {
+            GlStateManager.disableLighting();
+            GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
             Minecraft.getInstance().getTextureManager().bind(MENU_LOCATION);
             this.argentum$tabBatch.draw();
         }
