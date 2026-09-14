@@ -3,6 +3,7 @@ package dev.rdh.argentum.impl.gui;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import org.embeddedt.embeddium.impl.gui.CeleritasVideoOptionsController;
+import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.taumc.celeritas.api.options.structure.OptionFlag;
 
@@ -70,6 +71,15 @@ public final class VideoOptionsScreen extends Screen {
         }
         this.lastMouseX = mouseX;
         this.lastMouseY = mouseY;
+    }
+
+    @Override
+    protected void keyPressed(char character, int keyCode) {
+        if (keyCode == Keyboard.KEY_P && isShiftDown()) {
+            this.minecraft.openScreen(new net.minecraft.client.gui.screen.VideoOptionsScreen(this, this.minecraft.options));
+            return;
+        }
+        super.keyPressed(character, keyCode);
     }
 
     @Override
