@@ -4,7 +4,7 @@
   "package": "dev.rdh.argentum.mixin",
   "compatibilityLevel": "JAVA_25",
   "client": [
-    "core.GameOptionsMixin", "core.MinecraftMixin", "core.render.BufferBuilderMixin", "core.render.BufferUploaderMixin", "core.render.DebugOverlayMixin",
+    "core.GameOptionsMixin", "core.MinecraftMixin", "core.render.BufferBuilderMixin", "core.render.DebugOverlayMixin",
     "core.render.FrustumCullerMixin", "core.render.WorldRendererMixin",
     "core.world.ClientChunkCacheAccessor", "core.world.MultiplayerChunkCacheMixin", "features.cloud.WorldRendererMixin",
     "features.entity.shadow.EntityRendererMixin", "features.font.TextRendererMixin", "features.hud.ChatGuiMixin",

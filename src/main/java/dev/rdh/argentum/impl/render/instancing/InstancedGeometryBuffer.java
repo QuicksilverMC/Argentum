@@ -2,7 +2,6 @@ package dev.rdh.argentum.impl.render.instancing;
 
 import org.embeddedt.embeddium.impl.gl.array.GlVertexArray;
 import org.embeddedt.embeddium.impl.gl.attribute.GlVertexFormat;
-import org.embeddedt.embeddium.impl.gl.buffer.GlBufferTarget;
 import org.embeddedt.embeddium.impl.gl.buffer.GlBufferUsage;
 import org.embeddedt.embeddium.impl.gl.buffer.GlMutableBuffer;
 import org.embeddedt.embeddium.impl.gl.device.CommandList;
@@ -10,7 +9,6 @@ import org.embeddedt.embeddium.impl.gl.tessellation.GlVertexArrayTessellation;
 import org.embeddedt.embeddium.impl.gl.tessellation.TessellationBinding;
 import org.lwjgl.opengl.ARBDrawInstanced;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL15C;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.FloatBuffer;
@@ -55,23 +53,13 @@ public final class InstancedGeometryBuffer {
 
     public void draw(CommandList commandList, IntBuffer instances, int vertexCount, int instanceCount) {
         this.initialize(commandList);
-        this.uploadInstances(commandList, MemoryUtil.memAddress(instances), (long)instances.remaining() * Integer.BYTES);
+        commandList.uploadData(this.instanceBuffer, MemoryUtil.memAddress(instances), (long)instances.remaining() * Integer.BYTES, GlBufferUsage.STREAM_DRAW);
         this.tessellation.bind(commandList);
         try {
             ARBDrawInstanced.glDrawArraysInstancedARB(GL11.GL_QUADS, 0, vertexCount, instanceCount);
         } finally {
             this.tessellation.unbind(commandList);
         }
-    }
-
-    private void uploadInstances(CommandList commandList, long ptr, long bytes) {
-        if (bytes > this.instanceBuffer.getSize()) {
-            commandList.allocateStorage(this.instanceBuffer, bytes + (bytes >> 1), GlBufferUsage.STREAM_DRAW);
-        } else {
-            commandList.bindBuffer(GlBufferTarget.ARRAY_BUFFER, this.instanceBuffer);
-        }
-
-        GL15C.nglBufferSubData(GlBufferTarget.ARRAY_BUFFER.getTargetParameter(), 0L, bytes, ptr);
     }
 
     public void delete(CommandList commandList) {
