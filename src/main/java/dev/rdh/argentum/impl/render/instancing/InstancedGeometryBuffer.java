@@ -41,8 +41,7 @@ public final class InstancedGeometryBuffer {
                     TessellationBinding.forVertexBuffer(this.vertexBuffer, this.vertexFormat),
                     TessellationBinding.forVertexBuffer(this.instanceBuffer, this.instanceFormat,
                             this.vertexFormat.getAttributes().size(), 1)
-            }
-            );
+            });
             this.tessellation.init(commandList);
             this.vertices = null;
         } catch (RuntimeException exception) {

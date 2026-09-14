@@ -130,6 +130,10 @@ final class ArgentumExtrasOptionPage {
                         Platform.get() == Platform.MACOSX,
                         () -> toggle("macos_smooth_scrolling", (c, v) -> c.macosSmoothScrolling = v, c -> c.macosSmoothScrolling, OptionFlag.REQUIRES_GAME_RESTART)
                 )
+                .addConditionally(
+                        Platform.get() == Platform.MACOSX,
+                        () -> toggle("macos_right_click_emulation", (c, v) -> c.macosRightClickEmulation = v, c -> c.macosRightClickEmulation, OptionFlag.REQUIRES_GAME_RESTART)
+                )
                 .build();
 
         OptionGroup entities = OptionGroup.createBuilder()

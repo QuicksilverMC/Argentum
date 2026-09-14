@@ -48,6 +48,7 @@ public class ArgentumExtrasConfig {
     public float blockOutlineWidth = 2.0f;
     public boolean scaledBlockOutlineWidth = false;
     public boolean macosSmoothScrolling = true;
+    public boolean macosRightClickEmulation = false;
     public boolean highDpiScreen = false;
 
     public void validate() {

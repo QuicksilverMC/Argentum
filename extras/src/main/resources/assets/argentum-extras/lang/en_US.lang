@@ -101,6 +101,8 @@ argentum-extras.options.high_dpi_screen.name=High-DPI Screen
 argentum-extras.options.high_dpi_screen.tooltip=Enables usage of a high pixel density buffer if possible, enhancing the visual quality on high-DPI displays, but possibly reducing framerate.
 argentum-extras.options.macos_smooth_scrolling.name=Smooth Scrolling
 argentum-extras.options.macos_smooth_scrolling.tooltip=Enables scrolling momentum.
+argentum-extras.options.macos_right_click_emulation.name=Right-Click Emulation
+argentum-extras.options.macos_right_click_emulation.tooltip=Enables the ctrl-click to right click emulation on macOS.
 
 argentum-extras.options.value.leaf_quality.fast=Fast
 argentum-extras.options.value.leaf_quality.hollow=Hollow
