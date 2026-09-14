@@ -22,7 +22,7 @@
     "features.terrain.FaceBakeryMixin",
     "features.terrain.BiomeColorsMixin",
     "features.texture.TextureAtlasMixin", "features.texture.TextureAtlasSpriteMixin",
-    "features.texture.TextureManagerMixin"
+    "features.texture.TextureManagerMixin", "features.texture.TextureUtilMixin"
   ],
   "mixins": [
     "core.DirectionMixin", "core.collections.TypeInstanceMultimapMixin", "core.world.ChunkCacheMixin",
