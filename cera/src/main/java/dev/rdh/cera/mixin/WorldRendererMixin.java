@@ -1,5 +1,6 @@
 package dev.rdh.cera.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import dev.rdh.argentum.impl.ext.WorldRendererExtension;
 import dev.rdh.cera.Cera;
 import dev.rdh.cera.ext.CeraWorldRendererExtension;
@@ -8,6 +9,7 @@ import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.world.WorldRenderer;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.resource.Identifier;
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -24,6 +26,9 @@ public abstract class WorldRendererMixin implements CeraWorldRendererExtension {
     @Unique
     private final CustomSky cera$customSky = new CustomSky();
 
+    @Unique
+    private float cera$tickDelta;
+
     @Override
     public CustomSky cera$getCustomSky() {
         return this.cera$customSky;
@@ -39,16 +44,36 @@ public abstract class WorldRendererMixin implements CeraWorldRendererExtension {
 
     @Inject(method = "renderSky(FI)V", at = @At("HEAD"))
     private void cera$prepareCelestial(float tickDelta, int anaglyphRenderPass, CallbackInfo ci) {
+        this.cera$tickDelta = tickDelta;
         this.cera$customSky.prepareCelestial(this.world, tickDelta);
     }
 
-    @Inject(method = "renderSky(FI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;disableFog()V"))
+    // Same spot as OptiFine: after the sunrise/sunset disk, before the sun and moon.
+    @Inject(method = "renderSky(FI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientWorld;getRain(F)F"))
     private void cera$renderCustomSky(float tickDelta, int anaglyphRenderPass, CallbackInfo ci) {
         if (Cera.CONFIG.customSky) {
             this.cera$customSky.render(this.world, tickDelta);
+            // restore what vanilla expects for the sun/moon/stars that follow
+            GlStateManager.disableFog();
+            GlStateManager.disableAlphaTest();
+            GlStateManager.enableBlend();
+            GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE);
             GlStateManager.depthMask(false);
-            GlStateManager.disableTexture();
         }
+    }
+
+    // OptiFine draws the end skybox, then custom layers on top of it.
+    @Inject(method = "renderEndSky", at = @At("TAIL"))
+    private void cera$renderCustomEndSky(CallbackInfo ci) {
+        if (Cera.CONFIG.customSky) {
+            this.cera$customSky.render(this.world, this.cera$tickDelta);
+        }
+    }
+
+    // OptiFine hides vanilla stars whenever the dimension has custom sky layers.
+    @ModifyExpressionValue(method = "renderSky(FI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientWorld;getStarBrightness(F)F"))
+    private float cera$hideVanillaStars(float brightness) {
+        return Cera.CONFIG.customSky && this.cera$customSky.hasLayers(this.world) ? 0.0F : brightness;
     }
 
     @ModifyArg(method = "renderSky(FI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/texture/TextureManager;bind(Lnet/minecraft/resource/Identifier;)V", ordinal = 0))
