@@ -177,3 +177,9 @@ tasks.register("benchmarkGuiBatching") {
 tasks.check {
     dependsOn("compileTestmodJava")
 }
+
+tasks.remapJar {
+    manifest.attributes(
+        "Celeritas-Version" to project.property("celeritas_version") as String
+    )
+}

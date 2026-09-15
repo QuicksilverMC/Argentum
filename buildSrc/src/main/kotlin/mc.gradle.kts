@@ -10,6 +10,21 @@ java.toolchain {
     languageVersion = JavaLanguageVersion.of(25)
 }
 
+val gitCommit: Provider<String> = if (rootProject.file(".git").exists()) {
+    val commit = providers.exec {
+        workingDirectory = rootProject.projectDir
+        commandLine("git", "rev-parse", "HEAD")
+    }.standardOutput.asText.map { it.trim() }
+
+    val dirty = providers.exec {
+        workingDirectory = rootProject.projectDir
+        commandLine("git", "status", "--porcelain")
+    }.standardOutput.asText.map { it.trim() }
+    commit.zip(dirty) { c, d -> if (d.isBlank()) c else "$c-dirty" }
+} else {
+    provider { "NO-GIT" }
+}
+
 repositories {
     exclusiveContent {
         forRepository { mavenCentral() }
@@ -90,6 +105,10 @@ dependencies {
     if (project != rootProject) {
         implementation(project(path = ":", configuration = "namedElements"))
     }
+}
+
+tasks.remapJar {
+    manifest.attributes("Git-Commit" to gitCommit)
 }
 
 tasks.processResources {
