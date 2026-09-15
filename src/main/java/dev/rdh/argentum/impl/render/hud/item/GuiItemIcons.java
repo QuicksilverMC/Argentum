@@ -118,6 +118,7 @@ public final class GuiItemIcons {
         GlStateManager.disableLighting();
         RECORDER.flush();
         GLINTS.flush(ATLAS.getTexture());
+        GlStateManager.enableBlend();
         GlStateManager.blendFuncSeparate(770, 771, 1, 0);
         Minecraft.getInstance().getTextureManager().bind(TextureAtlas.BLOCKS_LOCATION);
     }

@@ -1,8 +1,14 @@
 package dev.rdh.argentum.impl.render.hud.item;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.platform.GLX;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.texture.TextureAtlasSprite;
+import net.minecraft.client.render.vertex.BufferBuilder;
+import net.minecraft.client.render.vertex.BufferUploader;
+import net.minecraft.client.render.vertex.DefaultVertexFormat;
+import net.minecraft.client.render.vertex.VertexFormat;
+import net.minecraft.client.render.vertex.VertexFormatElement;
 import net.minecraft.resource.Identifier;
 
 import org.lwjgl.opengl.GL11;
@@ -12,6 +18,17 @@ import java.util.Arrays;
 
 final class GuiItemGlints {
     private static final Identifier TEXTURE = new Identifier("textures/misc/enchanted_item_glint.png");
+
+    private static final VertexFormat FORMAT = new VertexFormat();
+
+    static {
+        FORMAT.addElement(DefaultVertexFormat.POSITION_ELEMENT);
+        FORMAT.addElement(DefaultVertexFormat.UV0_ELEMENT);
+        FORMAT.addElement(new VertexFormatElement(1, VertexFormatElement.Type.FLOAT, VertexFormatElement.Usage.UV, 2));
+    }
+
+    private final BufferBuilder buffer = new BufferBuilder(64 * 1024 / Integer.BYTES);
+    private final BufferUploader uploader = new BufferUploader();
 
     private float[] data = new float[1024 * 10];
     private int size;
@@ -41,16 +58,17 @@ final class GuiItemGlints {
 
         GlStateManager.disableLighting();
         GlStateManager.enableBlend();
-        GlStateManager.blendFunc(768, 1);
+        GlStateManager.blendFuncSeparate(768, 1, 768, 1);
         GlStateManager.depthMask(false);
         GlStateManager.depthFunc(514);
+        GlStateManager.color4f(0.5F, 0.25F, 0.8F, 1.0F);
 
-        GlStateManager.activeTexture(GL13.GL_TEXTURE0);
+        GlStateManager.activeTexture(GLX.GL_TEXTURE0);
         GlStateManager.enableTexture();
         GlStateManager.bindTexture(atlasTexture);
         this.maskTexture();
 
-        GlStateManager.activeTexture(GL13.GL_TEXTURE1);
+        GlStateManager.activeTexture(GLX.GL_TEXTURE1);
         GlStateManager.enableTexture();
         Minecraft.getInstance().getTextureManager().bind(TEXTURE);
         this.glintTexture();
@@ -64,11 +82,11 @@ final class GuiItemGlints {
             GlStateManager.popMatrix();
             GL11.glTexEnvi(GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_MODE, GL11.GL_MODULATE);
             GlStateManager.disableTexture();
-            GlStateManager.activeTexture(GL13.GL_TEXTURE0);
+            GlStateManager.activeTexture(GLX.GL_TEXTURE0);
             GL11.glTexEnvi(GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_MODE, GL11.GL_MODULATE);
             GlStateManager.matrixMode(GL11.GL_MODELVIEW);
             GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-            GlStateManager.blendFunc(770, 771);
+            GlStateManager.blendFuncSeparate(770, 771, 1, 0);
             GlStateManager.depthFunc(515);
             GlStateManager.depthMask(true);
             this.size = 0;
@@ -82,8 +100,7 @@ final class GuiItemGlints {
         GlStateManager.translatef(direction * offset, 0.0F, 0.0F);
         GlStateManager.rotatef(rotation, 0.0F, 0.0F, 1.0F);
 
-        GL11.glColor4f(0.5F, 0.25F, 0.8F, 1.0F);
-        GL11.glBegin(GL11.GL_QUADS);
+        this.buffer.begin(GL11.GL_QUADS, FORMAT);
         for (int i = 0; i < this.size; i++) {
             int offsetIndex = i * 10;
             float x = this.data[offsetIndex];
@@ -101,13 +118,12 @@ final class GuiItemGlints {
             this.vertex(x + 16, y, z, u + extent, v + extent, glintU1, glintV0);
             this.vertex(x, y, z, u, v + extent, glintU0, glintV0);
         }
-        GL11.glEnd();
+        this.buffer.end();
+        this.uploader.end(this.buffer);
     }
 
     private void vertex(float x, float y, float z, float maskU, float maskV, float glintU, float glintV) {
-        GL13.glMultiTexCoord2f(GL13.GL_TEXTURE0, maskU, maskV);
-        GL13.glMultiTexCoord2f(GL13.GL_TEXTURE1, glintU, glintV);
-        GL11.glVertex3f(x, y, z);
+        this.buffer.vertex(x, y, z).texture(maskU, maskV).texture(glintU, glintV).nextVertex();
     }
 
     private void maskTexture() {
