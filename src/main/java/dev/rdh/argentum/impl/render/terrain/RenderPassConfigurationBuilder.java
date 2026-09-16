@@ -8,9 +8,9 @@ import org.embeddedt.embeddium.impl.render.chunk.terrain.TerrainRenderPass.Pipel
 import org.embeddedt.embeddium.impl.render.chunk.terrain.material.Material;
 import org.embeddedt.embeddium.impl.render.chunk.terrain.material.parameters.AlphaCutoffParameter;
 import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkVertexType;
-import org.lwjgl.opengl.GL11;
 
 import net.minecraft.client.render.block.BlockLayer;
+import net.minecraft.client.render.platform.GlStateManager;
 
 import java.util.Collection;
 import java.util.List;
@@ -20,12 +20,12 @@ public class RenderPassConfigurationBuilder {
     private static final TerrainRenderPass.PipelineState DISABLE_BLEND_PIPELINE_STATE = new PipelineState() {
         @Override
         public void setup() {
-            GL11.glDisable(GL11.GL_ALPHA_TEST);
+            GlStateManager.disableAlphaTest();
         }
 
         @Override
         public void clear() {
-            GL11.glEnable(GL11.GL_ALPHA_TEST);
+            GlStateManager.enableAlphaTest();
         }
     };
 

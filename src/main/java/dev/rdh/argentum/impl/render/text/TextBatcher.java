@@ -49,6 +49,7 @@ public final class TextBatcher {
     private boolean batching;
     private boolean drawing;
     private boolean drawingDecorations;
+    private boolean blend;
 
     private float red = 1.0F;
     private float green = 1.0F;
@@ -330,12 +331,36 @@ public final class TextBatcher {
         for (Segment segment : geometry.segments()) segment.buffer().delete();
     }
 
+    public void setBlend(boolean blend) {
+        this.blend = blend;
+    }
+
+    private boolean pushBlend() {
+        if (!this.blend || GL11.glIsEnabled(GL11.GL_BLEND)) return false;
+        GlStateManager.enableBlend();
+        GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+        return true;
+    }
+
+    private void popBlend(boolean pushed) {
+        if (pushed) GlStateManager.disableBlend();
+    }
+
+    private void upload(BufferBuilder buffer) {
+        boolean pushed = this.pushBlend();
+        try {
+            this.uploader.end(buffer);
+        } finally {
+            this.popBlend(pushed);
+        }
+    }
+
     private void flush() {
         if (!this.drawing) return;
 
         this.buffer.end();
         if (this.pendingKey == null) {
-            this.uploader.end(this.buffer);
+            this.upload(this.buffer);
         } else {
             IntBuffer source = this.buffer.getBuffer().asIntBuffer();
             int[] vertices = new int[source.remaining()];
@@ -387,7 +412,7 @@ public final class TextBatcher {
 
         this.decorationBuffer.end();
         GlStateManager.disableTexture();
-        this.uploader.end(this.decorationBuffer);
+        this.upload(this.decorationBuffer);
         GlStateManager.enableTexture();
         this.drawingDecorations = false;
     }
@@ -406,6 +431,7 @@ public final class TextBatcher {
     }
 
     private void draw(VertexBuffer buffer, float x, float y) {
+        boolean pushed = this.pushBlend();
         GlStateManager.pushMatrix();
         GlStateManager.translatef(x, y, 0.0F);
         buffer.bind();
@@ -419,10 +445,12 @@ public final class TextBatcher {
         GL11.glColorPointer(4, GL11.GL_UNSIGNED_BYTE, stride, format.getColorOffset());
         buffer.draw(GL11.GL_QUADS);
         GL11.glDisableClientState(GL11.GL_COLOR_ARRAY);
+        GlStateManager.clearColor();
         GL11.glDisableClientState(GL11.GL_TEXTURE_COORD_ARRAY);
         GL11.glDisableClientState(GL11.GL_VERTEX_ARRAY);
         buffer.unbind();
         GlStateManager.popMatrix();
+        this.popBlend(pushed);
     }
 
     private void append(Identifier texture, int[] vertices, float x, float y) {
@@ -444,7 +472,7 @@ public final class TextBatcher {
 
             buffer.end();
             textureManager.bind(entry.getKey());
-            this.uploader.end(buffer);
+            this.upload(buffer);
         }
     }
 

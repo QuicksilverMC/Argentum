@@ -2,7 +2,6 @@ package dev.rdh.argentum.mixin.features.hud;
 
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 
 import dev.rdh.argentum.impl.render.hud.item.GuiItemIcons;
 
@@ -13,6 +12,9 @@ import net.minecraft.client.render.TextRenderer;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.item.ItemStack;
 import net.minecraft.client.resource.manager.ResourceManager;
+
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL14;
 
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -30,16 +32,16 @@ public abstract class GuiItemRendererMixin {
     @Final
     private ItemModelShaper modelShaper;
 
-    @WrapOperation(
+    @Inject(
             method = "renderGuiItemModel",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;blendFunc(II)V")
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;blendFunc(II)V",
+                    shift = At.Shift.AFTER)
     )
-    private void argentum$keepAlphaWhileBaking(int source, int destination, Operation<Void> original) {
+    private void argentum$keepAlphaWhileBaking(ItemStack item, int x, int y, CallbackInfo ci) {
         // blendFunc sets the alpha factors too, which would leave a*a in the atlas
         if (GuiItemIcons.baking()) {
-            GlStateManager.blendFuncSeparate(source, destination, 1, 771);
-        } else {
-            original.call(source, destination);
+            GlStateManager.blendFuncSeparate(GL11.glGetInteger(GL14.GL_BLEND_SRC_RGB),
+                    GL11.glGetInteger(GL14.GL_BLEND_DST_RGB), 1, 771);
         }
     }
 

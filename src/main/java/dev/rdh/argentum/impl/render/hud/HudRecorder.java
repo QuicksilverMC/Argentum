@@ -119,25 +119,28 @@ public final class HudRecorder {
     private void emit() {
         GlStateManager.enableBlend();
 
-        int runStart = 0;
-        while (runStart < this.size) {
-            int first = this.order[runStart];
-            int texture = this.textures[first];
-            int key = this.keys[first];
+        try {
+            int runStart = 0;
+            while (runStart < this.size) {
+                int first = this.order[runStart];
+                int texture = this.textures[first];
+                int key = this.keys[first];
 
-            int runEnd = runStart + 1;
-            while (runEnd < this.size) {
-                int candidate = this.order[runEnd];
-                if (this.textures[candidate] != texture || this.keys[candidate] != key) break;
-                runEnd++;
+                int runEnd = runStart + 1;
+                while (runEnd < this.size) {
+                    int candidate = this.order[runEnd];
+                    if (this.textures[candidate] != texture || this.keys[candidate] != key) break;
+                    runEnd++;
+                }
+
+                this.draw(runStart, runEnd, texture, materialOf(key));
+                runStart = runEnd;
             }
-
-            this.draw(runStart, runEnd, texture, materialOf(key));
-            runStart = runEnd;
+        } finally {
+            GlStateManager.enableTexture();
+            GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+            GlStateManager.disableBlend();
         }
-
-        GlStateManager.enableTexture();
-        GlStateManager.disableBlend();
     }
 
     private static int materialOf(int key) {
