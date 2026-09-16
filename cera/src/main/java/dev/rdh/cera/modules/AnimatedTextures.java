@@ -28,7 +28,9 @@ import java.io.InputStream;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public final class AnimatedTextures implements ResourceReloadListener {
     private volatile Map<Identifier, AnimatedTexture> textures = Map.of();
@@ -51,7 +53,6 @@ public final class AnimatedTextures implements ResourceReloadListener {
 
     public void tick() {
         if (!Cera.CONFIG.animatedTextures) return;
-        // Like OptiFine's Smart Animations: frames keep advancing, but uploads only happen for textures bound since the last tick.
         boolean onlyVisible = Argentum.CONFIG.animateOnlyVisibleTextures;
         for (AnimatedTexture tex : this.textures.values()) tex.tick(onlyVisible);
     }
@@ -92,8 +93,9 @@ public final class AnimatedTextures implements ResourceReloadListener {
 
     private static Map<Identifier, Target> parse(ResourceManager resources) {
         Map<Identifier, List<Animation>> grouped = new Object2ObjectOpenHashMap<>();
-        collect(resources, "optifine/anim/", grouped);
-        collect(resources, "mcpatcher/anim/", grouped);
+        Set<String> seen = new HashSet<>();
+        collect(resources, "optifine/anim/", grouped, seen);
+        collect(resources, "mcpatcher/anim/", grouped, seen);
 
         Map<Identifier, Target> loaded = new Object2ObjectOpenHashMap<>();
         grouped.forEach((id, animations) -> {
@@ -103,9 +105,11 @@ public final class AnimatedTextures implements ResourceReloadListener {
         return loaded;
     }
 
-    private static void collect(ResourceManager resources, String directory, Map<Identifier, List<Animation>> grouped) {
+    private static void collect(ResourceManager resources, String directory, Map<Identifier, List<Animation>> grouped, Set<String> seen) {
         resources.findResources("minecraft", directory, id -> id.identifier().endsWith(".properties"))
-                .forEach((_, resource) -> load(resource, resources, grouped));
+                .forEach((id, resource) -> {
+                    if (seen.add(id.identifier().substring(directory.length()))) load(resource, resources, grouped);
+                });
     }
 
     private static void load(Resource resource, ResourceManager resources, Map<Identifier, List<Animation>> grouped) {
@@ -167,7 +171,7 @@ public final class AnimatedTextures implements ResourceReloadListener {
         private final int[] durations;
         private final boolean interpolate;
         private final int skip;
-        private final int[] strip;
+        private final IntBuffer strip;
         private int phase;
         private int counter;
 
@@ -227,11 +231,13 @@ public final class AnimatedTextures implements ResourceReloadListener {
             boolean interpolate = props.getBoolean("interpolate", false).orElse(false);
             int skip = Math.max(props.getInt("skip", 0).orElse(0), 0);
             int[] stripPixels = strip.getRGB(0, 0, strip.getWidth(), strip.getHeight(), null, 0, strip.getWidth());
-            return Result.success(new Animation(target, x, y, width, height, tiles, durations, interpolate, skip, stripPixels));
+            IntBuffer stripBuffer = BufferUtils.createIntBuffer(stripPixels.length);
+            stripBuffer.put(stripPixels).flip();
+            return Result.success(new Animation(target, x, y, width, height, tiles, durations, interpolate, skip, stripBuffer));
         }
 
         Animation(Identifier target, int x, int y, int width, int height,
-                int[] tiles, int[] durations, boolean interpolate, int skip, int[] strip) {
+                int[] tiles, int[] durations, boolean interpolate, int skip, IntBuffer strip) {
             this.target = target;
             this.x = x;
             this.y = y;
@@ -262,18 +268,20 @@ public final class AnimatedTextures implements ResourceReloadListener {
             int tile = this.tiles[this.phase];
             int source = tile * this.height * this.width;
             int count = this.width * this.height;
-            scratch.clear();
+            IntBuffer data;
             if (!this.interpolate || this.counter <= 0) {
-                scratch.put(this.strip, source, count);
+                data = this.strip.limit(source + count).position(source);
             } else {
                 int next = this.tiles[(this.phase + 1) % this.tiles.length] * this.height * this.width;
                 float ratio = (float) this.counter / this.durations[this.phase];
+                scratch.clear();
                 for (int i = 0; i < count; i++) {
-                    scratch.put(ColorMixer.mix(this.strip[next + i], this.strip[source + i], ratio));
+                    scratch.put(ColorMixer.mix(this.strip.get(next + i), this.strip.get(source + i), ratio));
                 }
+                data = scratch.flip();
             }
-            scratch.flip();
-            GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, this.x, this.y, this.width, this.height, GL12.GL_BGRA, GL12.GL_UNSIGNED_INT_8_8_8_8_REV, scratch);
+            GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, this.x, this.y, this.width, this.height, GL12.GL_BGRA, GL12.GL_UNSIGNED_INT_8_8_8_8_REV, data);
+            this.strip.clear();
         }
     }
 
