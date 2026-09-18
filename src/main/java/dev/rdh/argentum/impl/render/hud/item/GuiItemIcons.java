@@ -116,6 +116,8 @@ public final class GuiItemIcons {
         if (baking || RECORDER.isEmpty() && GLINTS.isEmpty()) return;
 
         GlStateManager.disableLighting();
+        GlStateManager.enableAlphaTest();
+        GlStateManager.alphaFunc(516, 0.1F);
         RECORDER.flush();
         GLINTS.flush(ATLAS.getTexture());
         GlStateManager.enableBlend();

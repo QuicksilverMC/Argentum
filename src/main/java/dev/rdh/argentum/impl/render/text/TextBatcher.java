@@ -213,6 +213,8 @@ public final class TextBatcher {
     }
 
     public float begin(String text, boolean shadow, float x, float y, TextureManager textureManager) {
+        if (text.isEmpty()) return 0.0F;
+
         this.batching = Argentum.CONFIG.fontBatching;
         this.pendingKey = null;
         this.pendingSegments.clear();
