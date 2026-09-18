@@ -14,6 +14,7 @@
     "features.model.instancing.BoxAccessor", "features.model.instancing.EntityRendererAccessor",
     "features.model.instancing.GlStateManagerMixin", "features.model.instancing.ItemEntityRendererMixin",
     "features.model.instancing.ItemRendererMixin", "features.model.instancing.LivingEntityRendererMixin",
+    "features.model.instancing.MobSpawnerRendererMixin",
     "features.model.instancing.ModelPartAccessor", "features.model.instancing.PolygonAccessor", "features.options.OptionPageFrameMixin",
     "features.options.OptionsScreenMixin", "features.particle.ParticleManagerMixin", "features.particle.ParticleMixin",
     "features.blockentity.BlockEntityRenderDispatcherMixin",

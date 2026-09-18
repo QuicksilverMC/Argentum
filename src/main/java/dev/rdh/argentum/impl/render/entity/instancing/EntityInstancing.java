@@ -43,6 +43,7 @@ public final class EntityInstancing {
 
     private static boolean overlayPassDetected;
     private static int layerDepth;
+    private static int displayEntityDepth;
 
     public static boolean overlayPassDetected() {
         return overlayPassDetected;
@@ -95,13 +96,13 @@ public final class EntityInstancing {
     }
 
     public boolean isBatchActive() {
-        return this.backend.isBatchActive();
+        return displayEntityDepth == 0 && this.backend.isBatchActive();
     }
 
     public EntityCapture beginEntity(Model model, Identifier texture, boolean player, boolean preserveFixedFunction,
             int packedLight, float effectTime, float overlayRed, float overlayGreen, float overlayBlue,
             float overlayAlpha) {
-        if (!this.backend.isBatchActive() || model == null || texture == null) {
+        if (!this.isBatchActive() || model == null || texture == null) {
             return null;
         }
         EntityCapture capture = this.acquire();
@@ -116,7 +117,7 @@ public final class EntityInstancing {
     }
 
     public EntityCapture beginBlockEntity(InstanceRenderPass pass, int packedLight) {
-        if (!this.backend.isBatchActive()) {
+        if (!this.isBatchActive()) {
             return null;
         }
         EntityCapture capture = this.acquire();
@@ -125,13 +126,21 @@ public final class EntityInstancing {
     }
 
     public EntityCapture beginItemEntity(ItemEntity entity, BakedModel model, int packedLight) {
-        if (!this.backend.isBatchActive() || entity.getItem() == null
+        if (!this.isBatchActive() || entity.getItem() == null
                 || !this.backend.supportsItem(model, entity.getItem())) {
             return null;
         }
         EntityCapture capture = this.acquire();
         capture.beginItem(entity, packedLight);
         return capture;
+    }
+
+    public static void beginDisplayEntity() {
+        displayEntityDepth++;
+    }
+
+    public static void endDisplayEntity() {
+        displayEntityDepth--;
     }
 
     public static void beginLayerRender() {
@@ -153,7 +162,7 @@ public final class EntityInstancing {
         if (layerDepth > 0) {
             return false;
         }
-        if (!this.backend.isBatchActive()) {
+        if (!this.isBatchActive()) {
             return false;
         }
         this.transformArrow(this.arrowMatrix.identity(), arrow, x, y, z, tickDelta);

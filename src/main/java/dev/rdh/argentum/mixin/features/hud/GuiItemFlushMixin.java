@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin({GlStateManager.class, Lighting.class, InventoryMenuScreen.class})
 public class GuiItemFlushMixin {
-    @Inject(method = {"disableDepthTest", "turnOff"}, at = @At("HEAD"), require = 0)
+    @Inject(method = {"disableDepthTest", "turnOff", "pushMatrix", "popMatrix"}, at = @At("HEAD"), require = 0)
     private static void argentum$flushBeforeOverlay(CallbackInfo ci) {
         GuiItemIcons.flush();
     }

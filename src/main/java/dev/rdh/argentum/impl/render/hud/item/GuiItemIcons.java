@@ -22,6 +22,7 @@ public final class GuiItemIcons {
     private static boolean initialized;
     private static int readyTick;
     private static boolean baking;
+    private static boolean flushing;
     private static boolean warned;
 
     private GuiItemIcons() {
@@ -48,6 +49,8 @@ public final class GuiItemIcons {
 
     public static int acquire(BakedModel model, ItemStack item, Runnable bake) {
         return ATLAS.acquire(GuiItemAtlas.keyFor(model, item), sourceVersion(model), iconPixels(), () -> {
+            // before the first push: pushMatrix/popMatrix flush pending icons, and the atlas is the render target here
+            baking = true;
             GlStateManager.pushMatrix();
             GlStateManager.matrixMode(GL11.GL_PROJECTION);
             GlStateManager.pushMatrix();
@@ -57,15 +60,14 @@ public final class GuiItemIcons {
             GlStateManager.loadIdentity();
             GlStateManager.translatef(0.0F, 0.0F, -2000.0F);
 
-            baking = true;
             try {
                 bake.run();
             } finally {
-                baking = false;
                 GlStateManager.matrixMode(GL11.GL_PROJECTION);
                 GlStateManager.popMatrix();
                 GlStateManager.matrixMode(GL11.GL_MODELVIEW);
                 GlStateManager.popMatrix();
+                baking = false;
             }
         });
     }
@@ -113,16 +115,22 @@ public final class GuiItemIcons {
     }
 
     public static void flush() {
-        if (baking || RECORDER.isEmpty() && GLINTS.isEmpty()) return;
+        if (baking || flushing || RECORDER.isEmpty() && GLINTS.isEmpty()) return;
 
-        GlStateManager.disableLighting();
-        GlStateManager.enableAlphaTest();
-        GlStateManager.alphaFunc(516, 0.1F);
-        RECORDER.flush();
-        GLINTS.flush(ATLAS.getTexture());
-        GlStateManager.enableBlend();
-        GlStateManager.blendFuncSeparate(770, 771, 1, 0);
-        Minecraft.getInstance().getTextureManager().bind(TextureAtlas.BLOCKS_LOCATION);
+        // the glint pass pushes the texture matrix, which lands back here
+        flushing = true;
+        try {
+            GlStateManager.disableLighting();
+            GlStateManager.enableAlphaTest();
+            GlStateManager.alphaFunc(516, 0.1F);
+            RECORDER.flush();
+            GLINTS.flush(ATLAS.getTexture());
+            GlStateManager.enableBlend();
+            GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+            Minecraft.getInstance().getTextureManager().bind(TextureAtlas.BLOCKS_LOCATION);
+        } finally {
+            flushing = false;
+        }
     }
 
 }
