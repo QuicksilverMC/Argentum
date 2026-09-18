@@ -6,6 +6,9 @@
   "environment": "client",
   "description": "Optional rendering and visual controls for Argentum",
   "icon": "assets/argentum-extras/textures/gui/icon.png",
+  "contact": {
+    "sources": "https://github.com/QuicksilverMC/argentum/tree/main/extras"
+  },
   "authors": ["rdh"],
   "entrypoints": {
     "client": ["dev.rdh.argentum.extras.ArgentumExtras"],
