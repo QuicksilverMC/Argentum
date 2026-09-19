@@ -18,7 +18,7 @@
     "features.model.instancing.ModelPartAccessor", "features.model.instancing.PolygonAccessor", "features.options.OptionPageFrameMixin",
     "features.options.OptionsScreenMixin", "features.particle.ParticleManagerMixin", "features.particle.ParticleMixin",
     "features.blockentity.BlockEntityRenderDispatcherMixin",
-    "features.terrain.BakedQuadMixin",
+    "features.terrain.BakedQuadMixin", "features.terrain.BlockModelRendererMixin",
     "features.text.SignRendererMixin",
     "features.terrain.FaceBakeryMixin",
     "features.terrain.BiomeColorsMixin",

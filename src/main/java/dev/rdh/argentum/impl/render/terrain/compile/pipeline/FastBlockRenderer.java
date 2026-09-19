@@ -91,7 +91,7 @@ public final class FastBlockRenderer {
         boolean smooth = this.ambientOcclusion && block.getLight() == 0 && model.useAmbientOcclusion();
         LightPipeline lighter = this.lighters.getLighter(smooth ? LightMode.SMOOTH : LightMode.FLAT);
         BiomeColorCache.BiomeColorSource colorType = getBiomeColorType(state, world, pos);
-        this.setOffset(block, pos);
+        this.setOffset(state, pos, smooth);
 
         for (Direction direction : DIRECTIONS) {
             List<BakedQuad> quads = model.getQuads(direction);
@@ -232,11 +232,16 @@ public final class FastBlockRenderer {
         buffers.get(material).getVertexBuffer(quad.getNormalFace()).push(this.vertices, material);
     }
 
-    private void setOffset(Block block, BlockPos pos) {
+    public static BlockPos offsetPos(BlockState state, BlockPos pos) {
+        return state.getBlock() instanceof DoublePlantBlock && state.get(DoublePlantBlock.HALF) == DoublePlantBlock.Half.UPPER ? pos.down() : pos;
+    }
+
+    private void setOffset(BlockState state, BlockPos pos, boolean smooth) {
+        Block block = state.getBlock();
         this.offsetX = this.offsetY = this.offsetZ = 0.0F;
         if (block.getOffsetType() == Block.OffsetType.NONE) return;
 
-        long seed = MathHelper.hashCode(pos);
+        long seed = smooth ? MathHelper.hashCode(offsetPos(state, pos)) : MathHelper.hashCode(pos.getX(), 0, pos.getZ());
         this.offsetX = (((seed >> 16) & 15L) / 15.0F - 0.5F) * 0.5F;
         this.offsetZ = (((seed >> 24) & 15L) / 15.0F - 0.5F) * 0.5F;
         if (block.getOffsetType() == Block.OffsetType.XYZ) {
