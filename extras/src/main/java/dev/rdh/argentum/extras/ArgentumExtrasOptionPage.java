@@ -123,7 +123,6 @@ final class ArgentumExtrasOptionPage {
 
         OptionGroup misc = OptionGroup.createBuilder()
                 .setId(id("misc"))
-                .add(toggle("disable_realms", (c, v) -> c.disableRealms = v, c -> c.disableRealms))
                 .add(toggle("disable_text_shadows", (c, v) -> c.disableTextShadows = v, c -> c.disableTextShadows))
                 .add(toggle("high_dpi_screen", (c, v) -> c.highDpiScreen = v, c -> c.highDpiScreen, OptionFlag.REQUIRES_GAME_RESTART))
                 .addConditionally(
