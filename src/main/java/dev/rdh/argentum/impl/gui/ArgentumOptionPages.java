@@ -121,9 +121,9 @@ public final class ArgentumOptionPages {
                         .build())
                 .add(option(int.class, VANILLA, StandardOptions.Option.MAX_FRAMERATE)
                         .setName(vanilla("options.framerateLimit"))
-                        .setControl(option -> new SliderControl(option, 0, 260, 5,
+                        .setControl(option -> new SliderControl(option, Argentum.CONFIG.explicitVsyncOption ? 5 : 0, 260, 5,
                                 value -> {
-                                    if (value == 0) {
+                                    if (value == 0 || (Argentum.CONFIG.explicitVsyncOption && Minecraft.getInstance().options.vsync)) {
                                         return text("value.vsync");
                                     } else if (value == 260) {
                                         return vanilla("options.framerateLimit.max");
@@ -133,9 +133,21 @@ public final class ArgentumOptionPages {
 								}))
                         .setBinding((options, value) -> {
                             options.vsync = value == 0;
-                            options.fpsLimit = options.vsync ? 260 : value;
-                            Display.setVSyncEnabled(options.vsync);
-                        }, options -> options.vsync ? 0 : options.fpsLimit)
+                            options.fpsLimit = options.vsync && !Argentum.CONFIG.explicitVsyncOption ? 260 : value;
+                            if (!Argentum.CONFIG.explicitVsyncOption) {
+                                Display.setVSyncEnabled(options.vsync);
+                            }
+                        }, options -> options.vsync && !Argentum.CONFIG.explicitVsyncOption ? 0 : options.fpsLimit)
+                        .setImpact(OptionImpact.VARIES)
+                        .setEnabledPredicate(() -> !Argentum.CONFIG.explicitVsyncOption || !Minecraft.getInstance().options.vsync)
+                        .build())
+                .addConditionally(Argentum.CONFIG.explicitVsyncOption, () -> option(boolean.class, VANILLA, StandardOptions.Option.VSYNC)
+                        .setName(vanilla("options.vsync"))
+                        .setControl(TickBoxControl::new)
+                        .setBinding((options, value) -> {
+                            options.vsync = value;
+                            Display.setVSyncEnabled(value);
+                        }, options -> options.vsync)
                         .setImpact(OptionImpact.VARIES)
                         .build())
                 .build();

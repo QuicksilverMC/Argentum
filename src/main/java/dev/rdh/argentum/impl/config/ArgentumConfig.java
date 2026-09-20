@@ -28,6 +28,7 @@ public class ArgentumConfig {
     public boolean fontBatching = true;
     public boolean guiItemAtlas = true;
     public boolean greedyRenderThread = false;
+    public boolean explicitVsyncOption = true; // file only
 
 	public void validate() {
         this.chunkBuilderThreads = Math.max(0, this.chunkBuilderThreads);

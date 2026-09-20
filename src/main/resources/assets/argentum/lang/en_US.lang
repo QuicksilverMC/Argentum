@@ -19,6 +19,7 @@ options.chunks=%s Chunks
 minecraft.gui_scale.tooltip=Sets the maximum scale factor to be used for the user interface. If 'auto' is used then the largest scale factor will always be used.
 minecraft.fullscreen.tooltip=If enabled the game will display in full-screen (if supported).
 minecraft.max_frame_rate.tooltip=Controls the maximum frame rate. VSync synchronizes frames to the display's refresh rate for smoother presentation but may add input latency. A fixed limit can reduce power usage and system load.
+minecraft.vsync.tooltip=If enabled the game will synchronize frame rendering to the display's refresh rate. This can reduce screen tearing but may add input latency.
 options.framerate=%s fps
 
 minecraft.view_bobbing.tooltip=If enabled the player's view will sway and bob when moving around. Players who experience motion sickness while playing can benefit from disabling this.
