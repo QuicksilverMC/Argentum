@@ -196,7 +196,8 @@ public final class ModelInstancer {
             return BatchStats.EMPTY;
         }
         GlStateManager.activeTexture(GLX.GL_TEXTURE0);
-        GlStateManager.disableCull();
+        GlStateManager.enableCull();
+        GlStateManager.cullFace(GL11.GL_BACK);
         program.bind();
         program.getInterface().setUniforms();
         int previousArray = this.textureArraysSupported ? this.textureArrays.bindFallback() : 0;

@@ -86,21 +86,16 @@ final class InstanceBatcher {
             GlStateManager.enableCull();
         }
         if (this.has(InstanceRenderPass.CULL_FRONT)) {
-            GlStateManager.enableCull();
             GlStateManager.cullFace(GL11.GL_FRONT);
             Stats culled = this.renderPass(commandList, program, InstanceRenderPass.CULL_FRONT);
             draws += culled.draws;
             textureCount += culled.textures;
             GlStateManager.cullFace(GL11.GL_BACK);
-            GlStateManager.disableCull();
         }
         if (this.has(InstanceRenderPass.CULL_BACK)) {
-            GlStateManager.enableCull();
-            GlStateManager.cullFace(GL11.GL_BACK);
             Stats culled = this.renderPass(commandList, program, InstanceRenderPass.CULL_BACK);
             draws += culled.draws;
             textureCount += culled.textures;
-            GlStateManager.disableCull();
         }
         if (this.has(InstanceRenderPass.EMISSIVE_REPLACE)) {
             GlStateManager.enableBlend();
