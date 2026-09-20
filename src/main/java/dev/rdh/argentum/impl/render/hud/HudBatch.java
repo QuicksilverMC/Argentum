@@ -1,5 +1,7 @@
 package dev.rdh.argentum.impl.render.hud;
 
+import dev.rdh.argentum.impl.Argentum;
+
 import net.minecraft.client.render.TextRenderer;
 import net.minecraft.client.render.vertex.BufferBuilder;
 import net.minecraft.client.render.vertex.BufferUploader;
@@ -13,8 +15,8 @@ public final class HudBatch {
     private HudBatch() {
     }
 
-    public static Colored colored(int capacityBytes) {
-        return new Colored(capacityBytes);
+    public static Colored colored() {
+        return new Colored();
     }
 
     public static Textured textured(int capacityBytes) {
@@ -40,7 +42,10 @@ public final class HudBatch {
         }
 
         public void begin() {
-            if (this.drawing) throw new IllegalStateException("Text batch already active");
+            if (this.drawing) {
+                warnUnbalanced();
+                this.draw();
+            }
             this.renderer.argentum$beginBatch(this.beforeText);
             this.drawing = true;
         }
@@ -64,10 +69,20 @@ public final class HudBatch {
         }
     }
 
+    private static boolean warned;
+
+    private static void warnUnbalanced() {
+        if (warned) return;
+        warned = true;
+        Argentum.LOGGER.warn("A HUD text batch was still active when it was begun again, so it was flushed late. "
+                + "Something rendered this HUD element twice, cancelled its render, or threw part way through.",
+                new Throwable());
+    }
+
     public static final class Colored implements Runnable {
         private boolean drawing;
 
-        private Colored(int capacityBytes) {
+        private Colored() {
         }
 
         public void fill(int left, int top, int right, int bottom, int color) {

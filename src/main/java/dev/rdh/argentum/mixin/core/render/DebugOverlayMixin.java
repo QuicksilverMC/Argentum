@@ -1,5 +1,7 @@
 package dev.rdh.argentum.mixin.core.render;
 
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import dev.rdh.argentum.impl.debug.DebugStrings;
 import dev.rdh.argentum.impl.render.hud.HudBatch;
 import net.minecraft.client.Minecraft;
@@ -32,8 +34,17 @@ public class DebugOverlayMixin {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void argentum$createBackgroundBatch(Minecraft minecraft, CallbackInfo ci) {
-        this.argentum$backgroundBatch = HudBatch.colored(8 * 1024);
+        this.argentum$backgroundBatch = HudBatch.colored();
         this.argentum$textBatch = HudBatch.text(this.textRenderer, this.argentum$backgroundBatch);
+    }
+
+    @WrapMethod(method = "render")
+    private void argentum$alwaysDrawTextBatch(Window window, Operation<Void> original) {
+        try {
+            original.call(window);
+        } finally {
+            this.argentum$textBatch.draw();
+        }
     }
 
     @Inject(method = "render", at = @At("HEAD"))

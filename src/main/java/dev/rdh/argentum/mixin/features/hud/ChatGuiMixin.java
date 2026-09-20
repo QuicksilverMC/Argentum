@@ -29,7 +29,7 @@ public abstract class ChatGuiMixin extends GuiElement {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void argentum$createBackgroundBatch(Minecraft minecraft, CallbackInfo ci) {
-        this.argentum$backgroundBatch = HudBatch.colored(4 * 1024);
+        this.argentum$backgroundBatch = HudBatch.colored();
         this.argentum$textBatch = HudBatch.text(this.minecraft.textRenderer, this::argentum$prepareTextBatch);
     }
 

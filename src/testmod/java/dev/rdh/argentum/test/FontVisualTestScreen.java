@@ -6,7 +6,7 @@ import net.minecraft.client.gui.screen.Screen;
 
 public class FontVisualTestScreen extends Screen {
     private final String variant = System.getProperty("argentum.fontTestVariant", "batched");
-    private final HudBatch.Colored backgroundBatch = HudBatch.colored(4 * 1024);
+    private final HudBatch.Colored backgroundBatch = HudBatch.colored();
     private HudBatch.Text textBatch;
     private int ticks;
 

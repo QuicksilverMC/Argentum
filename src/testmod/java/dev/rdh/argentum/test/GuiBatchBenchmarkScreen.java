@@ -23,7 +23,7 @@ public class GuiBatchBenchmarkScreen extends Screen {
     };
 
     private final boolean batched = Boolean.getBoolean("argentum.guiBenchmarkBatched");
-    private final HudBatch.Colored backgrounds = HudBatch.colored(256 * 1024);
+    private final HudBatch.Colored backgrounds = HudBatch.colored();
     private final HudBatch.Textured icons = HudBatch.textured(256 * 1024);
     private HudBatch.Text textBatch;
     private final long[] samples = new long[MEASURED_FRAMES];

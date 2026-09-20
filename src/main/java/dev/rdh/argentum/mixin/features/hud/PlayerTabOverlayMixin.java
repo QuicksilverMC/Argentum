@@ -1,5 +1,7 @@
 package dev.rdh.argentum.mixin.features.hud;
 
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import dev.rdh.argentum.impl.render.hud.HudBatch;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiElement;
@@ -54,16 +56,26 @@ public abstract class PlayerTabOverlayMixin extends GuiElement {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void argentum$createBuffers(Minecraft minecraft, net.minecraft.client.gui.GameGui gui, CallbackInfo ci) {
-        this.argentum$backgroundBatch = HudBatch.colored(8 * 1024);
+        this.argentum$backgroundBatch = HudBatch.colored();
         this.argentum$textureBatch = HudBatch.textured(16 * 1024);
         this.argentum$iconBatch = HudBatch.textured(256 * 1024);
         this.argentum$textBatch = HudBatch.text(this.minecraft.textRenderer, this.argentum$backgroundBatch);
     }
 
-    @Inject(method = "render", at = @At("HEAD"))
-    private void argentum$beginBatch(int width, Scoreboard scoreboard, ScoreboardObjective objective, CallbackInfo ci) {
+    @WrapMethod(method = "render")
+    private void argentum$batchTabList(int width, Scoreboard scoreboard, ScoreboardObjective objective, Operation<Void> original) {
         this.argentum$skinQuadCount = 0;
         this.argentum$textBatch.begin();
+        try {
+            original.call(width, scoreboard, objective);
+        } finally {
+            this.argentum$textBatch.draw(this::argentum$prepareTextBatch);
+
+            if (!this.argentum$iconBatch.isEmpty()) {
+                this.minecraft.getTextureManager().bind(ICONS_LOCATION);
+                this.argentum$iconBatch.draw();
+            }
+        }
     }
 
     @Redirect(
@@ -117,16 +129,6 @@ public abstract class PlayerTabOverlayMixin extends GuiElement {
     )
     private void argentum$captureHeart(PlayerTabOverlay overlay, float x, float y, int u, int v, int width, int height) {
         this.argentum$iconBatch.quad(x, y, u, v, width, height, width, height, 256, 256, this.drawOffset);
-    }
-
-    @Inject(method = "render", at = @At("RETURN"))
-    private void argentum$drawBatch(int width, Scoreboard scoreboard, ScoreboardObjective objective, CallbackInfo ci) {
-        this.argentum$textBatch.draw(this::argentum$prepareTextBatch);
-
-        if (!this.argentum$iconBatch.isEmpty()) {
-            this.minecraft.getTextureManager().bind(ICONS_LOCATION);
-            this.argentum$iconBatch.draw();
-        }
     }
 
     @Unique
