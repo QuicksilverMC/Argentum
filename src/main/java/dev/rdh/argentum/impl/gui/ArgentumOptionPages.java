@@ -123,7 +123,7 @@ public final class ArgentumOptionPages {
                         .setName(vanilla("options.framerateLimit"))
                         .setControl(option -> new SliderControl(option, Argentum.CONFIG.explicitVsyncOption ? 5 : 0, 260, 5,
                                 value -> {
-                                    if (value == 0 || (Argentum.CONFIG.explicitVsyncOption && Minecraft.getInstance().options.vsync)) {
+                                    if (value == 0) {
                                         return text("value.vsync");
                                     } else if (value == 260) {
                                         return vanilla("options.framerateLimit.max");
@@ -132,14 +132,18 @@ public final class ArgentumOptionPages {
                                     }
 								}))
                         .setBinding((options, value) -> {
-                            options.vsync = value == 0;
-                            options.fpsLimit = options.vsync && !Argentum.CONFIG.explicitVsyncOption ? 260 : value;
                             if (!Argentum.CONFIG.explicitVsyncOption) {
+                                options.vsync = value == 0;
                                 Display.setVSyncEnabled(options.vsync);
+                                if (options.vsync) {
+                                    options.fpsLimit = 260;
+                                    return;
+                                }
                             }
-                        }, options -> options.vsync && !Argentum.CONFIG.explicitVsyncOption ? 0 : options.fpsLimit)
+                            options.fpsLimit = value;
+                        }, options -> options.vsync && !Argentum.CONFIG.explicitVsyncOption ? 0
+                                : (options.fpsLimit <= 0 ? 260 : options.fpsLimit))
                         .setImpact(OptionImpact.VARIES)
-                        .setEnabledPredicate(() -> !Argentum.CONFIG.explicitVsyncOption || !Minecraft.getInstance().options.vsync)
                         .build())
                 .addConditionally(Argentum.CONFIG.explicitVsyncOption, () -> option(boolean.class, VANILLA, StandardOptions.Option.VSYNC)
                         .setName(vanilla("options.vsync"))
