@@ -5,6 +5,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiElement;
 import net.minecraft.client.gui.chat.ChatGui;
 import net.minecraft.client.render.platform.GlStateManager;
+
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -16,6 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ChatGui.class)
 public abstract class ChatGuiMixin extends GuiElement {
     @Shadow
+    @Final
     private Minecraft minecraft;
 
     @Unique
@@ -26,7 +29,7 @@ public abstract class ChatGuiMixin extends GuiElement {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void argentum$createBackgroundBatch(Minecraft minecraft, CallbackInfo ci) {
-        this.argentum$backgroundBatch = HudBatch.colored(4 * 1024);
+        this.argentum$backgroundBatch = HudBatch.colored();
         this.argentum$textBatch = HudBatch.text(this.minecraft.textRenderer, this::argentum$prepareTextBatch);
     }
 

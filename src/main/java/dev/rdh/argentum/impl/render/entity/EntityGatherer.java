@@ -17,15 +17,32 @@ import java.util.function.Consumer;
 public class EntityGatherer {
     private final List<Entity> entityList;
 
+    private ClientWorld gatheredWorld;
+    private long gatheredTick = Long.MIN_VALUE;
+    private int gatheredChunkX;
+    private int gatheredChunkZ;
+    private int gatheredRadius = -1;
+
     public EntityGatherer() {
         this.entityList = new ObjectArrayList<>();
     }
 
-    public void clear() {
-        this.entityList.clear();
-    }
-
     public List<Entity> getLoadedEntityList(ClientWorld world, int centerChunkX, int centerChunkZ, int radius) {
+        // The world's entity set only changes while it ticks - packets are handled on the main thread inside the
+        // tick - so between two frames of the same tick this sweep would produce the same list. Entities are held
+        // by reference, so they still move at frame rate.
+        if (world == this.gatheredWorld && world.getTime() == this.gatheredTick && radius == this.gatheredRadius
+                && centerChunkX == this.gatheredChunkX && centerChunkZ == this.gatheredChunkZ) {
+            return this.entityList;
+        }
+
+        this.entityList.clear();
+        this.gatheredWorld = world;
+        this.gatheredTick = world.getTime();
+        this.gatheredChunkX = centerChunkX;
+        this.gatheredChunkZ = centerChunkZ;
+        this.gatheredRadius = radius;
+
         Consumer<Entity> addEntity = this.entityList::add;
         // Iterate directly over chunk entity lists where possible - mods may create multipart entities that are not
         // added to the main loadedEntityList.

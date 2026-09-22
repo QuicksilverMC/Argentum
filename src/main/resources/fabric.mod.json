@@ -4,7 +4,10 @@
   "name": "Argentum",
   "version": "${version}",
   "environment": "client",
-  "description": "An open-source client performance mod for Minecraft",
+  "description": "Client rendering improvements for Minecraft 1.8.9",
+  "contact": {
+    "sources": "https://github.com/QuicksilverMC/argentum"
+  },
   "icon": {
     "64": "assets/argentum/textures/gui/64.png",
     "512": "assets/argentum/textures/gui/512.png"
@@ -15,10 +18,9 @@
     "client": ["dev.rdh.argentum.impl.Argentum"],
     "modmenu": ["dev.rdh.argentum.impl.config.ModMenuCompat"]
   },
-  "dependencies": {
+  "depends": {
     "minecraft": "1.8.9",
-    "lenis": "*",
-    "osl": ">=0.20"
+    "lenis": "*"
   },
   "accessWidener": "argentum.classtweaker",
   "mixins": ["mixins.argentum.json"]

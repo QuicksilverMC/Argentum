@@ -9,6 +9,9 @@
     "512": "assets/cera/textures/gui/512.png",
     "64": "assets/cera/textures/gui/64.png"
   },
+  "contact": {
+    "sources": "https://github.com/QuicksilverMC/argentum/tree/main/cera"
+  },
   "authors": ["rdh"],
   "entrypoints": {
     "client": ["dev.rdh.cera.Cera"]

@@ -10,6 +10,21 @@ java.toolchain {
     languageVersion = JavaLanguageVersion.of(25)
 }
 
+val gitCommit: Provider<String> = if (rootProject.file(".git").exists()) {
+    val commit = providers.exec {
+        workingDirectory = rootProject.projectDir
+        commandLine("git", "rev-parse", "HEAD")
+    }.standardOutput.asText.map { it.trim() }
+
+    val dirty = providers.exec {
+        workingDirectory = rootProject.projectDir
+        commandLine("git", "status", "--porcelain")
+    }.standardOutput.asText.map { it.trim() }
+    commit.zip(dirty) { c, d -> if (d.isBlank()) c else "$c-dirty" }
+} else {
+    provider { "NO-GIT" }
+}
+
 repositories {
     exclusiveContent {
         forRepository { mavenCentral() }
@@ -48,13 +63,15 @@ loom {
     runs.named("client") {
         jvmArguments.add("-XstartOnFirstThread")
 
-        jvmArguments.add("-XX:+UseZGC")
-        jvmArguments.add("-XX:MaxGCPauseMillis=50")
-        jvmArguments.add("-XX:+UseCompactObjectHeaders")
-        jvmArguments.add("--enable-native-access=ALL-UNNAMED")
-        jvmArguments.add("--sun-misc-unsafe-memory-access=allow")
+        jvmArguments.addAll(
+            "-XX:+UseZGC", "-XX:MaxGCPauseMillis=50", "-XX:+UseCompactObjectHeaders",
+            "--enable-native-access=ALL-UNNAMED", "--sun-misc-unsafe-memory-access=allow",
+            "-XX:+UnlockDiagnosticVMOptions", "-XX:+DebugNonSafepoints"
+        )
 
-        systemProperties.putAll(rootProject.providers.gradlePropertiesPrefixedBy("run."))
+        systemProperties.putAll(rootProject.providers.gradlePropertiesPrefixedBy("run.").map {
+            it.mapKeys { it.key.removePrefix("run.") }
+        })
 
         runDirectory = rootProject.layout.projectDirectory.dir("run")
     }
@@ -88,6 +105,10 @@ dependencies {
     if (project != rootProject) {
         implementation(project(path = ":", configuration = "namedElements"))
     }
+}
+
+tasks.remapJar {
+    manifest.attributes("Git-Commit" to gitCommit)
 }
 
 tasks.processResources {

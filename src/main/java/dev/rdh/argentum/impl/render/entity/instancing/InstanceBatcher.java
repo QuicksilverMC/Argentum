@@ -1,6 +1,8 @@
 package dev.rdh.argentum.impl.render.entity.instancing;
 
 import java.util.Arrays;
+import dev.rdh.argentum.impl.render.instancing.BoxTemplate;
+import org.embeddedt.embeddium.impl.gl.shader.GlProgram;
 import dev.rdh.argentum.impl.render.instancing.TextureArrayManager;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
@@ -12,22 +14,20 @@ import net.minecraft.resource.Identifier;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import org.embeddedt.embeddium.impl.gl.device.CommandList;
-import org.embeddedt.embeddium.impl.gl.shader.GlProgram;
 import org.joml.Matrix4f;
 import org.joml.Vector4fc;
 import org.lwjgl.opengl.GL11;
 
 import java.util.EnumMap;
+import java.util.Map;
 
 final class InstanceBatcher {
-    private final Reference2ReferenceOpenHashMap<Model, ModelGeometry> models = new Reference2ReferenceOpenHashMap<>();
+    private final Map<Model, ModelGeometry> models = new Reference2ReferenceOpenHashMap<>();
     private final Matrix4f[] itemGlintMatrices = { new Matrix4f(), new Matrix4f() };
     private final boolean[] itemGlintCaptured = new boolean[2];
     private final float[] matrixValues = new float[16];
-    private final EnumMap<InstanceRenderPass, Object2ObjectLinkedOpenHashMap<Identifier, TextureBatch>> textures =
-            new EnumMap<>(InstanceRenderPass.class);
-    private final EnumMap<InstanceRenderPass, Reference2ReferenceOpenHashMap<TextureArrayManager.Pool, TextureBatch>> arrayTextures =
-            new EnumMap<>(InstanceRenderPass.class);
+    private final EnumMap<InstanceRenderPass, Map<Identifier, TextureBatch>> textures = new EnumMap<>(InstanceRenderPass.class);
+    private final EnumMap<InstanceRenderPass, Map<TextureArrayManager.Pool, TextureBatch>> arrayTextures = new EnumMap<>(InstanceRenderPass.class);
 
     InstanceBatcher() {
         for (InstanceRenderPass pass : InstanceRenderPass.values()) {
@@ -58,8 +58,8 @@ final class InstanceBatcher {
     void delete(CommandList commandList) {
         this.models.values().forEach(model -> model.delete(commandList));
         this.models.clear();
-        this.textures.values().forEach(Object2ObjectLinkedOpenHashMap::clear);
-        this.arrayTextures.values().forEach(Reference2ReferenceOpenHashMap::clear);
+        this.textures.values().forEach(Map::clear);
+        this.arrayTextures.values().forEach(Map::clear);
     }
 
     TextureBatch texture(Identifier texture, InstanceRenderPass pass) {
@@ -78,22 +78,24 @@ final class InstanceBatcher {
         Stats normal = this.renderPass(commandList, program, InstanceRenderPass.NORMAL);
         draws += normal.draws;
         textureCount += normal.textures;
-        if (this.has(InstanceRenderPass.CULL_FRONT)) {
+        if (this.has(InstanceRenderPass.NO_CULL)) {
+            GlStateManager.disableCull();
+            Stats unculled = this.renderPass(commandList, program, InstanceRenderPass.NO_CULL);
+            draws += unculled.draws;
+            textureCount += unculled.textures;
             GlStateManager.enableCull();
+        }
+        if (this.has(InstanceRenderPass.CULL_FRONT)) {
             GlStateManager.cullFace(GL11.GL_FRONT);
             Stats culled = this.renderPass(commandList, program, InstanceRenderPass.CULL_FRONT);
             draws += culled.draws;
             textureCount += culled.textures;
             GlStateManager.cullFace(GL11.GL_BACK);
-            GlStateManager.disableCull();
         }
         if (this.has(InstanceRenderPass.CULL_BACK)) {
-            GlStateManager.enableCull();
-            GlStateManager.cullFace(GL11.GL_BACK);
             Stats culled = this.renderPass(commandList, program, InstanceRenderPass.CULL_BACK);
             draws += culled.draws;
             textureCount += culled.textures;
-            GlStateManager.disableCull();
         }
         if (this.has(InstanceRenderPass.EMISSIVE_REPLACE)) {
             GlStateManager.enableBlend();
@@ -121,9 +123,23 @@ final class InstanceBatcher {
                 blockAtlas.popFilter();
             }
         }
-        Stats translucent = this.renderPass(commandList, program, InstanceRenderPass.TRANSLUCENT);
-        draws += translucent.draws;
-        textureCount += translucent.textures;
+        if (this.has(InstanceRenderPass.TRANSLUCENT)) {
+            GlStateManager.disableBlend();
+            program.getInterface().setAlphaPass(InstanceShader.ALPHA_OPAQUE);
+            Stats opaque = this.renderPass(commandList, program, InstanceRenderPass.TRANSLUCENT);
+            draws += opaque.draws;
+            textureCount += opaque.textures;
+
+            GlStateManager.enableBlend();
+            GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            GlStateManager.depthMask(false);
+            program.getInterface().setAlphaPass(InstanceShader.ALPHA_TRANSLUCENT);
+            Stats translucent = this.renderPass(commandList, program, InstanceRenderPass.TRANSLUCENT);
+            draws += translucent.draws;
+            textureCount += translucent.textures;
+            GlStateManager.depthMask(true);
+            program.getInterface().setAlphaPass(InstanceShader.ALPHA_ALL);
+        }
         GlStateManager.blendFunc(1, 1);
         // Additive emissive overlays sit on already-drawn geometry; writing depth only makes their
         // (uncensored, non-culled) coplanar faces z-fight, so test against the base depth without writing.
@@ -184,11 +200,14 @@ final class InstanceBatcher {
     }
 
     private Stats renderPass(CommandList commandList, GlProgram<InstanceShader> program, InstanceRenderPass pass) {
+        if (!this.has(pass)) return Stats.EMPTY;
+
         int draws = 0;
         int textureCount = 0;
         program.getInterface().setEmissive(pass != InstanceRenderPass.NORMAL
                 && pass != InstanceRenderPass.CULL_FRONT
                 && pass != InstanceRenderPass.CULL_BACK
+                && pass != InstanceRenderPass.NO_CULL
                 && pass != InstanceRenderPass.ITEM
                 && pass != InstanceRenderPass.TRANSLUCENT
         );
@@ -198,14 +217,14 @@ final class InstanceBatcher {
             if (texture.count == 0) continue;
             textureManager.bind(texture.texture);
             program.getInterface().setTextureArray(false);
-            draws += texture.render(commandList, pass == InstanceRenderPass.TRANSLUCENT);
+            draws += texture.render(commandList, program, pass == InstanceRenderPass.TRANSLUCENT);
             textureCount++;
         }
-        for (var entry : this.arrayTextures.get(pass).reference2ReferenceEntrySet()) {
+        for (var entry : this.arrayTextures.get(pass).entrySet()) {
             if (entry.getValue().count == 0) continue;
             int previous = entry.getKey().bind();
             program.getInterface().setTextureArray(true);
-            draws += entry.getValue().render(commandList, pass == InstanceRenderPass.TRANSLUCENT);
+            draws += entry.getValue().render(commandList, program, pass == InstanceRenderPass.TRANSLUCENT);
             entry.getKey().restore(previous);
             textureCount++;
         }
@@ -213,6 +232,7 @@ final class InstanceBatcher {
     }
 
     record Stats(int draws, int textures) {
+        static final Stats EMPTY = new Stats(0, 0);
     }
 
     static final class TextureBatch {
@@ -230,8 +250,8 @@ final class InstanceBatcher {
         }
 
         void add(InstanceGeometry geometry, Matrix4f matrix, float u, float v, int layer,
-                Vector4fc color, float effectTime, Vector4fc overlayColor) {
-            geometry.instances(this).add(matrix, u, v, layer, color, effectTime, overlayColor);
+                Vector4fc color, float effectTime, Vector4fc overlayColor, BoxTemplate box) {
+            geometry.instances(this).add(matrix, u, v, layer, color, effectTime, overlayColor, box);
             this.count++;
         }
 
@@ -244,13 +264,14 @@ final class InstanceBatcher {
             return instances;
         }
 
-        private int render(CommandList commandList, boolean sort) {
+        private int render(CommandList commandList, GlProgram<InstanceShader> program, boolean sort) {
             int draws = 0;
             for (var entry : this.parts.reference2ObjectEntrySet()) {
                 if (entry.getValue().count() != 0) {
                     if (sort) {
                         entry.getValue().sortBackToFront();
                     }
+                    program.getInterface().setBoxInstancing(entry.getKey().usesBoxInstancing());
                     entry.getKey().render(commandList, entry.getValue());
                     draws++;
                 }

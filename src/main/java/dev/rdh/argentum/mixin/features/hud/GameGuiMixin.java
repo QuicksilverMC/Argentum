@@ -34,7 +34,7 @@ public abstract class GameGuiMixin extends GuiElement {
     @Inject(method = "<init>", at = @At("RETURN"))
     private void argentum$createBatches(Minecraft minecraft, CallbackInfo ci) {
         this.argentum$statusBatch = HudBatch.textured(16 * 1024);
-        this.argentum$scoreboardBackgroundBatch = HudBatch.colored(4 * 1024);
+        this.argentum$scoreboardBackgroundBatch = HudBatch.colored();
         this.argentum$scoreboardTextBatch = HudBatch.text(this.getTextRenderer(), this.argentum$scoreboardBackgroundBatch);
     }
 

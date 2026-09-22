@@ -31,7 +31,12 @@ public class FrustumCullerMixin implements ViewportProvider {
         modelMatrix.invert();
         Vector3f offset = new Vector3f();
         modelMatrix.transformPosition(offset);
-		return new Viewport(this::celeritas$isVisible, new Vector3d(this.offsetX + offset.x, this.offsetY + offset.y, this.offsetZ + offset.z), this.argentum$viewProjection());
+        final float[] planes = this.argentum$flattenPlanes();
+        return new Viewport(
+                (minX, minY, minZ, maxX, maxY, maxZ) -> argentum$isVisible(planes, minX, minY, minZ, maxX, maxY, maxZ),
+                new Vector3d(this.offsetX + offset.x, this.offsetY + offset.y, this.offsetZ + offset.z),
+                this.argentum$viewProjection()
+        );
     }
 
     @Unique
@@ -41,15 +46,38 @@ public class FrustumCullerMixin implements ViewportProvider {
     }
 
     @Unique
-    private boolean celeritas$isVisible(float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
-        for (float[] plane : this.frustum.frustum) {
-            float x = plane[0] < 0.0F ? minX : maxX;
-            float y = plane[1] < 0.0F ? minY : maxY;
-            float z = plane[2] < 0.0F ? minZ : maxZ;
-            if (plane[0] * x + plane[1] * y + plane[2] * z + plane[3] <= 0.0F) {
+    private float[] argentum$flattenPlanes() {
+        final float[][] source = this.frustum.frustum;
+        final float[] planes = new float[source.length * 4];
+
+        for (int i = 0; i < source.length; i++) {
+            final float[] plane = source[i];
+            final int base = i * 4;
+            planes[base] = plane[0];
+            planes[base + 1] = plane[1];
+            planes[base + 2] = plane[2];
+            planes[base + 3] = plane[3];
+        }
+
+        return planes;
+    }
+
+    @Unique
+    private static boolean argentum$isVisible(float[] planes, float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
+        // `i + 3` lets bounds checks fold away
+        for (int i = 0; i + 3 < planes.length; i += 4) {
+            final float a = planes[i];
+            final float b = planes[i + 1];
+            final float c = planes[i + 2];
+
+            if (a * (a < 0.0F ? minX : maxX)
+                    + b * (b < 0.0F ? minY : maxY)
+                    + c * (c < 0.0F ? minZ : maxZ)
+                    + planes[i + 3] <= 0.0F) {
                 return false;
             }
         }
+
         return true;
     }
 }

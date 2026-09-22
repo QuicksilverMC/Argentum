@@ -97,7 +97,7 @@ public final class TextureArrayManager {
                 ? texture.argentum$getGeneration() : 0;
         CachedTexture cached = this.textures.get(source);
         if (cached != null && cached.sourceId == sourceId && cached.generation == generation) {
-            Layer layer = cached.pool.getLayer(location, source, sourceId, frame);
+            Layer layer = cached.pool.getLayer(location, source, sourceId, generation, frame);
             return layer != null ? layer.selection : null;
         }
 
@@ -121,7 +121,7 @@ public final class TextureArrayManager {
             this.pools.put(key, pool);
         }
         this.textures.put(source, new CachedTexture(sourceId, generation, pool));
-        Layer layer = pool.getLayer(location, source, sourceId, frame);
+        Layer layer = pool.getLayer(location, source, sourceId, generation, frame);
         return layer != null ? layer.selection : null;
     }
 
@@ -193,9 +193,9 @@ public final class TextureArrayManager {
             GlStateManager.activeTexture(GLX.GL_TEXTURE0);
         }
 
-        private Layer getLayer(Identifier location, Texture source, int sourceId, int frame) {
+        private Layer getLayer(Identifier location, Texture source, int sourceId, int generation, int frame) {
             Layer layer = this.layers.getAndMoveToLast(location);
-            if (layer != null && layer.source == source && layer.sourceId == sourceId) {
+            if (layer != null && layer.source == source && layer.sourceId == sourceId && layer.generation == generation) {
                 layer.frame = frame;
                 return layer;
             }
@@ -223,6 +223,7 @@ public final class TextureArrayManager {
             }
             layer.source = source;
             layer.sourceId = sourceId;
+            layer.generation = generation;
             layer.frame = frame;
             return layer;
         }
@@ -285,6 +286,7 @@ public final class TextureArrayManager {
         private final Selection selection;
         private Texture source;
         private int sourceId = -1;
+        private int generation = -1;
         private int frame;
 
         private Layer(int index, Selection selection) {

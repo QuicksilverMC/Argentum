@@ -16,5 +16,10 @@ public abstract class InstanceGeometry {
 
     abstract void render(CommandList commandList, Instances instances);
 
+    /** {@return whether this draws the shared unit cube} The shader rebuilds position and uv for those. */
+    boolean usesBoxInstancing() {
+        return false;
+    }
+
     public abstract void delete(CommandList commandList);
 }

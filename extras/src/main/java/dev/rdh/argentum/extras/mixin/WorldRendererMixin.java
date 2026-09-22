@@ -91,4 +91,29 @@ public class WorldRendererMixin {
     private boolean argentumExtras$drawLowerSky(int list) {
         return ArgentumExtras.CONFIG.lowerSky && ArgentumExtras.CONFIG.sky;
     }
+
+    @ModifyExpressionValue(method = "renderFancyClouds", at = @At(value = "CONSTANT", args = "doubleValue=0.029999999329447746")) // lmao
+    private double argentumExtras$vanillaCloudSpeed(double vanilla) {
+        return vanilla * ArgentumExtras.CONFIG.cloudSpeed / 100.0D;
+    }
+
+    @ModifyExpressionValue(method = "renderFancyClouds", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/dimension/Dimension;getCloudHeight()F"))
+    private float argentumExtras$vanillaCloudHeight(float vanilla) {
+        return vanilla + ArgentumExtras.CONFIG.cloudHeightOffset;
+    }
+
+    @ModifyExpressionValue(method = "renderFancyClouds", at = @At(value = "CONSTANT", args = "intValue=-3"))
+    private int argentumExtras$vanillaCloudStart(int vanilla) {
+        int distance = ArgentumExtras.CONFIG.cloudRenderDistance;
+        return distance == 0 ? vanilla : 1 - distance / 96;
+    }
+
+    @ModifyExpressionValue(method = "renderFancyClouds", at = {
+            @At(value = "CONSTANT", args = "intValue=4", ordinal = 1),
+            @At(value = "CONSTANT", args = "intValue=4", ordinal = 2)
+    })
+    private int argentumExtras$vanillaCloudEnd(int vanilla) {
+        int distance = ArgentumExtras.CONFIG.cloudRenderDistance;
+        return distance == 0 ? vanilla : distance / 96;
+    }
 }

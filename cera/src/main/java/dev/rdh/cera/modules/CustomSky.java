@@ -83,6 +83,11 @@ public final class CustomSky implements ResourceReloadListener {
         return override.source;
     }
 
+    public boolean hasLayers(ClientWorld world) {
+        List<LayerState> sky = layers.get(world.dimension.getId());
+        return sky != null && !sky.isEmpty();
+    }
+
     public void render(ClientWorld world, float tickDelta) {
         int dimension = world.dimension.getId();
         if (dimension != lastDimension) {

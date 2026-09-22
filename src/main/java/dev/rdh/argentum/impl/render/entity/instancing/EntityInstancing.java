@@ -2,6 +2,13 @@ package dev.rdh.argentum.impl.render.entity.instancing;
 
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.terrain.ArgentumWorldRenderer;
+
+import net.minecraft.client.render.block.entity.BannerRenderer;
+import net.minecraft.client.render.block.entity.BlockEntityRenderer;
+import net.minecraft.client.render.block.entity.ChestRenderer;
+import net.minecraft.client.render.block.entity.EnchantingTableRenderer;
+import net.minecraft.client.render.block.entity.EnderChestRenderer;
+import net.minecraft.client.render.block.entity.SkullRenderer;
 import net.minecraft.client.render.model.Model;
 import net.minecraft.client.resource.model.BakedModel;
 import net.minecraft.entity.Entity;
@@ -25,13 +32,18 @@ public final class EntityInstancing {
     private EntityCapture activeCapture;
     private int entityCount;
     private int playerCount;
-    private String debugString = "Entity instancing: waiting";
+    private int instanceCount;
+    private int drawCount;
+    private int textureCount;
+    private String inactiveReason = "waiting";
 
     public EntityInstancing(ModelInstancer backend) {
         this.backend = backend;
     }
 
     private static boolean overlayPassDetected;
+    private static int layerDepth;
+    private static int displayEntityDepth;
 
     public static boolean overlayPassDetected() {
         return overlayPassDetected;
@@ -62,25 +74,35 @@ public final class EntityInstancing {
         this.nameTags.clear();
         this.entityCount = 0;
         this.playerCount = 0;
+        this.instanceCount = 0;
+        this.drawCount = 0;
+        this.textureCount = 0;
         if (!Argentum.CONFIG.entityInstancing) {
-            this.debugString = "Entity instancing: disabled by config";
+            this.inactiveReason = "disabled by config";
             return false;
         }
         if (!this.backend.beginBatch()) {
-            this.debugString = "Entity instancing: unsupported";
+            this.inactiveReason = "unsupported";
             return false;
         }
         return true;
     }
 
+
+    // like beginBatch(), but keeps the frame's name tags and counts
+    public boolean resumeBatch() {
+        this.resetCaptures();
+        return Argentum.CONFIG.entityInstancing && this.backend.beginBatch();
+    }
+
     public boolean isBatchActive() {
-        return this.backend.isBatchActive();
+        return displayEntityDepth == 0 && this.backend.isBatchActive();
     }
 
     public EntityCapture beginEntity(Model model, Identifier texture, boolean player, boolean preserveFixedFunction,
             int packedLight, float effectTime, float overlayRed, float overlayGreen, float overlayBlue,
             float overlayAlpha) {
-        if (!this.backend.isBatchActive() || model == null || texture == null) {
+        if (!this.isBatchActive() || model == null || texture == null) {
             return null;
         }
         EntityCapture capture = this.acquire();
@@ -90,8 +112,21 @@ public final class EntityInstancing {
         return capture;
     }
 
+    public InstanceRenderPass passFor(BlockEntityRenderer<?> renderer) {
+        return renderer == null ? null : bePass(renderer);
+    }
+
+    public EntityCapture beginBlockEntity(InstanceRenderPass pass, int packedLight) {
+        if (!this.isBatchActive()) {
+            return null;
+        }
+        EntityCapture capture = this.acquire();
+        capture.beginBlockEntity(pass, packedLight);
+        return capture;
+    }
+
     public EntityCapture beginItemEntity(ItemEntity entity, BakedModel model, int packedLight) {
-        if (!this.backend.isBatchActive() || entity.getItem() == null
+        if (!this.isBatchActive() || entity.getItem() == null
                 || !this.backend.supportsItem(model, entity.getItem())) {
             return null;
         }
@@ -100,17 +135,39 @@ public final class EntityInstancing {
         return capture;
     }
 
+    public static void beginDisplayEntity() {
+        displayEntityDepth++;
+    }
+
+    public static void endDisplayEntity() {
+        displayEntityDepth--;
+    }
+
+    public static void beginLayerRender() {
+        layerDepth++;
+    }
+
+    public static void endLayerRender() {
+        layerDepth--;
+    }
+
     public boolean recordArrow(ArrowEntity arrow, double x, double y, double z, float tickDelta,
             Identifier texture, int packedLight) {
         if (this.activeCapture != null && this.activeCapture.isModelActive()) {
             return this.activeCapture.recordArrow(arrow, x, y, z, tickDelta, texture);
         }
-        if (!this.backend.isBatchActive()) {
+        // A layer renders its arrows at the origin and puts the placement in the matrix stack instead. Without a
+        // capture tracking that stack there is nothing here to place them by, and the identity matrix below would
+        // drop them at the camera entity's feet, so leave those to the fixed function pipeline.
+        if (layerDepth > 0) {
+            return false;
+        }
+        if (!this.isBatchActive()) {
             return false;
         }
         this.transformArrow(this.arrowMatrix.identity(), arrow, x, y, z, tickDelta);
         if (!this.backend.submit(this.backend.arrow(), texture, InstanceRenderPass.CULL_BACK, this.arrowMatrix,
-                packedLight, this.arrowColor, arrow.ticks + tickDelta, this.arrowOverlayColor)) {
+                packedLight, this.arrowColor, arrow.ticks + tickDelta, this.arrowOverlayColor, null)) {
             return false;
         }
         this.entityCount++;
@@ -130,9 +187,10 @@ public final class EntityInstancing {
 
     public void flush(CommandList commandList) {
         ModelInstancer.BatchStats stats = this.backend.flush(commandList);
-        this.debugString = "Entity instancing: %d entities (%d players) | %d parts | %d draws | %d textures".formatted(
-                this.entityCount, this.playerCount, stats.instances(), stats.draws(), stats.textures()
-        );
+        this.instanceCount += stats.instances();
+        this.drawCount += stats.draws();
+        this.textureCount += stats.textures();
+        this.inactiveReason = null;
     }
 
     public void renderNameTags() {
@@ -146,7 +204,13 @@ public final class EntityInstancing {
     }
 
     public String getDebugString() {
-        return this.debugString;
+        // only the debug overlay ever reads this, so it is not worth formatting every flush
+        if (this.inactiveReason != null) {
+            return "Entity instancing: " + this.inactiveReason;
+        }
+        return "Entity instancing: %d entities (%d players) | %d parts | %d draws | %d textures".formatted(
+                this.entityCount, this.playerCount, this.instanceCount, this.drawCount, this.textureCount
+        );
     }
 
     ModelInstancer backend() {
@@ -202,5 +266,18 @@ public final class EntityInstancing {
 
     public static int packedLight(Entity entity, float tickDelta) {
         return entity.isOnFire() ? 0xF000F0 : entity.getLightLevel(tickDelta);
+    }
+
+    // a renderer that draws anything other than model parts has its ffp calls swallowed
+    static InstanceRenderPass bePass(BlockEntityRenderer<?> renderer) {
+        if (renderer instanceof SkullRenderer) {
+            // skull outer layers are drawn double sided
+            return InstanceRenderPass.NO_CULL;
+        }
+        return renderer instanceof ChestRenderer
+                || renderer instanceof EnderChestRenderer
+                || renderer instanceof BannerRenderer
+                || renderer instanceof EnchantingTableRenderer
+                ? InstanceRenderPass.NORMAL : null;
     }
 }

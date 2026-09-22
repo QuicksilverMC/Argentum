@@ -84,7 +84,7 @@ public abstract class TextRendererMixin implements TextRendererExtension {
     @Inject(method = "drawLayer(Ljava/lang/String;FFIZ)I", at = @At("HEAD"))
     private void argentum$flushBeforeImmediateText(String text, float x, float y, int color, boolean shadow,
             CallbackInfoReturnable<Integer> cir) {
-        if (this.argentum$batcher.shouldFlushBeforeImmediate(text, this.unicode)) {
+        if (this.argentum$batcher.shouldFlushBeforeImmediate(text)) {
             this.argentum$batcher.runBeforeImmediateText();
         }
     }
@@ -97,8 +97,7 @@ public abstract class TextRendererMixin implements TextRendererExtension {
 
     @Inject(method = "drawLayer(Ljava/lang/String;Z)V", at = @At("HEAD"), cancellable = true)
     private void argentum$beginLayer(String text, boolean shadow, CallbackInfo ci) {
-        float advance = this.argentum$batcher.begin(text, shadow, this.x, this.y, this.unicode,
-                this.textureManager, this.fontLocation);
+        float advance = this.argentum$batcher.begin(text, shadow, this.x, this.y, this.textureManager);
         if (!Float.isNaN(advance)) {
             this.x += advance;
             ci.cancel();
@@ -194,6 +193,6 @@ public abstract class TextRendererMixin implements TextRendererExtension {
 
     @Override
     public void argentum$endBatch() {
-        this.argentum$batcher.endElementBatch(this.textureManager, this.fontLocation);
+        this.argentum$batcher.endElementBatch(this.textureManager);
     }
 }

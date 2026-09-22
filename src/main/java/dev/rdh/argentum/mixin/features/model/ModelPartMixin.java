@@ -1,5 +1,7 @@
 package dev.rdh.argentum.mixin.features.model;
 
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.client.render.vertex.DefaultVertexFormat;
 import net.minecraft.client.render.vertex.Tesselator;
@@ -12,11 +14,11 @@ import dev.rdh.argentum.impl.render.entity.instancing.EntityCapture;
 
 @Mixin(ModelPart.class)
 public abstract class ModelPartMixin {
-    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
-    private void celeritas$recordModelPart(float scale, CallbackInfo ci) {
+    @WrapMethod(method = "render")
+    private void celeritas$recordModelPart(float scale, Operation<Void> original) {
         EntityCapture capture = EntityCapture.current();
-        if (capture != null && capture.record((ModelPart)(Object)this, scale)) {
-            ci.cancel();
+        if (capture == null || !capture.record((ModelPart)(Object)this, scale)) {
+            original.call(scale);
         }
     }
 

@@ -1,5 +1,7 @@
 package dev.rdh.argentum.impl.render.entity.instancing;
 
+import net.minecraft.client.render.model.ModelPart;
+import dev.rdh.argentum.impl.render.instancing.BoxTemplate;
 import dev.rdh.argentum.impl.render.instancing.TextureArrayManager;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.minecraft.client.render.model.Model;
@@ -102,15 +104,49 @@ public final class ModelInstancer {
         return this.arrowGeometry;
     }
 
+    private final BoxGeometry[] boxGeometries = new BoxGeometry[2];
+    private final Reference2ReferenceOpenHashMap<ModelPart, BoxTemplate[]> boxTemplates = new Reference2ReferenceOpenHashMap<>();
+    private static final BoxTemplate[] NOT_BOXES = new BoxTemplate[0];
+
+    public InstanceGeometry boxGeometry(boolean mirrored) {
+        int index = mirrored ? 1 : 0;
+        if (this.boxGeometries[index] == null) {
+            this.boxGeometries[index] = new BoxGeometry(mirrored);
+        }
+        return this.boxGeometries[index];
+    }
+
+    /** {@return the part's boxes reduced to templates, or null if any of them is not a plain cuboid} */
+    public BoxTemplate[] boxTemplates(ModelPart part) {
+        BoxTemplate[] cached = this.boxTemplates.get(part);
+        if (cached == null) {
+            cached = NOT_BOXES;
+            BoxTemplate[] templates = new BoxTemplate[part.boxes.size()];
+            for (int i = 0; i < templates.length; i++) {
+                templates[i] = BoxTemplate.of(part, part.boxes.get(i));
+                if (templates[i] == null) {
+                    templates = null;
+                    break;
+                }
+            }
+            if (templates != null) {
+                cached = templates;
+            }
+            this.boxTemplates.put(part, cached);
+        }
+        return cached == NOT_BOXES ? null : cached;
+    }
+
     public boolean submit(InstanceGeometry geometry, Identifier texture, InstanceRenderPass pass, Matrix4f matrix,
-                          int packedLight, Vector4fc color, float effectTime, Vector4fc overlayColor) {
+                          int packedLight, Vector4fc color, float effectTime, Vector4fc overlayColor,
+                          BoxTemplate box) {
         if (!this.batchActive || geometry == null || texture == null) {
             return false;
         }
 
         InstanceBatcher.TextureBatch textureBatch = this.selectTexture(texture, pass);
         textureBatch.add(geometry, matrix, packedLight & 0xFFFF, packedLight >>> 16,
-                this.selectedTextureLayer, color, effectTime, overlayColor
+                this.selectedTextureLayer, color, effectTime, overlayColor, box
         );
         this.instanceCount++;
 
@@ -120,7 +156,7 @@ public final class ModelInstancer {
             Identifier overlay = this.emissiveOverlay(texture);
             if (overlay != null) {
                 this.submit(geometry, overlay, InstanceRenderPass.EMISSIVE_REPLACE, matrix,
-                        packedLight, color, effectTime, overlayColor);
+                        packedLight, color, effectTime, overlayColor, box);
             }
         }
         return true;
@@ -160,7 +196,8 @@ public final class ModelInstancer {
             return BatchStats.EMPTY;
         }
         GlStateManager.activeTexture(GLX.GL_TEXTURE0);
-        GlStateManager.disableCull();
+        GlStateManager.enableCull();
+        GlStateManager.cullFace(GL11.GL_BACK);
         program.bind();
         program.getInterface().setUniforms();
         int previousArray = this.textureArraysSupported ? this.textureArrays.bindFallback() : 0;
@@ -204,6 +241,13 @@ public final class ModelInstancer {
         this.discardBatch();
         this.batcher.delete(commandList);
         this.itemGeometry.delete(commandList);
+        for (int i = 0; i < this.boxGeometries.length; i++) {
+            if (this.boxGeometries[i] != null) {
+                this.boxGeometries[i].delete(commandList);
+                this.boxGeometries[i] = null;
+            }
+        }
+        this.boxTemplates.clear();
         if (this.arrowGeometry != null) {
             this.arrowGeometry.delete(commandList);
             this.arrowGeometry = null;

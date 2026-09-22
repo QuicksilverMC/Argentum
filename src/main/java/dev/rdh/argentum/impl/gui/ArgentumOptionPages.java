@@ -67,6 +67,7 @@ public final class ArgentumOptionPages {
         private static final OptionIdentifier<Void> PARTICLE_CULLING = OptionIdentifier.create(Argentum.ID, "particle_culling");
         private static final OptionIdentifier<Void> ENTITY_INSTANCING = OptionIdentifier.create(Argentum.ID, "entity_instancing");
         private static final OptionIdentifier<Void> FONT_BATCHING = OptionIdentifier.create(Argentum.ID, "font_batching");
+        private static final OptionIdentifier<Void> GUI_ITEM_ATLAS = OptionIdentifier.create(Argentum.ID, "gui_item_atlas");
         private static final OptionIdentifier<Void> SAFE_CHUNK_EDGES = OptionIdentifier.create(Argentum.ID, "safe_chunk_edges");
         private static final OptionIdentifier<Void> CHECK_GL_ERRORS = OptionIdentifier.create(Argentum.ID, "check_gl_errors");
         private static final OptionIdentifier<Void> GREEDY_RENDER_THREAD = OptionIdentifier.create(Argentum.ID, "greedy_render_thread");
@@ -120,9 +121,9 @@ public final class ArgentumOptionPages {
                         .build())
                 .add(option(int.class, VANILLA, StandardOptions.Option.MAX_FRAMERATE)
                         .setName(vanilla("options.framerateLimit"))
-                        .setControl(option -> new SliderControl(option, 0, 260, 5,
+                        .setControl(option -> new SliderControl(option, Argentum.CONFIG.explicitVsyncOption ? 5 : 0, 260, 5,
                                 value -> {
-                                    if (value == 0) {
+                                    if (value == 0 || (Argentum.CONFIG.explicitVsyncOption && Minecraft.getInstance().options.vsync)) {
                                         return text("value.vsync");
                                     } else if (value == 260) {
                                         return vanilla("options.framerateLimit.max");
@@ -131,10 +132,27 @@ public final class ArgentumOptionPages {
                                     }
 								}))
                         .setBinding((options, value) -> {
-                            options.vsync = value == 0;
-                            options.fpsLimit = options.vsync ? 260 : value;
-                            Display.setVSyncEnabled(options.vsync);
-                        }, options -> options.vsync ? 0 : options.fpsLimit)
+                            if (!Argentum.CONFIG.explicitVsyncOption) {
+                                options.vsync = value == 0;
+                                Display.setVSyncEnabled(options.vsync);
+                                if (options.vsync) {
+                                    options.fpsLimit = 260;
+                                    return;
+                                }
+                            }
+                            options.fpsLimit = value;
+                        }, options -> options.vsync && !Argentum.CONFIG.explicitVsyncOption ? 0
+                                : (options.fpsLimit <= 0 ? 260 : options.fpsLimit))
+                        .setImpact(OptionImpact.VARIES)
+                        .setEnabledPredicate(() -> !Argentum.CONFIG.explicitVsyncOption || !Minecraft.getInstance().options.vsync)
+                        .build())
+                .addConditionally(Argentum.CONFIG.explicitVsyncOption, () -> option(boolean.class, VANILLA, StandardOptions.Option.VSYNC)
+                        .setName(vanilla("options.vsync"))
+                        .setControl(TickBoxControl::new)
+                        .setBinding((options, value) -> {
+                            options.vsync = value;
+                            Display.setVSyncEnabled(value);
+                        }, options -> options.vsync)
                         .setImpact(OptionImpact.VARIES)
                         .build())
                 .build();
@@ -298,6 +316,8 @@ public final class ArgentumOptionPages {
                         (config, value) -> config.animateOnlyVisibleTextures = value,
                         config -> config.animateOnlyVisibleTextures, OptionFlag.REQUIRES_RENDERER_UPDATE))
                 .add(toggle(Option.FONT_BATCHING, OptionImpact.MEDIUM, (config3, value2) -> config3.fontBatching = value2, config4 -> config4.fontBatching))
+                .add(toggle(Option.GUI_ITEM_ATLAS, OptionImpact.MEDIUM,
+                        (config, value) -> config.guiItemAtlas = value, config -> config.guiItemAtlas))
                 .add(toggle(StandardOptions.Option.TRANSLUCENT_FACE_SORTING,
                         OptionImpact.VARIES,
                         (config, value) -> config.translucencySorting = value,

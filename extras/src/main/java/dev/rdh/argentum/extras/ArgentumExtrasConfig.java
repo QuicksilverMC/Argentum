@@ -16,7 +16,6 @@ public class ArgentumExtrasConfig {
     public int portalDistortionStrength = 100;
     public int viewBobbingStrength = 100;
     public int hurtCameraStrength = 100;
-    public boolean disableRealms = false;
     public int cloudRenderDistance = 0;
     public int cloudHeightOffset = 0;
     public int cloudSpeed = 100;
@@ -48,6 +47,7 @@ public class ArgentumExtrasConfig {
     public float blockOutlineWidth = 2.0f;
     public boolean scaledBlockOutlineWidth = false;
     public boolean macosSmoothScrolling = true;
+    public boolean macosRightClickEmulation = false;
     public boolean highDpiScreen = false;
 
     public void validate() {

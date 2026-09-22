@@ -12,6 +12,13 @@ import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
 final class InstanceShader {
+    /** Every texel, the way an alpha-tested pass draws. */
+    static final int ALPHA_ALL = 0;
+    /** Only texels the model can be seen through - drawn blended, over the opaque ones. */
+    static final int ALPHA_TRANSLUCENT = 1;
+    /** Only fully opaque texels, so they can lay down depth first. */
+    static final int ALPHA_OPAQUE = 2;
+
     private static final Vector3fc LIGHT_0 = new Vector3f(0.2F, 1.0F, -0.7F).normalize();
     private static final Vector3fc LIGHT_1 = new Vector3f(-0.2F, 1.0F, 0.7F).normalize();
 
@@ -25,6 +32,8 @@ final class InstanceShader {
     private final GlUniformInt glintPass;
     private final GlUniformInt chargePass;
     private final GlUniformInt itemGlintPass;
+    private final GlUniformInt boxInstancing;
+    private final GlUniformInt alphaPass;
     private final GlUniformMatrix4f itemGlintMatrix;
     private final GlUniformFloat3v lightDirection0;
     private final GlUniformFloat3v lightDirection1;
@@ -44,6 +53,8 @@ final class InstanceShader {
         this.glintPass = context.bindUniform("uGlintPass", GlUniformInt::new);
         this.chargePass = context.bindUniform("uChargePass", GlUniformInt::new);
         this.itemGlintPass = context.bindUniform("uItemGlintPass", GlUniformInt::new);
+        this.boxInstancing = context.bindUniform("uBoxInstancing", GlUniformInt::new);
+        this.alphaPass = context.bindUniform("uAlphaPass", GlUniformInt::new);
         this.itemGlintMatrix = context.bindUniform("uItemGlintMatrix", GlUniformMatrix4f::new);
         this.lightDirection0 = context.bindUniform("uLightDirection0", GlUniformFloat3v::new);
         this.lightDirection1 = context.bindUniform("uLightDirection1", GlUniformFloat3v::new);
@@ -59,6 +70,8 @@ final class InstanceShader {
         this.glintPass.setInt(-1);
         this.chargePass.setInt(0);
         this.itemGlintPass.setInt(-1);
+        this.boxInstancing.setInt(0);
+        this.alphaPass.setInt(ALPHA_ALL);
     }
 
     void setUniforms() {
@@ -89,6 +102,14 @@ final class InstanceShader {
 
     void setChargePass(int pass) {
         this.chargePass.setInt(pass);
+    }
+
+    void setBoxInstancing(boolean enabled) {
+        this.boxInstancing.setInt(enabled ? 1 : 0);
+    }
+
+    void setAlphaPass(int pass) {
+        this.alphaPass.setInt(pass);
     }
 
     void setItemGlintPass(int pass) {

@@ -2,22 +2,22 @@ package dev.rdh.argentum.impl.render.instancing;
 
 import org.lwjgl.BufferUtils;
 
-import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.util.Arrays;
 
 public abstract class InstanceDataBuffer {
     private final int stride;
     private final int positionOffset;
-    private float[] data;
-    private FloatBuffer upload;
+    private int[] data;
+    private IntBuffer upload;
     private int size;
     private int count;
 
     protected InstanceDataBuffer(int stride, int positionOffset, int initialCapacity) {
         this.stride = stride;
         this.positionOffset = positionOffset;
-        this.data = new float[initialCapacity * stride];
-        this.upload = BufferUtils.createFloatBuffer(this.data.length);
+        this.data = new int[initialCapacity * stride];
+        this.upload = BufferUtils.createIntBuffer(this.data.length);
     }
 
     public final void clear() {
@@ -32,7 +32,7 @@ public abstract class InstanceDataBuffer {
         return this.size;
     }
 
-    protected final float[] data() {
+    protected final int[] data() {
         return this.data;
     }
 
@@ -66,9 +66,9 @@ public abstract class InstanceDataBuffer {
 
     private float distance(int index) {
         int offset = index * this.stride + this.positionOffset;
-        float x = this.data[offset];
-        float y = this.data[offset + 1];
-        float z = this.data[offset + 2];
+        float x = Float.intBitsToFloat(this.data[offset]);
+        float y = Float.intBitsToFloat(this.data[offset + 1]);
+        float z = Float.intBitsToFloat(this.data[offset + 2]);
         return x * x + y * y + z * z;
     }
 
@@ -76,15 +76,15 @@ public abstract class InstanceDataBuffer {
         int a = first * this.stride;
         int b = second * this.stride;
         for (int i = 0; i < this.stride; i++) {
-            float value = this.data[a + i];
+            int value = this.data[a + i];
             this.data[a + i] = this.data[b + i];
             this.data[b + i] = value;
         }
     }
 
-    public final FloatBuffer upload() {
+    public final IntBuffer upload() {
         if (this.upload.capacity() < this.size) {
-            this.upload = BufferUtils.createFloatBuffer(this.data.length);
+            this.upload = BufferUtils.createIntBuffer(this.data.length);
         }
         return this.upload.clear().put(this.data, 0, this.size).flip();
     }

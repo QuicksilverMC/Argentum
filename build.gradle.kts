@@ -43,6 +43,22 @@ loom {
             systemProperties.put("argentum.disableFontBatching", "true")
             systemProperties.put("argentum.fontTestVariant", "vanilla")
         }
+        create("itemTestClient") {
+            inherit(getByName("client"))
+            sourceSet = testmod.name
+            displayName = "GUI Item Visual Test (Atlas)"
+            jvmArguments.add("-XstartOnFirstThread")
+            systemProperties.put("argentum.itemTestVariant", "atlas")
+            systemProperties.put("argentum.itemTestGlint", findProperty("itemTestGlint")?.toString() ?: "false")
+        }
+        create("itemTestVanillaClient") {
+            inherit(getByName("client"))
+            sourceSet = testmod.name
+            displayName = "GUI Item Visual Test (Vanilla)"
+            jvmArguments.add("-XstartOnFirstThread")
+            systemProperties.put("argentum.itemTestVariant", "vanilla")
+            systemProperties.put("argentum.itemTestGlint", findProperty("itemTestGlint")?.toString() ?: "false")
+        }
         create("guiBenchmarkBatchedClient") {
             inherit(getByName("client"))
             sourceSet = testmod.name
@@ -96,6 +112,58 @@ val verifyFontReload = registerFontComparison(
     "font-batched-after-reload.png"
 )
 
+tasks.named("runItemTestClient") {
+    mustRunAfter("runItemTestVanillaClient")
+}
+
+fun registerItemComparison(name: String, expected: String, actual: String): TaskProvider<Task> {
+    val expectedFile = layout.projectDirectory.file("run/screenshots/$expected").asFile
+    val actualFile = layout.projectDirectory.file("run/screenshots/$actual").asFile
+
+    return tasks.register(name) {
+        dependsOn("runItemTestVanillaClient", "runItemTestClient")
+        doLast {
+            val a = javax.imageio.ImageIO.read(expectedFile)
+            val b = javax.imageio.ImageIO.read(actualFile)
+            require(a.width == b.width && a.height == b.height) {
+                "$expected and $actual differ in size: ${a.width}x${a.height} vs ${b.width}x${b.height}"
+            }
+
+            var differing = 0
+            var worst = 0
+            for (y in 0 until a.height) {
+                for (x in 0 until a.width) {
+                    val p = a.getRGB(x, y)
+                    val q = b.getRGB(x, y)
+                    if (p == q) continue
+                    differing++
+                    for (shift in intArrayOf(16, 8, 0)) {
+                        val delta = Math.abs(((p shr shift) and 0xFF) - ((q shr shift) and 0xFF))
+                        if (delta > worst) worst = delta
+                    }
+                }
+            }
+
+            val fraction = differing.toDouble() / (a.width * a.height)
+            println("$actual: %d px differ (%.4f%%), worst channel delta %d".format(differing, fraction * 100, worst))
+            require(worst <= 1) { "$actual differs from $expected by up to $worst per channel; expected rounding only" }
+            require(fraction < 0.0005) { "$actual differs in %.4f%% of pixels; expected under 0.05%%".format(fraction * 100) }
+        }
+    }
+}
+
+val verifyItemsFirst = registerItemComparison(
+    "verifyGuiItemsFirst", "item-vanilla-first.png", "item-atlas-first.png"
+)
+val verifyItemsSecond = registerItemComparison(
+    "verifyGuiItemsSecond", "item-vanilla-second.png", "item-atlas-second.png"
+)
+
+tasks.register("verifyGuiItemRendering") {
+    group = "verification"
+    dependsOn(verifyItemsFirst, verifyItemsSecond)
+}
+
 tasks.register("verifyFontRendering") {
     group = "verification"
     dependsOn(verifyFontBeforeReload, verifyFontAfterReload, verifyFontReload)
@@ -108,4 +176,10 @@ tasks.register("benchmarkGuiBatching") {
 
 tasks.check {
     dependsOn("compileTestmodJava")
+}
+
+tasks.remapJar {
+    manifest.attributes(
+        "Celeritas-Version" to project.property("celeritas_version") as String
+    )
 }

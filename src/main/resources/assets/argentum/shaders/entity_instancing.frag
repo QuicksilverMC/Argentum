@@ -9,6 +9,8 @@ uniform sampler2DArray uTextureArray;
 uniform bool uTextureArrayEnabled;
 #endif
 uniform bool uEmissive;
+uniform int uAlphaPass;
+#define ALPHA_OPAQUE_CUTOFF (254.0 / 255.0)
 #ifdef USE_FOG
 uniform vec4 u_FogColor;
 #ifdef USE_FOG_SMOOTH
@@ -51,6 +53,12 @@ void main() {
 #endif
     color *= vColor;
     if (color.a <= 0.1) {
+        discard;
+    }
+    if (uAlphaPass == 1 && color.a >= ALPHA_OPAQUE_CUTOFF) {
+        discard;
+    }
+    if (uAlphaPass == 2 && color.a < ALPHA_OPAQUE_CUTOFF) {
         discard;
     }
 

@@ -28,5 +28,6 @@ public class ArgentumExtras implements ClientModInitializer, PreLaunchEntrypoint
 		DisplaySdl d = DisplaySdl.instance();
 		d.setHighPixelDensity(CONFIG.highDpiScreen);
 		d.setWindowHint(SDLHints.SDL_HINT_MAC_SCROLL_MOMENTUM, CONFIG.macosSmoothScrolling ? "1" : "0");
+		d.setWindowHint(SDLHints.SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK, CONFIG.macosRightClickEmulation ? "1" : "0");
 	}
 }

@@ -8,23 +8,29 @@
     "core.render.FrustumCullerMixin", "core.render.WorldRendererMixin",
     "core.world.ClientChunkCacheAccessor", "core.world.MultiplayerChunkCacheMixin", "features.cloud.WorldRendererMixin",
     "features.entity.shadow.EntityRendererMixin", "features.font.TextRendererMixin", "features.hud.ChatGuiMixin",
-    "features.hud.GameGuiMixin", "features.hud.PlayerTabOverlayMixin", "features.model.BufferBuilderAccessor",
+    "features.hud.CreativeInventoryScreenMixin", "features.hud.GameGuiMixin", "features.hud.GuiElementMixin", "features.hud.GuiItemRendererMixin", "features.hud.ScreenMixin", "features.hud.GuiItemFlushMixin", "features.hud.PlayerTabOverlayMixin", "features.model.BufferBuilderAccessor",
     "features.model.ModelPartMixin", "features.model.PolygonMixin", "features.model.instancing.AbstractTextureMixin",
     "features.model.instancing.ArrowRendererMixin", "features.model.instancing.BlockModelRendererMixin",
     "features.model.instancing.BoxAccessor", "features.model.instancing.EntityRendererAccessor",
     "features.model.instancing.GlStateManagerMixin", "features.model.instancing.ItemEntityRendererMixin",
     "features.model.instancing.ItemRendererMixin", "features.model.instancing.LivingEntityRendererMixin",
-    "features.model.instancing.PolygonAccessor", "features.options.OptionPageFrameMixin",
+    "features.model.instancing.MobSpawnerRendererMixin",
+    "features.model.instancing.ModelPartAccessor", "features.model.instancing.PolygonAccessor", "features.options.OptionPageFrameMixin",
     "features.options.OptionsScreenMixin", "features.particle.ParticleManagerMixin", "features.particle.ParticleMixin",
-    "features.terrain.BakedQuadMixin",
+    "features.blockentity.BlockEntityRenderDispatcherMixin",
+    "features.terrain.BakedQuadMixin", "features.terrain.BlockModelRendererMixin",
+    "features.text.SignRendererMixin",
     "features.terrain.FaceBakeryMixin",
     "features.terrain.BiomeColorsMixin",
+    "features.texture.ItemRendererMixin",
     "features.texture.TextureAtlasMixin", "features.texture.TextureAtlasSpriteMixin",
-    "features.texture.TextureManagerMixin"
+    "features.texture.TextureManagerMixin", "features.texture.TextureUtilMixin"
   ],
   "mixins": [
     "core.DirectionMixin", "core.collections.TypeInstanceMultimapMixin", "core.world.ChunkCacheMixin",
-    "core.world.WorldChunkMixin", "core.world.WorldMixin"
+    "core.world.WorldChunkMixin", "core.world.WorldMixin",
+    "features.blockentity.BlockEntityMixin",
+    "features.text.SignBlockEntityMixin"
   ],
   "injectors": {
     "defaultRequire": 1

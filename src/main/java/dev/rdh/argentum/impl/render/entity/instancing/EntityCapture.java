@@ -13,6 +13,8 @@ import net.minecraft.entity.living.LivingEntity;
 import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.resource.Identifier;
+import dev.rdh.argentum.impl.render.instancing.BoxTemplate;
+import dev.rdh.argentum.mixin.features.model.instancing.ModelPartAccessor;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
@@ -24,6 +26,7 @@ public final class EntityCapture implements AutoCloseable {
 
     private final EntityInstancing owner;
     private final Matrix4f arrowMatrix = new Matrix4f();
+    private final Matrix4f boxMatrix = new Matrix4f();
     private final ReferenceOpenHashSet<ModelPart> glintParts = new ReferenceOpenHashSet<>();
 
     private final Matrix4fStack matrices = new Matrix4fStack(64);
@@ -81,6 +84,21 @@ public final class EntityCapture implements AutoCloseable {
         this.effectTime = effectTime;
         this.overlayColor.set(overlayRed, overlayGreen, overlayBlue, overlayAlpha);
         this.resetState();
+    }
+
+    void beginBlockEntity(InstanceRenderPass pass, int packedLight) {
+        this.item = false;
+        this.model = null;
+        this.entityTexture = null;
+        this.boundTexture = null;
+        this.pass = pass;
+        this.player = false;
+        this.suppressFixedFunction = true;
+        this.packedLight = packedLight;
+        this.effectTime = 0.0F;
+        this.overlayColor.set(0);
+        this.resetState();
+        this.modelActive = true;
     }
 
     void beginItem(ItemEntity entity, int packedLight) {
@@ -357,8 +375,12 @@ public final class EntityCapture implements AutoCloseable {
     }
 
     private boolean submit(InstanceGeometry geometry, Matrix4f matrix) {
+        return this.submit(geometry, matrix, null);
+    }
+
+    private boolean submit(InstanceGeometry geometry, Matrix4f matrix, BoxTemplate box) {
         boolean submitted = this.owner.backend().submit(geometry, this.boundTexture, this.pass, matrix,
-                this.packedLight, this.color, this.effectTime, this.currentOverlayColor
+                this.packedLight, this.color, this.effectTime, this.currentOverlayColor, box
         );
         this.recorded |= submitted;
         return submitted;
@@ -371,15 +393,13 @@ public final class EntityCapture implements AutoCloseable {
         if (this.pass == InstanceRenderPass.GLINT && !this.glintParts.add(part)) {
             return;
         }
-        InstanceGeometry geometry = this.model.getGeometry(part, scale);
-
         this.pushMatrix();
         this.translate(part.translateX, part.translateY, part.translateZ);
         this.translate(part.x * scale, part.y * scale, part.z * scale);
         this.matrices.rotateZ(part.rotationZ).rotateY(part.rotationY).rotateX(part.rotationX);
 
-        if (!part.boxes.isEmpty()) {
-            this.submit(geometry, this.matrices);
+        if (!part.boxes.isEmpty() && !this.submitBoxes(part, scale)) {
+            this.submit(this.modelFor(part).getGeometry(part, scale), this.matrices);
         }
         if (part.children != null) {
             for (int i = 0; i < part.children.size(); i++) {
@@ -387,6 +407,29 @@ public final class EntityCapture implements AutoCloseable {
             }
         }
         this.popMatrix();
+    }
+
+    /**
+      * Draws each of the part's boxes from the shared unit cube, mapped onto the box by its own matrix.
+      * {@return false if any box is not a plain cuboid}, in which case the caller draws the part's own geometry.
+      */
+    private ModelGeometry modelFor(ModelPart part) {
+        return this.model != null ? this.model
+                : this.owner.backend().model(((ModelPartAccessor)part).argentum$getModel());
+    }
+
+    private boolean submitBoxes(ModelPart part, float scale) {
+        BoxTemplate[] templates = this.owner.backend().boxTemplates(part);
+        if (templates == null) {
+            return false;
+        }
+        for (BoxTemplate template : templates) {
+            this.boxMatrix.set(this.matrices)
+                    .translate(template.originX() * scale, template.minY() * scale, template.minZ() * scale)
+                    .scale(template.spanX() * scale, template.spanY() * scale, template.spanZ() * scale);
+            this.submit(this.owner.backend().boxGeometry(template.flipped()), this.boxMatrix, template);
+        }
+        return true;
     }
 
     private boolean tracksModelView() {

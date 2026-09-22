@@ -5,3 +5,4 @@ run/
 .kotlin/
 *.iml
 .DS_Store
+!.idea/icon.svg

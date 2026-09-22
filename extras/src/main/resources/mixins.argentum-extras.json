@@ -4,10 +4,10 @@
   "package": "dev.rdh.argentum.extras.mixin",
   "compatibilityLevel": "JAVA_25",
   "client": [
-    "AbstractArmorLayerMixin", "AbstractLeavesBlockMixin", "CloudRendererMixin", "DebugOverlayMixin",
+    "AbstractArmorLayerMixin", "AbstractLeavesBlockMixin", "AnvilScreenMixin", "CloudRendererMixin", "DebugOverlayMixin",
     "EntityRendererMixin", "GameGuiMixin", "TextRendererMixin",
     "FastBlockRendererMixin", "GameRendererMixin", "LivingEntityRendererMixin", "MobRendererMixin",
-    "ParticleManagerMixin", "TitleScreenMixin", "WorldRendererMixin"
+    "ParticleManagerMixin", "WorldRendererMixin"
   ],
   "mixinextras": {
     "minVersion": "0.5.1"

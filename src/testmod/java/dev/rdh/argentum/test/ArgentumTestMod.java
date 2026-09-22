@@ -8,7 +8,10 @@ public class ArgentumTestMod implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         MinecraftClientEvents.READY.register(minecraft -> {
-            if (Boolean.getBoolean("argentum.guiBenchmark")) {
+            if (System.getProperty("argentum.itemTestVariant") != null) {
+                Argentum.CONFIG.guiItemAtlas = "atlas".equals(System.getProperty("argentum.itemTestVariant"));
+                minecraft.openScreen(new GuiItemVisualTestScreen());
+            } else if (Boolean.getBoolean("argentum.guiBenchmark")) {
                 Argentum.CONFIG.fontBatching = true;
                 minecraft.openScreen(new GuiBatchBenchmarkScreen());
             } else {

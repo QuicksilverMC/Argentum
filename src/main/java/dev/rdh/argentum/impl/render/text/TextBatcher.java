@@ -22,8 +22,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.IntBuffer;
 import java.util.List;
-
-import static dev.rdh.argentum.impl.render.text.TextBatcher.TextType.*;
+import java.util.Map;
 
 public final class TextBatcher {
     private static final int WIDTH_CACHE_SIZE = 2048;
@@ -36,7 +35,7 @@ public final class TextBatcher {
 
     private final BufferBuilder buffer = new BufferBuilder(64 * 1024 / Integer.BYTES);
     private final BufferBuilder decorationBuffer = new BufferBuilder(4 * 1024 / Integer.BYTES);
-    private final BufferBuilder elementBuffer = new BufferBuilder(128 * 1024 / Integer.BYTES);
+    private final Map<Identifier, BufferBuilder> elementBuffers = new Object2ObjectLinkedOpenHashMap<>(4);
     private final BufferUploader uploader = new BufferUploader();
 
     private final float[] widths = new float[256];
@@ -50,6 +49,7 @@ public final class TextBatcher {
     private boolean batching;
     private boolean drawing;
     private boolean drawingDecorations;
+    private boolean blend;
 
     private float red = 1.0F;
     private float green = 1.0F;
@@ -58,8 +58,6 @@ public final class TextBatcher {
 
     private GeometryKey pendingKey;
     private final List<Segment> pendingSegments = new ObjectArrayList<>(4);
-    private int[] pendingVertices;
-    private boolean batchable;
     private boolean appendable;
     private float originX;
     private float originY;
@@ -204,32 +202,29 @@ public final class TextBatcher {
         if (this.batching) buffer.color(this.red, this.green, this.blue, this.alpha);
     }
 
-    public boolean shouldFlushBeforeImmediate(String text, boolean unicode) {
-        return this.elementBatchDepth > 0 && this.beforeImmediateText != null && text != null
-                && (!Argentum.CONFIG.fontBatching || this.classify(text, unicode) != BATCHABLE);
+    public boolean shouldFlushBeforeImmediate(String text) {
+        return this.elementBatchDepth > 0 && this.beforeImmediateText != null
+                && text != null && !text.isEmpty()
+                && (!Argentum.CONFIG.fontBatching || !cacheable(text));
     }
 
     public void runBeforeImmediateText() {
         this.beforeImmediateText.run();
     }
 
-    public float begin(String text, boolean shadow, float x, float y, boolean unicode,
-            TextureManager textureManager, Identifier fontLocation) {
+    public float begin(String text, boolean shadow, float x, float y, TextureManager textureManager) {
+        if (text.isEmpty()) return 0.0F;
+
         this.batching = Argentum.CONFIG.fontBatching;
         this.pendingKey = null;
         this.pendingSegments.clear();
-        this.pendingVertices = null;
-        this.batchable = false;
         this.appendable = false;
 
-        TextType kind = this.batching ? this.classify(text, unicode) : UNCACHEABLE;
-        if (kind == UNCACHEABLE) {
-            this.flushElementBatch(textureManager, fontLocation);
+        if (!this.batching || !cacheable(text)) {
+            this.flushElementBatch(textureManager);
             return Float.NaN;
         }
-        this.batchable = kind == BATCHABLE;
-        if (this.batchable) this.appendable = this.elementBatchDepth > 0;
-        else this.flushElementBatch(textureManager, fontLocation);
+        this.appendable = this.elementBatchDepth > 0;
 
         GeometryKey key = this.lookupKey.set(text, shadow,
                 Float.floatToIntBits(this.red), Float.floatToIntBits(this.green),
@@ -237,10 +232,10 @@ public final class TextBatcher {
         );
         Geometry geometry = this.geometryCache.getAndMoveToLast(key);
         if (geometry != null) {
-            if (this.appendable) {
-                this.append(geometry.vertices(), x, y);
-            } else {
-                for (Segment segment : geometry.segments()) {
+            for (Segment segment : geometry.segments()) {
+                if (this.appendable) {
+                    this.append(segment.texture(), segment.vertices(), x, y);
+                } else {
                     textureManager.bind(segment.texture());
                     this.draw(segment.buffer(), x, y);
                 }
@@ -260,15 +255,13 @@ public final class TextBatcher {
         this.flushDecorations();
         if (!this.pendingSegments.isEmpty()) {
             this.geometryCache.put(this.pendingKey, new Geometry(
-                    this.pendingSegments.toArray(new Segment[0]), this.pendingVertices, x - this.originX));
+                    this.pendingSegments.toArray(new Segment[0]), x - this.originX));
             if (this.geometryCache.size() > GEOMETRY_CACHE_SIZE) {
                 delete(this.geometryCache.removeFirst());
             }
         }
         this.pendingKey = null;
         this.pendingSegments.clear();
-        this.pendingVertices = null;
-        this.batchable = false;
         this.appendable = false;
         this.batching = false;
     }
@@ -321,10 +314,10 @@ public final class TextBatcher {
         if (this.elementBatchDepth++ == 0) this.beforeImmediateText = beforeImmediateText;
     }
 
-    public void endElementBatch(TextureManager textureManager, Identifier fontLocation) {
+    public void endElementBatch(TextureManager textureManager) {
         if (this.elementBatchDepth == 0) throw new IllegalStateException("Text batch not active");
         if (--this.elementBatchDepth == 0) {
-            this.flushElementBatch(textureManager, fontLocation);
+            this.flushElementBatch(textureManager);
             this.beforeImmediateText = null;
         }
     }
@@ -340,23 +333,45 @@ public final class TextBatcher {
         for (Segment segment : geometry.segments()) segment.buffer().delete();
     }
 
+    public void setBlend(boolean blend) {
+        this.blend = blend;
+    }
+
+    private boolean pushBlend() {
+        if (!this.blend || GL11.glIsEnabled(GL11.GL_BLEND)) return false;
+        GlStateManager.enableBlend();
+        GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+        return true;
+    }
+
+    private void popBlend(boolean pushed) {
+        if (pushed) GlStateManager.disableBlend();
+    }
+
+    private void upload(BufferBuilder buffer) {
+        boolean pushed = this.pushBlend();
+        try {
+            this.uploader.end(buffer);
+        } finally {
+            this.popBlend(pushed);
+        }
+    }
+
     private void flush() {
         if (!this.drawing) return;
 
         this.buffer.end();
         if (this.pendingKey == null) {
-            this.uploader.end(this.buffer);
+            this.upload(this.buffer);
         } else {
-            if (this.batchable) {
-                IntBuffer source = this.buffer.getBuffer().asIntBuffer();
-                this.pendingVertices = new int[source.remaining()];
-                source.get(this.pendingVertices);
-            }
+            IntBuffer source = this.buffer.getBuffer().asIntBuffer();
+            int[] vertices = new int[source.remaining()];
+            source.get(vertices);
             VertexBuffer uploaded = new VertexBuffer(DefaultVertexFormat.POSITION_TEX_COLOR);
             uploaded.upload(this.buffer.getBuffer());
-            this.pendingSegments.add(new Segment(uploaded, this.texture));
+            this.pendingSegments.add(new Segment(uploaded, this.texture, vertices));
             if (this.appendable) {
-                this.append(this.pendingVertices, this.originX, this.originY);
+                this.append(this.texture, vertices, this.originX, this.originY);
             } else {
                 this.draw(uploaded, this.originX, this.originY);
             }
@@ -399,30 +414,26 @@ public final class TextBatcher {
 
         this.decorationBuffer.end();
         GlStateManager.disableTexture();
-        this.uploader.end(this.decorationBuffer);
+        this.upload(this.decorationBuffer);
         GlStateManager.enableTexture();
         this.drawingDecorations = false;
     }
 
-    private TextType classify(String text, boolean unicode) {
-        if (text.isEmpty()) return UNCACHEABLE;
+    private static boolean cacheable(String text) {
+        if (text.isEmpty()) return false;
 
-        TextType kind = unicode ? CACHEABLE : BATCHABLE;
         for (int i = 0; i < text.length(); i++) {
-            char character = text.charAt(i);
-            if (character == SECTION && i + 1 < text.length()) {
+            if (text.charAt(i) == SECTION && i + 1 < text.length()) {
                 char formatting = Character.toLowerCase(text.charAt(++i));
                 // obfuscated text changes every frame, and decorations are not part of the geometry
-                if (formatting == 'k' || formatting == 'm' || formatting == 'n') return UNCACHEABLE;
-            } else {
-                char normalized = normalizeSpace(character);
-                if (normalized < 32 || normalized > 126) kind = CACHEABLE;
+                if (formatting == 'k' || formatting == 'm' || formatting == 'n') return false;
             }
         }
-        return kind;
+        return true;
     }
 
     private void draw(VertexBuffer buffer, float x, float y) {
+        boolean pushed = this.pushBlend();
         GlStateManager.pushMatrix();
         GlStateManager.translatef(x, y, 0.0F);
         buffer.bind();
@@ -436,25 +447,35 @@ public final class TextBatcher {
         GL11.glColorPointer(4, GL11.GL_UNSIGNED_BYTE, stride, format.getColorOffset());
         buffer.draw(GL11.GL_QUADS);
         GL11.glDisableClientState(GL11.GL_COLOR_ARRAY);
+        GlStateManager.clearColor();
         GL11.glDisableClientState(GL11.GL_TEXTURE_COORD_ARRAY);
         GL11.glDisableClientState(GL11.GL_VERTEX_ARRAY);
         buffer.unbind();
         GlStateManager.popMatrix();
+        this.popBlend(pushed);
     }
 
-    private void append(int[] vertices, float x, float y) {
-        if (this.elementBuffer.getVertexCount() == 0) {
-            this.elementBuffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+    private void append(Identifier texture, int[] vertices, float x, float y) {
+        BufferBuilder buffer = this.elementBuffers.get(texture);
+        if (buffer == null) {
+            buffer = new BufferBuilder(32 * 1024 / Integer.BYTES);
+            this.elementBuffers.put(texture, buffer);
         }
-        this.elementBuffer.argentum$appendTranslated(vertices, x, y);
+        if (buffer.getVertexCount() == 0) {
+            buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        }
+        buffer.argentum$appendTranslated(vertices, x, y);
     }
 
-    private void flushElementBatch(TextureManager textureManager, Identifier fontLocation) {
-        if (this.elementBuffer.getVertexCount() == 0) return;
+    private void flushElementBatch(TextureManager textureManager) {
+        for (Map.Entry<Identifier, BufferBuilder> entry : this.elementBuffers.entrySet()) {
+            BufferBuilder buffer = entry.getValue();
+            if (buffer.getVertexCount() == 0) continue;
 
-        this.elementBuffer.end();
-        textureManager.bind(fontLocation);
-        this.uploader.end(this.elementBuffer);
+            buffer.end();
+            textureManager.bind(entry.getKey());
+            this.upload(buffer);
+        }
     }
 
     private static final class GeometryKey {
@@ -505,16 +526,7 @@ public final class TextBatcher {
         }
     }
 
-    public enum TextType {
-        /** can't do anything with this */
-        UNCACHEABLE,
-        /** cacheable, but spans more than the font page and so cannot join the element batch */
-        CACHEABLE,
-        /** cacheable and can be joined to the element batch */
-        BATCHABLE
-    }
+    private record Segment(VertexBuffer buffer, Identifier texture, int[] vertices) {}
 
-    private record Segment(VertexBuffer buffer, Identifier texture) {}
-
-    private record Geometry(Segment[] segments, int[] vertices, float advance) {}
+    private record Geometry(Segment[] segments, float advance) {}
 }

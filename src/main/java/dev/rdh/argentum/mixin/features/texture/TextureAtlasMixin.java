@@ -1,12 +1,17 @@
 package dev.rdh.argentum.mixin.features.texture;
 
 import com.google.common.collect.Iterators;
+import net.minecraft.client.render.platform.GlStateManager;
+import net.minecraft.client.render.texture.AbstractTexture;
 import net.minecraft.client.render.texture.TextureAtlas;
 import net.minecraft.client.render.texture.TextureAtlasSprite;
 
 import it.unimi.dsi.fastutil.HashCommon;
 import org.embeddedt.embeddium.impl.util.collections.quadtree.QuadTree;
 import org.embeddedt.embeddium.impl.util.collections.quadtree.Rect2i;
+import org.lwjgl.opengl.EXTTextureFilterAnisotropic;
+import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -23,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 @Mixin(TextureAtlas.class)
-public class TextureAtlasMixin implements TextureAtlasExtension {
+public abstract class TextureAtlasMixin extends AbstractTexture implements TextureAtlasExtension {
     @Shadow @Final
     private Map<String, TextureAtlasSprite> stitchedSprites;
 
@@ -50,6 +55,15 @@ public class TextureAtlasMixin implements TextureAtlasExtension {
         this.celeritas$quadTree = new QuadTree<>(bounds, minSize, this.stitchedSprites.values(),
                 sprite -> new Rect2i(sprite.getX(), sprite.getY(), sprite.getWidth(), sprite.getHeight())
         );
+    }
+
+    @Inject(method = "loadAndStitch", at = @At("RETURN"))
+    private void argentum$resetAnisotropy(CallbackInfo ci) {
+        var capabilities = GL.getCapabilities();
+        if (capabilities.GL_EXT_texture_filter_anisotropic || capabilities.GL_ARB_texture_filter_anisotropic) {
+            GlStateManager.bindTexture(this.getGlId());
+            GL11.glTexParameterf(GL11.GL_TEXTURE_2D, EXTTextureFilterAnisotropic.GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
+        }
     }
 
     @Redirect(method = "bindAndTick", at = @At(value = "INVOKE", target = "Ljava/util/List;iterator()Ljava/util/Iterator;"))

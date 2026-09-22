@@ -1,5 +1,6 @@
 package dev.rdh.argentum.mixin.core.render;
 
+import dev.rdh.argentum.impl.ext.WorldExtension;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import org.embeddedt.embeddium.impl.gl.device.RenderDevice;
@@ -159,6 +160,8 @@ public abstract class WorldRendererMixin implements WorldRendererExtension {
     @Overwrite
     public void markDirty(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
         this.renderer.scheduleRebuildForBlockArea(minX, minY, minZ, maxX, maxY, maxZ, false);
+        ((WorldExtension)this.world).argentum$getBlockEntityLight()
+                .invalidate(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     @Inject(method = "reload()V", at = @At("RETURN"))

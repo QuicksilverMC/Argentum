@@ -26,6 +26,7 @@ import net.minecraft.client.render.Culler;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.living.LivingEntity;
+import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.entity.projectile.WitherSkullEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -167,8 +168,6 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
             return true;
         }
 
-        if (entity.shouldShowNameTag()) return true;
-
         var box = entity.getShape();
         if (!Double.isFinite(box.minX) || !Double.isFinite(box.minY) || !Double.isFinite(box.minZ)
                 || !Double.isFinite(box.maxX) || !Double.isFinite(box.maxY) || !Double.isFinite(box.maxZ)) {
@@ -176,6 +175,10 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
         }
 
         return this.isEntitySectionVisible(box) && this.entityOcclusionCuller.isVisible(entity);
+    }
+
+    public static boolean hasNameTag(Entity entity) {
+        return entity.shouldShowNameTag() || entity.hasCustomName() || entity instanceof PlayerEntity;
     }
 
     public boolean isEntitySectionVisible(net.minecraft.util.math.Box box) {
@@ -186,7 +189,6 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
         Minecraft minecraft = Minecraft.getInstance();
         var dispatcher = minecraft.getEntityRenderDispatcher();
         boolean batching = this.entityInstancing.isBatchActive();
-        this.entityGatherer.clear();
         List<Entity> entities = this.entityGatherer.getLoadedEntityList((ClientWorld)this.world,
                 MathHelper.floor(cameraX) >> 4, MathHelper.floor(cameraZ) >> 4, this.getEffectiveRenderDistance() + 1);
         this.entityOcclusionCuller.prepare(entities, camera, cameraX, cameraY, cameraZ);
@@ -196,13 +198,11 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
         BlockPos.Mutable entityBlockPos = new BlockPos.Mutable();
         try {
             for (Entity entity : entities) {
-                boolean visible = dispatcher.shouldRender(entity, culler, cameraX, cameraY, cameraZ);
-                if (visible && !this.isEntityVisible(entity)) {
-                    visible = false;
-                }
+                boolean inFrustum = dispatcher.shouldRender(entity, culler, cameraX, cameraY, cameraZ);
+                boolean visible = inFrustum && this.isEntityVisible(entity);
 
                 if (!visible && entity.rider != minecraft.player) {
-                    if (entity instanceof WitherSkullEntity) {
+                    if (entity instanceof WitherSkullEntity || (inFrustum && hasNameTag(entity))) {
                         dispatcher.renderNameTag(entity, tickDelta);
                     }
                     continue;
@@ -252,6 +252,27 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
 
         return this.getLastViewport().isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ)
                 && this.isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
+    }
+
+    @Override
+    public int renderBlockEntities(Float partialTicks) {
+        boolean batching = this.entityInstancing.resumeBatch();
+        int count;
+        try {
+            count = super.renderBlockEntities(partialTicks);
+        } catch (RuntimeException | Error exception) {
+            this.entityInstancing.discardBatch();
+            throw exception;
+        }
+        if (batching) {
+            RenderDevice.enterManagedCode();
+            try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
+                this.entityInstancing.flush(commandList);
+            } finally {
+                RenderDevice.exitManagedCode();
+            }
+        }
+        return count;
     }
 
     @Override

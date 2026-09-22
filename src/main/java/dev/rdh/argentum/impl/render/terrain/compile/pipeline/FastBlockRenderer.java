@@ -19,7 +19,6 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import org.embeddedt.embeddium.api.util.ColorARGB;
 import org.embeddedt.embeddium.api.util.ColorMixer;
-import org.embeddedt.embeddium.impl.model.light.DiffuseProvider;
 import org.embeddedt.embeddium.impl.model.light.LightMode;
 import org.embeddedt.embeddium.impl.model.light.LightPipeline;
 import org.embeddedt.embeddium.impl.model.light.LightPipelineProvider;
@@ -37,7 +36,6 @@ import org.embeddedt.embeddium.impl.util.ModelQuadUtil;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.terrain.compile.PrimitiveBuiltRenderSectionData;
 import dev.rdh.argentum.impl.render.terrain.compile.ArgentumChunkBuildContext;
-import dev.rdh.argentum.impl.render.terrain.compile.light.LightDataCache;
 import dev.rdh.argentum.impl.world.biome.BiomeColorCache;
 import dev.rdh.argentum.impl.world.cloned.ChunkRenderContext;
 
@@ -63,9 +61,9 @@ public final class FastBlockRenderer {
     private float offsetY;
     private float offsetZ;
 
-    public FastBlockRenderer(ArgentumChunkBuildContext context, LightDataCache lightCache) {
+    public FastBlockRenderer(ArgentumChunkBuildContext context, LightPipelineProvider lighters) {
         this.context = context;
-        this.lighters = new LightPipelineProvider(lightCache, DiffuseProvider.NONE, true);
+        this.lighters = lighters;
         int flags = BakedQuadGroupAnalyzer.USE_ALL_THINGS;
         if (!Argentum.CONFIG.renderPassOptimization) {
             flags &= ~BakedQuadGroupAnalyzer.USE_RENDER_PASS_OPTIMIZATION;
@@ -75,7 +73,6 @@ public final class FastBlockRenderer {
     }
 
     public void beginSection() {
-        this.lighters.reset();
         this.blockRenderDispatcher = Minecraft.getInstance().getBlockRenderDispatcher();
         this.ambientOcclusion = Minecraft.isAmbientOcclusionEnabled();
     }
@@ -91,7 +88,7 @@ public final class FastBlockRenderer {
         boolean smooth = this.ambientOcclusion && block.getLight() == 0 && model.useAmbientOcclusion();
         LightPipeline lighter = this.lighters.getLighter(smooth ? LightMode.SMOOTH : LightMode.FLAT);
         BiomeColorCache.BiomeColorSource colorType = getBiomeColorType(state, world, pos);
-        this.setOffset(block, pos);
+        this.setOffset(state, pos, smooth);
 
         for (Direction direction : DIRECTIONS) {
             List<BakedQuad> quads = model.getQuads(direction);
@@ -232,11 +229,16 @@ public final class FastBlockRenderer {
         buffers.get(material).getVertexBuffer(quad.getNormalFace()).push(this.vertices, material);
     }
 
-    private void setOffset(Block block, BlockPos pos) {
+    public static BlockPos offsetPos(BlockState state, BlockPos pos) {
+        return state.getBlock() instanceof DoublePlantBlock && state.get(DoublePlantBlock.HALF) == DoublePlantBlock.Half.UPPER ? pos.down() : pos;
+    }
+
+    private void setOffset(BlockState state, BlockPos pos, boolean smooth) {
+        Block block = state.getBlock();
         this.offsetX = this.offsetY = this.offsetZ = 0.0F;
         if (block.getOffsetType() == Block.OffsetType.NONE) return;
 
-        long seed = MathHelper.hashCode(pos);
+        long seed = smooth ? MathHelper.hashCode(offsetPos(state, pos)) : MathHelper.hashCode(pos.getX(), 0, pos.getZ());
         this.offsetX = (((seed >> 16) & 15L) / 15.0F - 0.5F) * 0.5F;
         this.offsetZ = (((seed >> 24) & 15L) / 15.0F - 0.5F) * 0.5F;
         if (block.getOffsetType() == Block.OffsetType.XYZ) {

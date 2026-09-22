@@ -88,7 +88,7 @@ public class EntityOcclusionCuller {
 
     public boolean isVisible(Entity entity) {
         Query query = this.queries.get(entity);
-        return entity.shouldShowNameTag() || query == null || !query.occluded;
+        return query == null || !query.occluded;
     }
 
     public void clear() {
@@ -101,7 +101,7 @@ public class EntityOcclusionCuller {
     }
 
     private boolean shouldQuery(Entity entity, Entity camera, double cameraX, double cameraY, double cameraZ) {
-        if (entity == camera || entity.removed || entity.shouldShowNameTag()) {
+        if (entity == camera || entity.removed) {
             return false;
         }
 
@@ -148,6 +148,7 @@ public class EntityOcclusionCuller {
         GlStateManager.depthMask(true);
         GlStateManager.colorMask(true, true, true, true);
         GlStateManager.enableAlphaTest();
+        GlStateManager.enableCull();
     }
 
     private void removeStaleQueries() {

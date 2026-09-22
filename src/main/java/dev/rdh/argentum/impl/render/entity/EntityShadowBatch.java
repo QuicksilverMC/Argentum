@@ -290,17 +290,17 @@ public final class EntityShadowBatch {
         private void add(double minX, double y, double minZ, double maxX, double maxZ,
                 float minU, float minV, float maxU, float maxV, double alpha) {
             int i = appendOffset();
-            float[] data = data();
-            data[i++] = (float)minX;
-            data[i++] = (float)y;
-            data[i++] = (float)minZ;
-            data[i++] = (float)maxX;
-            data[i++] = (float)maxZ;
-            data[i++] = minU;
-            data[i++] = minV;
-            data[i++] = maxU;
-            data[i++] = maxV;
-            data[i] = (float)alpha;
+            int[] data = data();
+            data[i++] = Float.floatToRawIntBits((float)minX);
+            data[i++] = Float.floatToRawIntBits((float)y);
+            data[i++] = Float.floatToRawIntBits((float)minZ);
+            data[i++] = Float.floatToRawIntBits((float)maxX);
+            data[i++] = Float.floatToRawIntBits((float)maxZ);
+            data[i++] = Float.floatToRawIntBits(minU);
+            data[i++] = Float.floatToRawIntBits(minV);
+            data[i++] = Float.floatToRawIntBits(maxU);
+            data[i++] = Float.floatToRawIntBits(maxV);
+            data[i] = Float.floatToRawIntBits((float)alpha);
             finishInstance();
         }
     }
