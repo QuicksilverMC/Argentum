@@ -13,7 +13,7 @@ jobs:
             git clone https://git.taumc.org/embeddedt/celeritas.git ../celeritas
             cd ../celeritas
             git checkout stonecutter
-            cd ../argentum
+            cd ../${{ github.event.repository.name }}
 
       -   name: setup java
           uses: actions/setup-java@v5
