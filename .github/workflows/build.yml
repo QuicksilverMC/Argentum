@@ -10,9 +10,9 @@ jobs:
           uses: actions/checkout@v7
 
       -   run: |
-            git clone https://git.taumc.org/rdh/celeritas.git ../celeritas
+            git clone https://git.taumc.org/embeddedt/celeritas.git ../celeritas
             cd ../celeritas
-            git checkout raster
+            git checkout stonecutter
             cd ../argentum
 
       -   name: setup java
