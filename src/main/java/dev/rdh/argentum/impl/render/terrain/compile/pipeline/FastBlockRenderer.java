@@ -19,7 +19,6 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import org.embeddedt.embeddium.api.util.ColorARGB;
 import org.embeddedt.embeddium.api.util.ColorMixer;
-import org.embeddedt.embeddium.impl.model.light.DiffuseProvider;
 import org.embeddedt.embeddium.impl.model.light.LightMode;
 import org.embeddedt.embeddium.impl.model.light.LightPipeline;
 import org.embeddedt.embeddium.impl.model.light.LightPipelineProvider;
@@ -37,7 +36,6 @@ import org.embeddedt.embeddium.impl.util.ModelQuadUtil;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.terrain.compile.PrimitiveBuiltRenderSectionData;
 import dev.rdh.argentum.impl.render.terrain.compile.ArgentumChunkBuildContext;
-import dev.rdh.argentum.impl.render.terrain.compile.light.LightDataCache;
 import dev.rdh.argentum.impl.world.biome.BiomeColorCache;
 import dev.rdh.argentum.impl.world.cloned.ChunkRenderContext;
 
@@ -63,9 +61,9 @@ public final class FastBlockRenderer {
     private float offsetY;
     private float offsetZ;
 
-    public FastBlockRenderer(ArgentumChunkBuildContext context, LightDataCache lightCache) {
+    public FastBlockRenderer(ArgentumChunkBuildContext context, LightPipelineProvider lighters) {
         this.context = context;
-        this.lighters = new LightPipelineProvider(lightCache, DiffuseProvider.NONE, true);
+        this.lighters = lighters;
         int flags = BakedQuadGroupAnalyzer.USE_ALL_THINGS;
         if (!Argentum.CONFIG.renderPassOptimization) {
             flags &= ~BakedQuadGroupAnalyzer.USE_RENDER_PASS_OPTIMIZATION;
@@ -75,7 +73,6 @@ public final class FastBlockRenderer {
     }
 
     public void beginSection() {
-        this.lighters.reset();
         this.blockRenderDispatcher = Minecraft.getInstance().getBlockRenderDispatcher();
         this.ambientOcclusion = Minecraft.isAmbientOcclusionEnabled();
     }

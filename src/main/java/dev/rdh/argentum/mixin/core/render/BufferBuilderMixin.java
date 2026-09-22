@@ -33,6 +33,11 @@ public abstract class BufferBuilderMixin implements BufferBuilderExtension {
     }
 
     @Override
+    public IntBuffer argentum$rawIntBuffer() {
+        return this.intBuffer;
+    }
+
+    @Override
     public void argentum$appendTranslated(int[] vertices, float x, float y) {
         int stride = this.format.getIntSize();
         int start = this.vertexCount * stride;

@@ -91,6 +91,8 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
 
                         if (block.getRenderType() == 3) {
                             buildContext.getBlockRenderer().render(blockState, blockPos, this.renderContext, pass, buffers, renderData);
+                        } else if (block.getRenderType() == 1) {
+                            buildContext.renderFluid(blockState, blockPos, this.renderContext, pass);
                         } else {
                             renderBlocks.render(blockState, blockPos, this.renderContext, buildContext.getBuffer(pass));
                         }

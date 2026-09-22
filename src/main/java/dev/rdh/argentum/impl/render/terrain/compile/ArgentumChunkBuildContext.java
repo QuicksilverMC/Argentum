@@ -1,5 +1,7 @@
 package dev.rdh.argentum.impl.render.terrain.compile;
 
+import org.embeddedt.embeddium.impl.model.light.DiffuseProvider;
+import org.embeddedt.embeddium.impl.model.light.LightPipelineProvider;
 import org.embeddedt.embeddium.impl.model.quad.properties.ModelQuadFacing;
 import org.embeddedt.embeddium.impl.render.chunk.RenderPassConfiguration;
 import org.embeddedt.embeddium.impl.render.chunk.compile.ChunkBuildBuffers;
@@ -10,7 +12,9 @@ import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkVertexEncode
 import org.embeddedt.embeddium.impl.util.QuadUtil;
 import org.lwjgl.opengl.GL11C;
 
+import net.minecraft.block.state.BlockState;
 import net.minecraft.client.render.block.BlockLayer;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.texture.TextureAtlas;
 import net.minecraft.client.render.texture.TextureAtlasSprite;
@@ -20,6 +24,7 @@ import net.minecraft.client.render.vertex.DefaultVertexFormat;
 import java.nio.IntBuffer;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.terrain.compile.light.LightDataCache;
+import dev.rdh.argentum.impl.render.terrain.compile.light.SmoothFluidLighter;
 import dev.rdh.argentum.impl.render.terrain.compile.pipeline.FastBlockRenderer;
 import dev.rdh.argentum.impl.world.biome.BiomeColorCache;
 import dev.rdh.argentum.impl.world.cloned.ChunkRenderContext;
@@ -35,7 +40,9 @@ public class ArgentumChunkBuildContext extends ChunkBuildContext {
     private final short[] renderLightCache = new short[20 * 20 * 20];
     private final BiomeColorCache biomeColorCache = new BiomeColorCache(Argentum.CONFIG.biomeBlendRadius);
     private final boolean renderPassOptimization = Argentum.CONFIG.renderPassOptimization;
-    private final FastBlockRenderer blockRenderer = new FastBlockRenderer(this, this.lightCache);
+    private final LightPipelineProvider lighters = new LightPipelineProvider(this.lightCache, DiffuseProvider.NONE, true);
+    private final FastBlockRenderer blockRenderer = new FastBlockRenderer(this, this.lighters);
+    private final SmoothFluidLighter fluidLighter = new SmoothFluidLighter(this.lighters);
     private int originX;
     private int originY;
     private int originZ;
@@ -53,11 +60,20 @@ public class ArgentumChunkBuildContext extends ChunkBuildContext {
         this.biomeColorCache.update(world);
         world.resetCaches(this.renderLightCache, this.biomeColorCache);
         this.lightCache.reset(world, x, y, z);
+        this.lighters.reset();
         this.blockRenderer.beginSection();
+        this.fluidLighter.beginSection();
     }
 
     public FastBlockRenderer getBlockRenderer() {
         return this.blockRenderer;
+    }
+
+    public void renderFluid(BlockState state, BlockPos pos, ChunkRenderContext world, BlockLayer layer) {
+        BufferBuilder buffer = this.getBuffer(layer);
+        int firstVertex = buffer.getVertexCount();
+        Minecraft.getInstance().getBlockRenderDispatcher().render(state, pos, world, buffer);
+        this.fluidLighter.relight(buffer, firstVertex, state, pos, this.originX, this.originY, this.originZ);
     }
 
     public BufferBuilder getBuffer(BlockLayer layer) {
