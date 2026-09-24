@@ -7,7 +7,6 @@ import net.minecraft.client.render.pipeline.RenderTarget;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.resource.manager.ResourceManager;
 import net.minecraft.resource.Identifier;
-import org.apache.logging.log4j.LogManager;
 
 import java.io.IOException;
 
@@ -49,7 +48,7 @@ public final class FxaaRenderer implements AutoCloseable {
             this.chain.resize(minecraft.width, minecraft.height);
         } catch (IOException | JsonSyntaxException e) {
             this.failed = true;
-            LogManager.getLogger("Argentum Extras").warn("Failed to load FXAA", e);
+            ArgentumExtras.LOGGER.warn("Failed to load FXAA", e);
         }
     }
 

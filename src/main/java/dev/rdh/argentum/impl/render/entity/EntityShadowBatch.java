@@ -14,8 +14,6 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.embeddedt.embeddium.impl.gl.shader.GlProgram;
 import org.embeddedt.embeddium.impl.gl.device.CommandList;
 import org.embeddedt.embeddium.impl.gl.shader.GlShader;
@@ -30,6 +28,8 @@ import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderFogComponent;
 import org.embeddedt.embeddium.impl.render.shader.ShaderLoader;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL;
+
+import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.instancing.InstancedGeometryBuffer;
 import dev.rdh.argentum.impl.render.instancing.InstanceDataBuffer;
 
@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 
 public final class EntityShadowBatch {
-    private static final Logger LOGGER = LogManager.getLogger();
     private static final Identifier SHADOW_TEXTURE = new Identifier("textures/misc/shadow.png");
     private static final int INSTANCE_FLOATS = 10;
     private static final GlVertexFormat VERTEX_FORMAT = GlVertexFormat.builder(2 * Float.BYTES)
@@ -133,7 +132,7 @@ public final class EntityShadowBatch {
             geometry.draw(commandList, instances.upload(), 4, instances.count());
         } catch (RuntimeException exception) {
             supported = false;
-            LOGGER.error("Instanced entity shadows disabled after a draw failure", exception);
+            Argentum.LOGGER.error("Instanced entity shadows disabled after a draw failure", exception);
         } finally {
             program.unbind();
             GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
@@ -192,7 +191,7 @@ public final class EntityShadowBatch {
                     && capabilities.GL_ARB_instanced_arrays
                     && capabilities.OpenGL20;
             if (!supported) {
-                LOGGER.warn("Instanced entity shadows disabled: required OpenGL extensions are missing");
+                Argentum.LOGGER.warn("Instanced entity shadows disabled: required OpenGL extensions are missing");
                 return false;
             }
 
@@ -219,12 +218,12 @@ public final class EntityShadowBatch {
                     program.unbind();
                 }
                 if (firstProgram) {
-                    LOGGER.info("Instanced entity shadows enabled");
+                    Argentum.LOGGER.info("Instanced entity shadows enabled");
                 }
             }
         } catch (RuntimeException exception) {
             supported = false;
-            LOGGER.error("Instanced entity shadows failed to initialize", exception);
+            Argentum.LOGGER.error("Instanced entity shadows failed to initialize", exception);
         }
         return supported;
     }
@@ -236,7 +235,7 @@ public final class EntityShadowBatch {
         } catch (RuntimeException exception) {
             geometry.delete(commandList);
             supported = false;
-            LOGGER.error("Instanced entity shadow geometry failed to initialize", exception);
+            Argentum.LOGGER.error("Instanced entity shadow geometry failed to initialize", exception);
             return false;
         }
     }

@@ -4,8 +4,6 @@ import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.util.math.MathHelper;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.embeddedt.embeddium.impl.gl.array.GlVertexArray;
 import org.embeddedt.embeddium.impl.gl.attribute.GlVertexAttributeFormat;
 import org.embeddedt.embeddium.impl.gl.attribute.GlVertexFormat;
@@ -29,13 +27,14 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 
+import dev.rdh.argentum.impl.Argentum;
+
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.List;
 import java.util.Map;
 
 public final class CloudRenderer {
-    private static final Logger LOGGER = LogManager.getLogger();
     private static final int VERTEX_FLOATS = 6;
     private static final GlVertexFormat VERTEX_FORMAT = GlVertexFormat.builder(VERTEX_FLOATS * Float.BYTES)
             .addElement("aPosition", 0, GlVertexAttributeFormat.FLOAT, 3, false, false)
@@ -73,7 +72,7 @@ public final class CloudRenderer {
                 program = this.program();
             } catch (RuntimeException exception) {
                 this.supported = false;
-                LOGGER.error("Faster clouds failed to initialize", exception);
+                Argentum.LOGGER.error("Faster clouds failed to initialize", exception);
                 return false;
             }
 
@@ -111,7 +110,7 @@ public final class CloudRenderer {
                 }
             } catch (RuntimeException exception) {
                 this.supported = false;
-                LOGGER.error("Faster clouds disabled after a draw failure", exception);
+                Argentum.LOGGER.error("Faster clouds disabled after a draw failure", exception);
             } finally {
                 program.unbind();
             }
@@ -153,7 +152,7 @@ public final class CloudRenderer {
             this.initialized = true;
             this.supported = GL.getCapabilities().OpenGL20;
             if (!this.supported) {
-                LOGGER.warn("Faster clouds disabled: OpenGL 2.0 is unavailable");
+                Argentum.LOGGER.warn("Faster clouds disabled: OpenGL 2.0 is unavailable");
             }
         }
         return this.supported;

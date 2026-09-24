@@ -9,8 +9,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.embeddedt.embeddium.impl.gl.attribute.GlVertexAttributeFormat;
 import org.embeddedt.embeddium.impl.gl.attribute.GlVertexFormat;
 import org.embeddedt.embeddium.impl.gl.device.CommandList;
@@ -26,6 +24,8 @@ import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderFogComponent;
 import org.embeddedt.embeddium.impl.render.shader.ShaderLoader;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL;
+
+import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.instancing.InstanceDataBuffer;
 import dev.rdh.argentum.impl.render.instancing.InstancedGeometryBuffer;
 
@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.Random;
 
 public final class WeatherRenderer {
-    private static final Logger LOGGER = LogManager.getLogger();
     private static final Identifier RAIN_TEXTURE = new Identifier("textures/environment/rain.png");
     private static final Identifier SNOW_TEXTURE = new Identifier("textures/environment/snow.png");
     private static final int INSTANCE_FLOATS = 12;
@@ -107,7 +106,7 @@ public final class WeatherRenderer {
             program = this.program();
         } catch (RuntimeException exception) {
             this.supported = false;
-            LOGGER.error("Instanced weather failed to initialize", exception);
+            Argentum.LOGGER.error("Instanced weather failed to initialize", exception);
             return false;
         }
 
@@ -133,7 +132,7 @@ public final class WeatherRenderer {
             this.draw(commandList, shader, this.snowGeometry, this.snow, SNOW_TEXTURE, true);
         } catch (RuntimeException exception) {
             this.supported = false;
-            LOGGER.error("Instanced weather disabled after a draw failure", exception);
+            Argentum.LOGGER.error("Instanced weather disabled after a draw failure", exception);
         } finally {
             program.unbind();
         }
@@ -201,17 +200,17 @@ public final class WeatherRenderer {
                     && capabilities.GL_ARB_instanced_arrays
                     && capabilities.OpenGL20;
             if (!this.supported) {
-                LOGGER.warn("Instanced weather disabled: required OpenGL extensions are missing");
+                Argentum.LOGGER.warn("Instanced weather disabled: required OpenGL extensions are missing");
                 return false;
             }
 
             try {
                 this.rainGeometry = createGeometry(commandList);
                 this.snowGeometry = createGeometry(commandList);
-                LOGGER.info("Instanced weather enabled");
+                Argentum.LOGGER.info("Instanced weather enabled");
             } catch (RuntimeException exception) {
                 this.supported = false;
-                LOGGER.error("Instanced weather geometry failed to initialize", exception);
+                Argentum.LOGGER.error("Instanced weather geometry failed to initialize", exception);
             }
         }
         return this.supported;
