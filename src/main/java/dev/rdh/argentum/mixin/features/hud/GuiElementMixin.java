@@ -1,6 +1,6 @@
 package dev.rdh.argentum.mixin.features.hud;
 
-import dev.rdh.argentum.impl.render.hud.GradientBatch;
+import dev.rdh.argentum.impl.render.gui.hud.GradientBatch;
 
 import net.minecraft.client.gui.GuiElement;
 

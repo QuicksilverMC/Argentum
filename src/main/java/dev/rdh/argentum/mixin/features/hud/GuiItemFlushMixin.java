@@ -1,6 +1,6 @@
 package dev.rdh.argentum.mixin.features.hud;
 
-import dev.rdh.argentum.impl.render.hud.item.GuiItemIcons;
+import dev.rdh.argentum.impl.render.gui.hud.item.GuiItemIcons;
 
 import net.minecraft.client.gui.screen.inventory.menu.InventoryMenuScreen;
 import net.minecraft.client.render.platform.GlStateManager;

@@ -16,6 +16,7 @@ import dev.rdh.argentum.impl.render.entity.EntityGatherer;
 import dev.rdh.argentum.impl.render.entity.EntityShadowBatch;
 import dev.rdh.argentum.impl.render.entity.instancing.EntityInstancing;
 import dev.rdh.argentum.impl.render.entity.instancing.ModelInstancer;
+import dev.rdh.argentum.impl.render.environment.WeatherRenderer;
 
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.Minecraft;
@@ -44,6 +45,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     private final EntityShadowBatch entityShadowBatch = new EntityShadowBatch();
     private final ModelInstancer modelInstancer = new ModelInstancer();
     private final EntityInstancing entityInstancing = new EntityInstancing(this.modelInstancer);
+    private final WeatherRenderer weatherRenderer = new WeatherRenderer();
 
     private ChunkRenderMatrices matrices = null;
 
@@ -76,6 +78,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
         try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
             this.entityShadowBatch.close(commandList);
             this.modelInstancer.close(commandList);
+            this.weatherRenderer.close(commandList);
         }
         super.unloadWorld();
     }
@@ -83,13 +86,14 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     @Override
     public void reload() {
         boolean reloadModels = this.modelInstancer.isInitialized();
-        if (reloadModels || this.entityShadowBatch.isInitialized()) {
+        if (reloadModels || this.entityShadowBatch.isInitialized() || this.weatherRenderer.isInitialized()) {
             try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
                 if (reloadModels) {
                     this.entityInstancing.discardBatch();
                     this.modelInstancer.reload(commandList);
                 }
                 this.entityShadowBatch.close(commandList);
+                this.weatherRenderer.close(commandList);
             }
         }
         super.reload();
@@ -105,6 +109,15 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
 
     public ModelInstancer getModelInstancer() {
         return this.modelInstancer;
+    }
+
+    public boolean renderWeather(Entity camera, int ticks, float tickDelta, float strength, int radius, float[] sizeX, float[] sizeZ) {
+        RenderDevice.enterManagedCode();
+        try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
+            return this.weatherRenderer.render(commandList, this.world, camera, ticks, tickDelta, strength, radius, sizeX, sizeZ);
+        } finally {
+            RenderDevice.exitManagedCode();
+        }
     }
 
     public void beginEntityRendering() {

@@ -24,6 +24,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArgs;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
+import org.lwjgl.opengl.GL11;
 
 @Mixin(GameRenderer.class)
 public class GameRendererMixin {
@@ -81,9 +82,15 @@ public class GameRendererMixin {
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/render/GameRenderer;setupFog(IF)V",
                     shift = At.Shift.AFTER))
-    private void argentumExtras$removeCloudFog(WorldRenderer renderer, float tickDelta, int pass, CallbackInfo ci) {
+    private void argentumExtras$changeCloudFog(WorldRenderer renderer, float tickDelta, int pass, CallbackInfo ci) {
         if (!ArgentumExtras.CONFIG.cloudFog) {
             GlStateManager.disableFog();
+            return;
+        }
+        int distance = ArgentumExtras.CONFIG.cloudRenderDistance;
+        if (distance != 0 && GlStateManager.FOG.mode == GL11.GL_LINEAR && !this.argentumExtras$isBlind()) {
+            GlStateManager.fogStart(distance * 0.75F);
+            GlStateManager.fogEnd(distance);
         }
     }
 
@@ -92,11 +99,15 @@ public class GameRendererMixin {
     private void argentumExtras$changeTerrainFog(GameRenderer instance, int mode, float tickDelta, Operation<Void> original) {
         original.call(instance, mode, tickDelta);
         int density = ArgentumExtras.CONFIG.terrainFogDensity;
-        Entity camera = this.minecraft.getCamera();
-        if (density < 100 && mode != -1
-                && (!(camera instanceof LivingEntity living) || !living.hasStatusEffect(StatusEffect.BLINDNESS))) {
+        if (density < 100 && mode != -1 && !this.argentumExtras$isBlind()) {
             GlStateManager.fogEnd(density == 0 ? Float.MAX_VALUE : this.renderDistance / strength(density));
         }
+    }
+
+    @Unique
+    private boolean argentumExtras$isBlind() {
+        Entity camera = this.minecraft.getCamera();
+        return camera instanceof LivingEntity living && living.hasStatusEffect(StatusEffect.BLINDNESS);
     }
 
     @ModifyArg(method = "setupFog",

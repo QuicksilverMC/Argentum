@@ -3,7 +3,7 @@ package dev.rdh.argentum.mixin.features.hud;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 
-import dev.rdh.argentum.impl.render.hud.item.GuiItemIcons;
+import dev.rdh.argentum.impl.render.gui.hud.item.GuiItemIcons;
 
 import net.minecraft.client.render.entity.ItemRenderer;
 import net.minecraft.client.render.item.ItemModelShaper;

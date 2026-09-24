@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.compat.NvidiaWorkarounds;
-import dev.rdh.argentum.impl.render.hud.item.GuiItemIcons;
+import dev.rdh.argentum.impl.render.gui.hud.item.GuiItemIcons;
 
 @Mixin(Minecraft.class)
 public abstract class MinecraftMixin {

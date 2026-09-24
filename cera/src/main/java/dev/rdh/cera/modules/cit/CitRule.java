@@ -13,6 +13,7 @@ import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import net.minecraft.client.render.model.block.BlockModel;
 import net.minecraft.client.resource.ModelIdentifier;
 import net.minecraft.client.resource.Resource;
@@ -20,6 +21,7 @@ import net.minecraft.client.resource.manager.ResourceManager;
 import net.minecraft.client.resource.model.BakedModel;
 import net.minecraft.client.resource.model.ModelManager;
 import net.minecraft.enchantment.Enchantment;
+import net.minecraft.item.ArmorItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -50,6 +52,7 @@ record CitRule(Type type, NamespacedIdentifier source, IntList items, Identifier
         BakedModel value;
         final Map<String, ModelIdentifier> models = new Object2ObjectOpenHashMap<>();
         final Map<String, BakedModel> values = new Object2ObjectOpenHashMap<>();
+        final Map<BakedModel, TransformedModel> transformed = new Reference2ObjectOpenHashMap<>();
     }
 
     static CitRule parse(Props props) {
@@ -104,7 +107,7 @@ record CitRule(Type type, NamespacedIdentifier source, IntList items, Identifier
     void registerModels(ResourceManager resources, Map<String, Identifier> itemModels,
                         Map<Identifier, BlockModel> blockModels, int index) {
         if (type != Type.ITEM) return;
-        baked.model = register(resources, itemModels, blockModels, index, "base", model, texture, textures);
+        baked.model = register(resources, itemModels, blockModels, index, "base", model, layers());
         Set<String> keys = new HashSet<>();
         keys.addAll(models.keySet());
         keys.addAll(textures.keySet());
@@ -114,19 +117,20 @@ record CitRule(Type type, NamespacedIdentifier source, IntList items, Identifier
                 variantModel = new Identifier("item/" + key);
             }
             if (variantModel == null) continue;
+            Identifier variantTexture = textures.getOrDefault(key, texture);
             ModelIdentifier registered = register(resources, itemModels, blockModels, index, key, variantModel,
-                    textures.getOrDefault(key, texture), null);
+                    variantTexture == null ? Map.of() : Map.of("layer0", variantTexture));
             if (registered != null) baked.models.put(key, registered);
         }
     }
 
     private ModelIdentifier register(ResourceManager resources, Map<String, Identifier> itemModels,
                                      Map<Identifier, BlockModel> blockModels, int index, String key,
-                                     Identifier model, Identifier texture, Map<String, Identifier> variants) {
-        if (model == null && (texture == null || !textureExists(resources, texture))) return null;
+                                     Identifier model, Map<String, Identifier> layers) {
+        if (model == null && (layers.isEmpty() || !layers.values().stream().allMatch(texture -> textureExists(resources, texture)))) return null;
         Identifier synthetic = new Identifier("cera", "cit/" + index + "/" + key.replaceAll("[^a-z0-9_/.-]", "_"));
         try {
-            BlockModel loaded = model(resources, model, texture, variants);
+            BlockModel loaded = model(resources, model, layers);
             blockModels.put(synthetic, loaded);
             parents(resources, blockModels, loaded);
             itemModels.put(synthetic.toString(), synthetic);
@@ -140,12 +144,39 @@ record CitRule(Type type, NamespacedIdentifier source, IntList items, Identifier
     private static void parents(ResourceManager resources, Map<Identifier, BlockModel> blockModels, BlockModel model) throws IOException {
         Identifier parent = model.getParentLocation();
         if (parent == null || parent.getPath().startsWith("builtin/") || blockModels.containsKey(parent)) return;
-        BlockModel loaded = model(resources, parent, null, null);
+        BlockModel loaded = model(resources, parent, Map.of());
         blockModels.put(parent, loaded);
         parents(resources, blockModels, loaded);
     }
 
+    private Map<String, Identifier> layers() {
+        Map<String, Identifier> layers = new Object2ObjectOpenHashMap<>();
+        if (items.size() == 1 && Item.byId(items.getInt(0)) instanceof ArmorItem armor && armor.getTier() == ArmorItem.Tier.CLOTH) {
+            String key = Item.REGISTRY.getKey(armor).getPath();
+            if (textures.containsKey(key) || textures.containsKey(key + "_overlay")) {
+                layers.put("layer0", textures.getOrDefault(key, texture != null ? texture : new Identifier("items/" + key)));
+                layers.put("layer1", textures.getOrDefault(key + "_overlay", new Identifier("items/" + key + "_overlay")));
+                return layers;
+            }
+        }
+        Identifier overlay = textures.get("potion_overlay");
+        Identifier bottle = textures.getOrDefault("potion_bottle_drinkable", textures.get("potion_bottle_splash"));
+        if (overlay != null || bottle != null) {
+            if (model == null) {
+                boolean splash = damage != null && damage.rangeCount() > 0 && (NumberList.start(damage.range(0)) & 16384) != 0;
+                if (overlay == null) overlay = new Identifier("items/potion_overlay");
+                if (bottle == null) bottle = new Identifier(splash ? "items/potion_bottle_splash" : "items/potion_bottle_drinkable");
+            }
+            if (overlay != null) layers.put("layer0", overlay);
+            if (bottle != null) layers.put("layer1", bottle);
+        } else if (texture != null) {
+            layers.put("layer0", texture);
+        }
+        return layers;
+    }
+
     void linkModels(ModelManager manager) {
+        baked.transformed.clear();
         baked.value = baked.model == null ? null : linked(manager, baked.model);
         for (var entry : baked.models.entrySet()) {
             BakedModel model = linked(manager, entry.getValue());
@@ -161,8 +192,14 @@ record CitRule(Type type, NamespacedIdentifier source, IntList items, Identifier
         return baked.value;
     }
 
-    boolean usesOriginalTransforms(String variant) {
-        return model == null && (variant == null || !models.containsKey(variant));
+    BakedModel model(String variant, BakedModel original) {
+        BakedModel model = model(variant);
+        if (model == null || this.model != null || variant != null && models.containsKey(variant)) return model;
+        TransformedModel wrapped = baked.transformed.get(original);
+        if (wrapped == null || wrapped.model() != model) {
+            baked.transformed.put(original, wrapped = new TransformedModel(model, original.getTransformations()));
+        }
+        return wrapped;
     }
 
     boolean matches(ItemStack stack) {
@@ -199,8 +236,7 @@ record CitRule(Type type, NamespacedIdentifier source, IntList items, Identifier
         return source.identifier();
     }
 
-    private static BlockModel model(ResourceManager resources, Identifier model, Identifier texture,
-                                    Map<String, Identifier> variants) throws IOException {
+    private static BlockModel model(ResourceManager resources, Identifier model, Map<String, Identifier> layers) throws IOException {
         JsonObject json;
         if (model == null) {
             json = new JsonObject();
@@ -217,13 +253,7 @@ record CitRule(Type type, NamespacedIdentifier source, IntList items, Identifier
             String value = entry.getValue().getAsString();
             if (!value.startsWith("#")) textures.addProperty(entry.getKey(), texture(resolve(value, model)).toString());
         }
-        Identifier overlay = variants == null ? null : variants.get("potion_overlay");
-        Identifier bottle = variants == null ? null : variants.get("potion_bottle_drinkable");
-        if (bottle == null && variants != null) bottle = variants.get("potion_bottle_splash");
-        if (overlay != null || bottle != null) {
-            if (overlay != null) textures.addProperty("layer0", overlay.toString());
-            if (bottle != null) textures.addProperty("layer1", bottle.toString());
-        } else if (texture != null) textures.addProperty("layer0", texture.toString());
+        layers.forEach((layer, texture) -> textures.addProperty(layer, texture.toString()));
         json.add("textures", textures);
         return BlockModel.fromJson(json.toString());
     }
@@ -303,8 +333,10 @@ record CitRule(Type type, NamespacedIdentifier source, IntList items, Identifier
     }
 
     private static boolean textureExists(ResourceManager resources, Identifier texture) {
+        String path = texture.getPath();
+        if (!path.startsWith("optifine/") && !path.startsWith("mcpatcher/")) path = "textures/" + path;
         try {
-            resources.getResource(new Identifier(texture.getNamespace(), texture.getPath() + ".png"));
+            resources.getResource(new Identifier(texture.getNamespace(), path + ".png"));
             return true;
         } catch (IOException ignored) {
             return false;

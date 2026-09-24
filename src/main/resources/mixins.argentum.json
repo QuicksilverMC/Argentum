@@ -24,7 +24,8 @@
     "features.terrain.BiomeColorsMixin",
     "features.texture.ItemRendererMixin",
     "features.texture.TextureAtlasMixin", "features.texture.TextureAtlasSpriteMixin",
-    "features.texture.TextureManagerMixin", "features.texture.TextureUtilMixin"
+    "features.texture.TextureManagerMixin", "features.texture.TextureUtilMixin",
+    "features.weather.GameRendererMixin"
   ],
   "mixins": [
     "core.DirectionMixin", "core.collections.TypeInstanceMultimapMixin", "core.world.ChunkCacheMixin",

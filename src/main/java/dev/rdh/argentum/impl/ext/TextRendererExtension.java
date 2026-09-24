@@ -1,6 +1,6 @@
 package dev.rdh.argentum.impl.ext;
 
-import dev.rdh.argentum.impl.render.text.TextBatcher;
+import dev.rdh.argentum.impl.render.gui.TextBatcher;
 
 public interface TextRendererExtension {
     default TextBatcher argentum$getBatcher() {

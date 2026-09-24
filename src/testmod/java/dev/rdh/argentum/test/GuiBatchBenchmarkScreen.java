@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.Properties;
 
-import dev.rdh.argentum.impl.render.hud.HudBatch;
+import dev.rdh.argentum.impl.render.gui.hud.HudBatch;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.render.platform.GlStateManager;
 import org.lwjgl.opengl.GL11;

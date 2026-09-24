@@ -1,6 +1,8 @@
 package dev.rdh.argentum.impl.render.entity.instancing;
 
 import net.minecraft.client.render.model.ModelPart;
+
+import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.instancing.BoxTemplate;
 import dev.rdh.argentum.impl.render.instancing.TextureArrayManager;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
@@ -11,8 +13,6 @@ import net.minecraft.client.resource.model.BakedModel;
 import net.minecraft.client.render.texture.TextureAtlas;
 import net.minecraft.item.ItemStack;
 import net.minecraft.resource.Identifier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.embeddedt.embeddium.impl.gl.device.CommandList;
 import org.embeddedt.embeddium.impl.gl.shader.GlProgram;
 import org.embeddedt.embeddium.impl.gl.shader.GlShader;
@@ -30,7 +30,6 @@ import org.lwjgl.opengl.GL11;
 import java.util.regex.Pattern;
 
 public final class ModelInstancer {
-    private static final Logger LOGGER = LogManager.getLogger();
     private static final Pattern VERSION_DIRECTIVE = Pattern.compile("^#version.*$", Pattern.MULTILINE);
     private static final Pattern IN_PARAM = Pattern.compile("^in ", Pattern.MULTILINE);
     private static final Pattern OUT_PARAM = Pattern.compile("^out ", Pattern.MULTILINE);
@@ -191,7 +190,7 @@ public final class ModelInstancer {
             program = this.getProgram();
         } catch (RuntimeException exception) {
             this.supported = false;
-            LOGGER.error("Model instancing disabled after a shader failure", exception);
+            Argentum.LOGGER.error("Model instancing disabled after a shader failure", exception);
             this.batcher.clear();
             return BatchStats.EMPTY;
         }
@@ -208,7 +207,7 @@ public final class ModelInstancer {
         } catch (RuntimeException exception) {
             failed = true;
             this.supported = false;
-            LOGGER.error("Model instancing disabled after a geometry failure", exception);
+            Argentum.LOGGER.error("Model instancing disabled after a geometry failure", exception);
             stats = new InstanceBatcher.Stats(0, 0);
         } finally {
             if (this.textureArraysSupported) {
@@ -279,7 +278,7 @@ public final class ModelInstancer {
                 selection = this.textureArrays.select(texture, this.frame);
             } catch (RuntimeException exception) {
                 this.textureArraysSupported = false;
-                LOGGER.warn("Texture arrays disabled after a copy failure", exception);
+                Argentum.LOGGER.warn("Texture arrays disabled after a copy failure", exception);
             }
         }
         if (selection != null) {
@@ -306,7 +305,7 @@ public final class ModelInstancer {
                 && capabilities.GL_ARB_instanced_arrays
                 && capabilities.OpenGL20;
         if (!this.supported) {
-            LOGGER.warn("Model instancing disabled: required OpenGL extensions are missing");
+            Argentum.LOGGER.warn("Model instancing disabled: required OpenGL extensions are missing");
             return false;
         }
 
@@ -314,7 +313,7 @@ public final class ModelInstancer {
             try {
                 this.textureArraysSupported = this.textureArrays.initialize();
             } catch (RuntimeException exception) {
-                LOGGER.warn("Texture arrays unavailable", exception);
+                Argentum.LOGGER.warn("Texture arrays unavailable", exception);
             }
             try {
                 this.getProgram();
@@ -322,18 +321,18 @@ public final class ModelInstancer {
                 if (!this.textureArraysSupported) {
                     throw exception;
                 }
-                LOGGER.warn("Texture-array shader unavailable", exception);
+                Argentum.LOGGER.warn("Texture-array shader unavailable", exception);
                 this.textureArrays.delete();
                 this.textureArraysSupported = false;
                 this.getProgram();
             }
-            LOGGER.info("Model instancing enabled");
+            Argentum.LOGGER.info("Model instancing enabled");
         } catch (RuntimeException exception) {
             this.supported = false;
             this.programs.values().forEach(GlProgram::delete);
             this.programs.clear();
             this.textureArrays.delete();
-            LOGGER.error("Model instancing failed to initialize", exception);
+            Argentum.LOGGER.error("Model instancing failed to initialize", exception);
         }
         return this.supported;
     }
