@@ -76,17 +76,17 @@ public final class WeatherRenderer {
             return false;
         }
 
-        int x = MathHelper.floor(camera.x);
-        int y = MathHelper.floor(camera.y);
-        int z = MathHelper.floor(camera.z);
+        int originX = MathHelper.floor(camera.x);
+        int originY = MathHelper.floor(camera.y);
+        int originZ = MathHelper.floor(camera.z);
         double cameraX = camera.prevX + (camera.x - camera.prevX) * tickDelta;
         double cameraY = camera.prevY + (camera.y - camera.prevY) * tickDelta;
         double cameraZ = camera.prevZ + (camera.z - camera.prevZ) * tickDelta;
         int cameraBlockY = MathHelper.floor(cameraY);
 
-        if (!this.built || ticks != this.builtTicks || x != this.builtX || y != this.builtY || z != this.builtZ
-                || cameraBlockY != this.builtCameraY || radius != this.builtRadius) {
-            this.rebuild(world, x, y, z, cameraBlockY, radius, sizeX, sizeZ);
+        if (!this.built || ticks != this.builtTicks || originX != this.builtX || originY != this.builtY
+                || originZ != this.builtZ || cameraBlockY != this.builtCameraY || radius != this.builtRadius) {
+            this.rebuild(world, originX, originY, originZ, cameraBlockY, radius, sizeX, sizeZ);
             if (this.rain.count() > 0) {
                 this.rainGeometry.upload(commandList, this.rain.upload());
             }
@@ -95,9 +95,9 @@ public final class WeatherRenderer {
             }
             this.built = true;
             this.builtTicks = ticks;
-            this.builtX = x;
-            this.builtY = y;
-            this.builtZ = z;
+            this.builtX = originX;
+            this.builtY = originY;
+            this.builtZ = originZ;
             this.builtCameraY = cameraBlockY;
             this.builtRadius = radius;
         }
@@ -111,12 +111,12 @@ public final class WeatherRenderer {
             return false;
         }
 
-        this.frame0[0] = (float)(x - cameraX);
+        this.frame0[0] = (float)(originX - cameraX);
         this.frame0[1] = (float)-cameraY;
-        this.frame0[2] = (float)(z - cameraZ);
+        this.frame0[2] = (float)(originZ - cameraZ);
         this.frame0[3] = 1.0F / radius;
-        this.frame1[0] = (float)(camera.x - x);
-        this.frame1[1] = (float)(camera.z - z);
+        this.frame1[0] = (float)(camera.x - originX);
+        this.frame1[1] = (float)(camera.z - originZ);
         this.frame1[2] = strength;
         this.frame1[3] = tickDelta;
         this.frame2[0] = ticks + tickDelta;
@@ -129,8 +129,8 @@ public final class WeatherRenderer {
             shader.fog().setup();
             shader.frame0().set(this.frame0);
             shader.frame1().set(this.frame1);
-            this.draw(commandList, shader, this.rainGeometry, this.rain, RAIN_TEXTURE, 0.0F);
-            this.draw(commandList, shader, this.snowGeometry, this.snow, SNOW_TEXTURE, 1.0F);
+            this.draw(commandList, shader, this.rainGeometry, this.rain, RAIN_TEXTURE, false);
+            this.draw(commandList, shader, this.snowGeometry, this.snow, SNOW_TEXTURE, true);
         } catch (RuntimeException exception) {
             this.supported = false;
             LOGGER.error("Instanced weather disabled after a draw failure", exception);
@@ -140,55 +140,54 @@ public final class WeatherRenderer {
         return true;
     }
 
-    private void draw(CommandList commandList, WeatherShader shader, InstancedGeometryBuffer geometry,
-            WeatherInstances instances, Identifier texture, float snow) {
+    private void draw(CommandList commandList, WeatherShader shader, InstancedGeometryBuffer geometry, WeatherInstances instances, Identifier texture, boolean isSnow) {
         if (instances.count() == 0) {
             return;
         }
-        this.frame2[3] = snow;
+        this.frame2[3] = isSnow ? 1.0F : 0.0F;
         shader.frame2().set(this.frame2);
         Minecraft.getInstance().getTextureManager().bind(texture);
         geometry.draw(commandList, 4, instances.count());
     }
 
-    private void rebuild(World world, int x, int y, int z, int cameraBlockY, int radius, float[] sizeX, float[] sizeZ) {
+    private void rebuild(World world, int originX, int originY, int originZ, int cameraBlockY, int radius, float[] sizeX, float[] sizeZ) {
         this.rain.clear();
         this.snow.clear();
-        for (int o = z - radius; o <= z + radius; o++) {
-            for (int p = x - radius; p <= x + radius; p++) {
-                this.pos.set(p, 0, o);
+        for (int z = originZ - radius; z <= originZ + radius; z++) {
+            for (int x = originX - radius; x <= originX + radius; x++) {
+                this.pos.set(x, 0, z);
                 Biome biome = world.getBiome(this.pos);
                 if (!biome.isRainy() && !biome.isSnowy()) {
                     continue;
                 }
 
-                int height = world.getPrecipitationHeight(this.pos).getY();
-                int bottom = Math.max(y - radius, height);
-                int top = Math.max(y + radius, height);
+                int precipitationY = world.getPrecipitationHeight(this.pos).getY();
+                int bottom = Math.max(originY - radius, precipitationY);
+                int top = Math.max(originY + radius, precipitationY);
                 if (bottom == top) {
                     continue;
                 }
 
-                int q = (o - z + 16) * 32 + p - x + 16;
-                float halfX = sizeX[q] * 0.5F;
-                float halfZ = sizeZ[q] * 0.5F;
-                this.random.setSeed(p * p * 3121 + p * 45238971 ^ o * o * 418711 + o * 13761);
-                this.pos.set(p, bottom, o);
-                boolean isRain = world.getBiomeSource().adjustTemperatureForHeight(biome.getTemperature(this.pos), height) >= 0.15F;
-                this.pos.set(p, Math.max(height, cameraBlockY), o);
+                int sizeIndex = (z - originZ + 16) * 32 + x - originX + 16;
+                float halfX = sizeX[sizeIndex] * 0.5F;
+                float halfZ = sizeZ[sizeIndex] * 0.5F;
+                this.random.setSeed(hashX(x) ^ hashZ(z));
+                this.pos.set(x, bottom, z);
+                boolean isRain = world.getBiomeSource().adjustTemperatureForHeight(biome.getTemperature(this.pos), precipitationY) >= 0.15F;
+                this.pos.set(x, Math.max(precipitationY, cameraBlockY), z);
                 int light = world.getLightColor(this.pos, 0);
 
                 if (isRain) {
-                    int hash = p * p * 3121 + p * 45238971 + o * o * 418711 + o * 13761;
-                    this.rain.add(p - x, o - z, halfX, halfZ, bottom, top, light,
-                            (float)this.random.nextDouble(), hash & 31, 0.0F, 0.0F);
+                    float speed = (float) this.random.nextDouble();
+                    int scrollOffset = hashX(x) + hashZ(z) & 31;
+                    this.rain.add(x - originX, z - originZ, halfX, halfZ, bottom, top, light,
+                            speed, scrollOffset, 0.0F, 0.0F);
                 } else {
-                    float u = (float)this.random.nextDouble();
-                    float uDrift = (float)this.random.nextGaussian();
-                    float v = (float)this.random.nextDouble();
-                    float vDrift = (float)this.random.nextGaussian();
-                    this.snow.add(p - x, o - z, halfX, halfZ, bottom, top, (light * 3 + 15728880) / 4,
-                            u, uDrift, v, vDrift);
+                    float u = (float) this.random.nextDouble();
+                    float uDrift = (float) this.random.nextGaussian();
+                    float v = (float) this.random.nextDouble();
+                    float vDrift = (float) this.random.nextGaussian();
+                    this.snow.add(x - originX, z - originZ, halfX, halfZ, bottom, top, (light * 3 + 15728880) / 4, u, uDrift, v, vDrift);
                 }
             }
         }
@@ -253,6 +252,14 @@ public final class WeatherRenderer {
 
     public boolean isInitialized() {
         return this.initialized;
+    }
+
+    private static int hashX(int x) {
+        return x * x * 3121 + x * 45238971;
+    }
+
+    private static int hashZ(int z) {
+        return z * z * 418711 + z * 13761;
     }
 
     private static InstancedGeometryBuffer createGeometry(CommandList commandList) {
