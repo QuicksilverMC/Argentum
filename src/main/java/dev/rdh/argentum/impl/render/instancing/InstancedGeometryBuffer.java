@@ -51,8 +51,16 @@ public final class InstancedGeometryBuffer {
     }
 
     public void draw(CommandList commandList, IntBuffer instances, int vertexCount, int instanceCount) {
+        this.upload(commandList, instances);
+        this.draw(commandList, vertexCount, instanceCount);
+    }
+
+    public void upload(CommandList commandList, IntBuffer instances) {
         this.initialize(commandList);
         commandList.uploadData(this.instanceBuffer, MemoryUtil.memAddress(instances), (long)instances.remaining() * Integer.BYTES, GlBufferUsage.STREAM_DRAW);
+    }
+
+    public void draw(CommandList commandList, int vertexCount, int instanceCount) {
         this.tessellation.bind(commandList);
         try {
             ARBDrawInstanced.glDrawArraysInstancedARB(GL11.GL_QUADS, 0, vertexCount, instanceCount);
