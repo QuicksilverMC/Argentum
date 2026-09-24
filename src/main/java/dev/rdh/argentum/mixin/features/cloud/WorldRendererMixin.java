@@ -11,10 +11,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import dev.rdh.argentum.impl.Argentum;
-import dev.rdh.argentum.impl.render.cloud.CloudRenderer;
+import dev.rdh.argentum.impl.render.environment.CloudRenderer;
 
-// a low priority, so the cell range handlers wrap anyone else's changes to it and record the final values
-@Mixin(value = WorldRenderer.class, priority = 900)
+@Mixin(value = WorldRenderer.class, priority = 100)
 public abstract class WorldRendererMixin {
     @Unique
     private final CloudRenderer celeritas$cloudRenderer = new CloudRenderer();

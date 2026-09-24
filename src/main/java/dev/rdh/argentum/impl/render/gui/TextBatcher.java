@@ -1,4 +1,4 @@
-package dev.rdh.argentum.impl.render.text;
+package dev.rdh.argentum.impl.render.gui;
 
 import dev.rdh.argentum.impl.Argentum;
 

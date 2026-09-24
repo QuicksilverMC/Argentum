@@ -3,7 +3,7 @@ package dev.rdh.cera.modules;
 import dev.rdh.cera.Cera;
 import dev.rdh.cera.props.Props;
 
-import dev.rdh.argentum.impl.render.text.TextBatcher;
+import dev.rdh.argentum.impl.render.gui.TextBatcher;
 import net.minecraft.resource.Identifier;
 import net.ornithemc.osl.resource.loader.api.resource.Resource;
 import net.ornithemc.osl.resource.loader.api.resource.manager.ResourceManager;

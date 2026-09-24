@@ -1,4 +1,4 @@
-package dev.rdh.argentum.impl.render.cloud;
+package dev.rdh.argentum.impl.render.environment;
 
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.util.math.MathHelper;

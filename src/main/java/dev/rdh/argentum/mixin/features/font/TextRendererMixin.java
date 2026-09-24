@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import dev.rdh.argentum.impl.ext.TextRendererExtension;
-import dev.rdh.argentum.impl.render.text.TextBatcher;
+import dev.rdh.argentum.impl.render.gui.TextBatcher;
 
 @Mixin(TextRenderer.class)
 public abstract class TextRendererMixin implements TextRendererExtension {

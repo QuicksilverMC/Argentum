@@ -1,7 +1,7 @@
-package dev.rdh.argentum.impl.render.hud.item;
+package dev.rdh.argentum.impl.render.gui.hud.item;
 
 import dev.rdh.argentum.impl.Argentum;
-import dev.rdh.argentum.impl.render.hud.HudRecorder;
+import dev.rdh.argentum.impl.render.gui.hud.HudRecorder;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.Window;

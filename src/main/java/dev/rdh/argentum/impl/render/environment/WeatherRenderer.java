@@ -1,4 +1,4 @@
-package dev.rdh.argentum.impl.render.weather;
+package dev.rdh.argentum.impl.render.environment;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;

@@ -16,7 +16,7 @@ import dev.rdh.argentum.impl.render.entity.EntityGatherer;
 import dev.rdh.argentum.impl.render.entity.EntityShadowBatch;
 import dev.rdh.argentum.impl.render.entity.instancing.EntityInstancing;
 import dev.rdh.argentum.impl.render.entity.instancing.ModelInstancer;
-import dev.rdh.argentum.impl.render.weather.WeatherRenderer;
+import dev.rdh.argentum.impl.render.environment.WeatherRenderer;
 
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.Minecraft;

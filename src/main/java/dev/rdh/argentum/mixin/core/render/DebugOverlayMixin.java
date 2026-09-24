@@ -3,7 +3,7 @@ package dev.rdh.argentum.mixin.core.render;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import dev.rdh.argentum.impl.debug.DebugStrings;
-import dev.rdh.argentum.impl.render.hud.HudBatch;
+import dev.rdh.argentum.impl.render.gui.hud.HudBatch;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.overlay.DebugOverlay;
 import net.minecraft.client.render.TextRenderer;

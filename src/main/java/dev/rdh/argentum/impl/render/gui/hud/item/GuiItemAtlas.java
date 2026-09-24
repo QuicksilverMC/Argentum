@@ -1,4 +1,4 @@
-package dev.rdh.argentum.impl.render.hud.item;
+package dev.rdh.argentum.impl.render.gui.hud.item;
 
 import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import net.minecraft.client.render.platform.GlStateManager;
