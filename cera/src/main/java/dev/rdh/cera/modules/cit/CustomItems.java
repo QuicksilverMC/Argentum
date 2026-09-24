@@ -51,8 +51,8 @@ public final class CustomItems {
         String variant = location == null ? null : location.getPath();
         for (CitRule rule : candidates) {
             if (rule.type() != CitRule.Type.ITEM || !rule.matches(stack)) continue;
-            BakedModel model = rule.model(variant);
-            if (model != null) return rule.usesOriginalTransforms(variant) ? new TransformedModel(model, original.getTransformations()) : model;
+            BakedModel model = rule.model(variant, original);
+            if (model != null) return model;
         }
         return original;
     }

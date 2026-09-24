@@ -1,13 +1,13 @@
 package dev.rdh.argentum.impl.render.gui.hud.item;
 
 import dev.rdh.argentum.impl.Argentum;
+import dev.rdh.argentum.impl.render.AnimatedModelSprites;
 import dev.rdh.argentum.impl.render.gui.hud.HudRecorder;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.Window;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.texture.TextureAtlas;
-import net.minecraft.client.render.texture.TextureAtlasSprite;
 import net.minecraft.client.resource.model.BakedModel;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
@@ -87,8 +87,7 @@ public final class GuiItemIcons {
     }
 
     private static int sourceVersion(BakedModel model) {
-        TextureAtlasSprite sprite = model.getParticleIcon();
-        return sprite != null && sprite.isAnimated() ? currentTick() : 0;
+        return AnimatedModelSprites.of(model).length > 0 ? currentTick() : 0;
     }
 
     public static void draw(int slot, int x, int y, float zOffset) {

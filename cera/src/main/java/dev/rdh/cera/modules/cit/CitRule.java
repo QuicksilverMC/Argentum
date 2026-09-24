@@ -13,6 +13,7 @@ import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import net.minecraft.client.render.model.block.BlockModel;
 import net.minecraft.client.resource.ModelIdentifier;
 import net.minecraft.client.resource.Resource;
@@ -50,6 +51,7 @@ record CitRule(Type type, NamespacedIdentifier source, IntList items, Identifier
         BakedModel value;
         final Map<String, ModelIdentifier> models = new Object2ObjectOpenHashMap<>();
         final Map<String, BakedModel> values = new Object2ObjectOpenHashMap<>();
+        final Map<BakedModel, TransformedModel> transformed = new Reference2ObjectOpenHashMap<>();
     }
 
     static CitRule parse(Props props) {
@@ -146,6 +148,7 @@ record CitRule(Type type, NamespacedIdentifier source, IntList items, Identifier
     }
 
     void linkModels(ModelManager manager) {
+        baked.transformed.clear();
         baked.value = baked.model == null ? null : linked(manager, baked.model);
         for (var entry : baked.models.entrySet()) {
             BakedModel model = linked(manager, entry.getValue());
@@ -161,8 +164,14 @@ record CitRule(Type type, NamespacedIdentifier source, IntList items, Identifier
         return baked.value;
     }
 
-    boolean usesOriginalTransforms(String variant) {
-        return model == null && (variant == null || !models.containsKey(variant));
+    BakedModel model(String variant, BakedModel original) {
+        BakedModel model = model(variant);
+        if (model == null || this.model != null || variant != null && models.containsKey(variant)) return model;
+        TransformedModel wrapped = baked.transformed.get(original);
+        if (wrapped == null || wrapped.model() != model) {
+            baked.transformed.put(original, wrapped = new TransformedModel(model, original.getTransformations()));
+        }
+        return wrapped;
     }
 
     boolean matches(ItemStack stack) {
