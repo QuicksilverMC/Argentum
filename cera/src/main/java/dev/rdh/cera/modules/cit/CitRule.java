@@ -162,6 +162,11 @@ record CitRule(Type type, NamespacedIdentifier source, IntList items, Identifier
         Identifier overlay = textures.get("potion_overlay");
         Identifier bottle = textures.getOrDefault("potion_bottle_drinkable", textures.get("potion_bottle_splash"));
         if (overlay != null || bottle != null) {
+            if (model == null) {
+                boolean splash = damage != null && damage.rangeCount() > 0 && (NumberList.start(damage.range(0)) & 16384) != 0;
+                if (overlay == null) overlay = new Identifier("items/potion_overlay");
+                if (bottle == null) bottle = new Identifier(splash ? "items/potion_bottle_splash" : "items/potion_bottle_drinkable");
+            }
             if (overlay != null) layers.put("layer0", overlay);
             if (bottle != null) layers.put("layer1", bottle);
         } else if (texture != null) {
