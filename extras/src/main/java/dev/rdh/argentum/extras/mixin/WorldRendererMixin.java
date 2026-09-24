@@ -105,7 +105,7 @@ public class WorldRendererMixin {
     @ModifyExpressionValue(method = "renderFancyClouds", at = @At(value = "CONSTANT", args = "intValue=-3"))
     private int argentumExtras$vanillaCloudStart(int vanilla) {
         int distance = ArgentumExtras.CONFIG.cloudRenderDistance;
-        return distance == 0 ? vanilla : 1 - distance / 96;
+        return distance == 0 ? vanilla : -distance / 96;
     }
 
     @ModifyExpressionValue(method = "renderFancyClouds", at = {
@@ -114,6 +114,6 @@ public class WorldRendererMixin {
     })
     private int argentumExtras$vanillaCloudEnd(int vanilla) {
         int distance = ArgentumExtras.CONFIG.cloudRenderDistance;
-        return distance == 0 ? vanilla : distance / 96;
+        return distance == 0 ? vanilla : distance / 96 - 1;
     }
 }
