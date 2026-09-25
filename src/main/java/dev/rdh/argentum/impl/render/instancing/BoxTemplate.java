@@ -74,7 +74,7 @@ public record BoxTemplate(float minX, float minY, float minZ, float maxX, float 
 
         float width = part.textureWidth;
         float height = part.textureHeight;
-        if (width <= 0.0F || height <= 0.0F) {
+        if (width <= 0.0F || height <= 0.0F || lowX == highX || lowY == highY || lowZ == highZ) {
             return null;
         }
         // face 1 starts at the texture origin, and face 2 starts one depth below it
