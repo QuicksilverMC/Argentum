@@ -3,7 +3,6 @@ package dev.rdh.argentum.impl.render.entity.instancing;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.layer.AbstractArmorLayer;
-import net.minecraft.client.render.entity.layer.EntityRenderLayer;
 import net.minecraft.client.render.model.Model;
 import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.client.render.platform.GlStateManager;
@@ -172,9 +171,6 @@ public final class EntityCapture implements AutoCloseable {
         this.pass = layerPass;
         this.armorLayer = layer instanceof AbstractArmorLayer;
         this.currentOverlayColor.set(this.overlayColor);
-        if (!(layer instanceof EntityRenderLayer<?> renderLayer) || !renderLayer.colorsWhenDamaged()) {
-            this.currentOverlayColor.w = 0.0F;
-        }
         this.glintParts.clear();
         this.itemGlintPass = 0;
         this.model.begin();

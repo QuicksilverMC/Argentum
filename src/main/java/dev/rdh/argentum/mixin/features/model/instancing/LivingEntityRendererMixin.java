@@ -66,14 +66,12 @@ public abstract class LivingEntityRendererMixin {
     @Inject(method = "setupOverlayColor(Lnet/minecraft/entity/living/LivingEntity;FZ)Z", at = @At("RETURN"))
     private void celeritas$captureOverlayColor(LivingEntity entity, float tickDelta, boolean alwaysRender,
             CallbackInfoReturnable<Boolean> cir) {
-        if (!cir.getReturnValueZ()) {
-            // either the entity has no tint, or this layer does not take it; beginEntity and beginLayer cover both
-            return;
-        }
         EntityCapture capture = EntityCapture.current();
-        if (capture != null) {
+        if (capture != null && cir.getReturnValueZ()) {
             capture.setOverlayColor(this.tintBuffer.get(0), this.tintBuffer.get(1),
                     this.tintBuffer.get(2), this.tintBuffer.get(3));
+        } else if (capture != null) {
+            capture.setOverlayColor(0.0F, 0.0F, 0.0F, 0.0F);
         }
     }
 
