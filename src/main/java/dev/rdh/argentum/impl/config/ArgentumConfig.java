@@ -30,6 +30,7 @@ public class ArgentumConfig {
     public boolean guiItemAtlas = true;
     public boolean greedyRenderThread = false;
     public boolean explicitVsyncOption = true; // file only
+    public boolean decoupledPresentation = true;
 
 	public void validate() {
         this.chunkBuilderThreads = Math.max(0, this.chunkBuilderThreads);

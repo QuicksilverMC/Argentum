@@ -72,6 +72,7 @@ public final class ArgentumOptionPages {
         private static final OptionIdentifier<Void> CHECK_GL_ERRORS = OptionIdentifier.create(Argentum.ID, "check_gl_errors");
         private static final OptionIdentifier<Void> FASTER_WEATHER = OptionIdentifier.create(Argentum.ID, "faster_weather");
         private static final OptionIdentifier<Void> GREEDY_RENDER_THREAD = OptionIdentifier.create(Argentum.ID, "greedy_render_thread");
+        private static final OptionIdentifier<Void> DECOUPLED_PRESENTATION = OptionIdentifier.create(Argentum.ID, "decoupled_presentation");
         private static final OptionIdentifier<Void> FOG_SHAPE = OptionIdentifier.create(Argentum.ID, "fog_shape");
     }
 
@@ -335,6 +336,9 @@ public final class ArgentumOptionPages {
                 .add(toggle(Option.GREEDY_RENDER_THREAD,
                         OptionImpact.MEDIUM,
                         (config, value) -> config.greedyRenderThread = value, config -> config.greedyRenderThread))
+                .add(toggle(Option.DECOUPLED_PRESENTATION,
+                        OptionImpact.MEDIUM,
+                        (config, value) -> config.decoupledPresentation = value, config -> config.decoupledPresentation, OptionFlag.REQUIRES_GAME_RESTART))
                 .build();
 
         return page(Page.PERFORMANCE, chunkUpdates, culling, rendering);

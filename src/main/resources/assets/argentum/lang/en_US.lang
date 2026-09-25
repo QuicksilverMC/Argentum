@@ -81,6 +81,8 @@ celeritas.compact_vertex_format.name=Use Compact Vertex Format
 celeritas.compact_vertex_format.tooltip=If enabled a more compact vertex format will be used for rendering chunks. This can reduce graphics memory usage and bandwidth requirements significantly especially for integrated graphics cards but can cause z-fighting with some resource packs due to how it reduces the precision of position and texture coordinate attributes.
 argentum.greedy_render_thread.name=Greedy Render Thread
 argentum.greedy_render_thread.tooltip=If enabled, the render thread does not yield to other threads every frame, increasing framerate but possibly causing stuttering on some systems.
+argentum.decoupled_presentation.name=Decoupled Presentation
+argentum.decoupled_presentation.tooltip=If enabled, frames are only sent to the display as often as its refresh rate, and extra frames are discarded instead of waiting to be shown. This can greatly improve framerate and input latency. Has no effect when VSync is enabled.
 
 celeritas.cpu_render_ahead_limit.name=CPU Render-Ahead Limit
 celeritas.cpu_render_ahead_limit.tooltip=Specifies the maximum number of frames the CPU can be waiting on the GPU to finish rendering. Very low or high values may create frame rate instability.
