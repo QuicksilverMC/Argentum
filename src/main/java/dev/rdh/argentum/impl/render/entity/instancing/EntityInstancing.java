@@ -278,6 +278,6 @@ public final class EntityInstancing {
                 || renderer instanceof EnderChestRenderer
                 || renderer instanceof BannerRenderer
                 || renderer instanceof EnchantingTableRenderer
-                ? InstanceRenderPass.NORMAL : null;
+                ? InstanceRenderPass.CULL_BACK : null;
     }
 }

@@ -47,7 +47,7 @@ final class EntityLayerSupport {
             return InstanceRenderPass.CULL_FRONT;
         }
         if (layer instanceof StuckArrowLayer) {
-            return InstanceRenderPass.CULL_BACK;
+            return InstanceRenderPass.NO_CULL;
         }
         if (layer instanceof AbstractArmorLayer) {
             return InstanceRenderPass.NORMAL;

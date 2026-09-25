@@ -75,16 +75,16 @@ final class InstanceBatcher {
         int textureCount = 0;
         GlStateManager.disableBlend();
         GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GlStateManager.disableCull();
         Stats normal = this.renderPass(commandList, program, InstanceRenderPass.NORMAL);
         draws += normal.draws;
         textureCount += normal.textures;
         if (this.has(InstanceRenderPass.NO_CULL)) {
-            GlStateManager.disableCull();
             Stats unculled = this.renderPass(commandList, program, InstanceRenderPass.NO_CULL);
             draws += unculled.draws;
             textureCount += unculled.textures;
-            GlStateManager.enableCull();
         }
+        GlStateManager.enableCull();
         if (this.has(InstanceRenderPass.CULL_FRONT)) {
             GlStateManager.cullFace(GL11.GL_FRONT);
             Stats culled = this.renderPass(commandList, program, InstanceRenderPass.CULL_FRONT);
@@ -123,6 +123,7 @@ final class InstanceBatcher {
                 blockAtlas.popFilter();
             }
         }
+        GlStateManager.disableCull();
         if (this.has(InstanceRenderPass.TRANSLUCENT)) {
             GlStateManager.disableBlend();
             program.getInterface().setAlphaPass(InstanceShader.ALPHA_OPAQUE);
@@ -132,12 +133,10 @@ final class InstanceBatcher {
 
             GlStateManager.enableBlend();
             GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-            GlStateManager.depthMask(false);
             program.getInterface().setAlphaPass(InstanceShader.ALPHA_TRANSLUCENT);
             Stats translucent = this.renderPass(commandList, program, InstanceRenderPass.TRANSLUCENT);
             draws += translucent.draws;
             textureCount += translucent.textures;
-            GlStateManager.depthMask(true);
             program.getInterface().setAlphaPass(InstanceShader.ALPHA_ALL);
         }
         GlStateManager.blendFunc(1, 1);
