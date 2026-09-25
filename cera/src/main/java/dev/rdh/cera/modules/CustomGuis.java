@@ -234,6 +234,7 @@ public final class CustomGuis implements ResourceReloadListener {
         private static Identifier texture(String value, NamespacedIdentifier source) {
             String path = value.trim();
             if (!path.endsWith(".png")) path += ".png";
+            if (path.startsWith("/~")) path = path.substring(1);
             if (path.startsWith("~/")) return new Identifier(source.namespace(), "mcpatcher/" + path.substring(2));
             if (path.startsWith("/")) return new Identifier(source.namespace(), "mcpatcher/" + path.substring(1));
             return Props.parseId(path.contains(":") || path.startsWith("assets/") || path.startsWith("./") ? path : "./" + path, source);
