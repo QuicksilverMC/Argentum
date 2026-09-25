@@ -54,9 +54,11 @@ public class AbstractArmorLayerMixin<T extends Model> {
         for (CustomItems.Effect effect : effects) {
             Minecraft.getInstance().getTextureManager().bind(effect.texture());
             effect.blend().apply(1.0F);
+            float textureScale = Minecraft.getInstance().cera$getCustomItems().glintWidth(effect.texture()) / 8.0F;
             GlStateManager.pushMatrix();
-            GlStateManager.translatef(effect.speed() * (Minecraft.getTime() % 3000L) / 3000.0F, 0.0F, 0.0F);
             GlStateManager.rotatef(effect.rotation(), 0.0F, 0.0F, 1.0F);
+            GlStateManager.scalef(textureScale, textureScale / 2.0F, textureScale);
+            GlStateManager.translatef(0.0F, effect.speed() * (Minecraft.getTime() % 3000L) / 24000.0F, 0.0F);
             GlStateManager.matrixMode(5888);
             model.render(entity, walkAnimationProgress, walkAnimationSpeed, bob, yaw, pitch, scale);
             GlStateManager.matrixMode(5890);

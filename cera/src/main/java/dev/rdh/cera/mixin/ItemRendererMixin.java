@@ -66,8 +66,9 @@ public class ItemRendererMixin {
         for (CustomItems.Effect effect : effects) {
             this.textureManager.bind(effect.texture());
             effect.blend().apply(1.0F);
+            float scale = Minecraft.getInstance().cera$getCustomItems().glintWidth(effect.texture()) / 2.0F;
             GlStateManager.pushMatrix();
-            GlStateManager.scalef(8.0F, 8.0F, 8.0F);
+            GlStateManager.scalef(scale, scale, scale);
             GlStateManager.translatef(effect.speed() * (Minecraft.getTime() % 3000L) / 24000.0F, 0.0F, 0.0F);
             GlStateManager.rotatef(effect.rotation(), 0.0F, 0.0F, 1.0F);
             this.render(model, -1);

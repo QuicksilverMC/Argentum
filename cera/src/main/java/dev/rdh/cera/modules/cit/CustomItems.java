@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.render.model.block.BlockModel;
 import net.minecraft.client.resource.ModelIdentifier;
@@ -19,6 +20,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.resource.Identifier;
 import net.ornithemc.osl.core.api.util.NamespacedIdentifier;
 import net.ornithemc.osl.resource.loader.api.resource.Resource;
+import org.lwjgl.opengl.GL11;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,10 +30,12 @@ import java.util.Map;
 
 public final class CustomItems {
     private volatile Rules rules = Rules.empty();
+    private final Object2IntOpenHashMap<Identifier> glintWidths = new Object2IntOpenHashMap<>();
 
     public void registerModels(ResourceManager resources, Map<String, Identifier> itemModels,
                                Map<Identifier, BlockModel> blockModels) {
         rules = load().registerModels(resources, itemModels, blockModels);
+        glintWidths.clear();
         Cera.LOGGER.info("[CIT] Loaded {} rules", rules.all.size());
     }
 
@@ -80,6 +84,16 @@ public final class CustomItems {
             }
         }
         return effects;
+    }
+
+    public int glintWidth(Identifier texture) {
+        int width = glintWidths.getInt(texture);
+        if (width == 0) {
+            width = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
+            if (width <= 0) width = 16;
+            glintWidths.put(texture, width);
+        }
+        return width;
     }
 
     private static Rules load() {
