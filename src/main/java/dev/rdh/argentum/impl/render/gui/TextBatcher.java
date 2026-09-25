@@ -16,10 +16,13 @@ import net.minecraft.client.render.vertex.VertexFormat;
 import net.minecraft.resource.Identifier;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +32,18 @@ public final class TextBatcher {
     private static final int GEOMETRY_CACHE_SIZE = 1024;
 
     private static final char SECTION = '§';
+
+    public static final int OBFUSCATED =    0b00001;
+    public static final int BOLD =          0b00010;
+    public static final int STRIKETHROUGH = 0b00100;
+    public static final int UNDERLINED =    0b01000;
+    public static final int ITALIC =        0b10000;
+    private static final int UNCACHEABLE_STYLE = OBFUSCATED | STRIKETHROUGH | UNDERLINED;
+
+    private static final VertexFormat FORMAT = DefaultVertexFormat.POSITION_TEX_COLOR;
+    private static final int STRIDE = FORMAT.getIntSize();
+    private static final int COLOR_INDEX = FORMAT.getColorOffset() / Integer.BYTES;
+    private static final int ALPHA_SHIFT = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? 24 : 0;
 
     // this got proguarded out in vanilla so we have to duplicate it
     private static final String CHARACTERS = "ÀÁÂÈÊËÍÓÔÕÚßãõğİıŒœŞşŴŵžȇ\u0000\u0000\u0000\u0000\u0000\u0000\u0000 !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u0000ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜø£Ø×ƒáíóúñÑªº¿®¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αβΓπΣσμτΦΘΩδ∞∅∈∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\u0000";
@@ -64,6 +79,9 @@ public final class TextBatcher {
 
     private int elementBatchDepth;
     private Runnable beforeImmediateText;
+
+    private int endStyle;
+    private ByteBuffer uploadBuffer;
 
     public void readWidths(Identifier fontLocation, int[] characterWidths) {
         BufferedImage image;
@@ -212,7 +230,7 @@ public final class TextBatcher {
         this.beforeImmediateText.run();
     }
 
-    public float begin(String text, boolean shadow, float x, float y, TextureManager textureManager) {
+    public float begin(String text, boolean shadow, int style, float x, float y, TextureManager textureManager) {
         if (text.isEmpty()) return 0.0F;
 
         this.batching = Argentum.CONFIG.fontBatching;
@@ -220,26 +238,30 @@ public final class TextBatcher {
         this.pendingSegments.clear();
         this.appendable = false;
 
-        if (!this.batching || !cacheable(text)) {
+        if (!this.batching || !cacheable(text) || (style & UNCACHEABLE_STYLE) != 0) {
             this.flushElementBatch(textureManager);
             return Float.NaN;
         }
         this.appendable = this.elementBatchDepth > 0;
 
-        GeometryKey key = this.lookupKey.set(text, shadow,
-                Float.floatToIntBits(this.red), Float.floatToIntBits(this.green),
-                Float.floatToIntBits(this.blue), Float.floatToIntBits(this.alpha)
+        GeometryKey key = this.lookupKey.set(text, shadow, style,
+                Float.floatToIntBits(this.red), Float.floatToIntBits(this.green), Float.floatToIntBits(this.blue)
         );
         Geometry geometry = this.geometryCache.getAndMoveToLast(key);
         if (geometry != null) {
+            int alpha = this.alphaByte();
             for (Segment segment : geometry.segments()) {
                 if (this.appendable) {
-                    this.append(segment.texture(), segment.vertices(), x, y);
+                    segment.setAlpha(alpha);
+                    this.append(segment.texture, segment.vertices, x, y);
                 } else {
-                    textureManager.bind(segment.texture());
-                    this.draw(segment.buffer(), x, y);
+                    textureManager.bind(segment.texture);
+                    this.drawCached(segment, alpha, x, y);
                 }
             }
+            GlStateManager.color4f(geometry.red(), geometry.green(), geometry.blue(), this.alpha);
+            this.setColor(geometry.red(), geometry.green(), geometry.blue(), this.alpha);
+            this.endStyle = geometry.style();
             this.batching = false;
             return geometry.advance();
         }
@@ -250,12 +272,16 @@ public final class TextBatcher {
         return Float.NaN;
     }
 
-    public void end(float x) {
+    public int endStyle() {
+        return this.endStyle;
+    }
+
+    public void end(float x, int style) {
         this.flush();
         this.flushDecorations();
         if (!this.pendingSegments.isEmpty()) {
-            this.geometryCache.put(this.pendingKey, new Geometry(
-                    this.pendingSegments.toArray(new Segment[0]), x - this.originX));
+            this.geometryCache.put(this.pendingKey, new Geometry(this.pendingSegments.toArray(new Segment[0]),
+                    x - this.originX, style, this.red, this.green, this.blue));
             if (this.geometryCache.size() > GEOMETRY_CACHE_SIZE) {
                 delete(this.geometryCache.removeFirst());
             }
@@ -330,7 +356,9 @@ public final class TextBatcher {
     }
 
     private static void delete(Geometry geometry) {
-        for (Segment segment : geometry.segments()) segment.buffer().delete();
+        for (Segment segment : geometry.segments()) {
+            if (segment.buffer != null) segment.buffer.delete();
+        }
     }
 
     public void setBlend(boolean blend) {
@@ -367,13 +395,14 @@ public final class TextBatcher {
             IntBuffer source = this.buffer.getBuffer().asIntBuffer();
             int[] vertices = new int[source.remaining()];
             source.get(vertices);
-            VertexBuffer uploaded = new VertexBuffer(DefaultVertexFormat.POSITION_TEX_COLOR);
-            uploaded.upload(this.buffer.getBuffer());
-            this.pendingSegments.add(new Segment(uploaded, this.texture, vertices));
+            this.pendingSegments.add(new Segment(this.texture, vertices, this.alphaByte()));
             if (this.appendable) {
                 this.append(this.texture, vertices, this.originX, this.originY);
             } else {
-                this.draw(uploaded, this.originX, this.originY);
+                GlStateManager.pushMatrix();
+                GlStateManager.translatef(this.originX, this.originY, 0.0F);
+                this.upload(this.buffer);
+                GlStateManager.popMatrix();
             }
         }
         this.drawing = false;
@@ -432,6 +461,43 @@ public final class TextBatcher {
         return true;
     }
 
+    private int alphaByte() {
+        return (int) (this.alpha * 255.0F);
+    }
+
+    private void drawCached(Segment segment, int alpha, float x, float y) {
+        if (segment.buffer != null && segment.bufferAlpha == alpha) {
+            this.draw(segment.buffer, x, y);
+            return;
+        }
+
+        segment.setAlpha(alpha);
+        if (segment.lastAlpha == alpha) {
+            if (segment.buffer == null) segment.buffer = new VertexBuffer(FORMAT);
+            segment.buffer.upload(this.uploadBuffer(segment.vertices));
+            segment.bufferAlpha = alpha;
+            this.draw(segment.buffer, x, y);
+            return;
+        }
+
+        segment.lastAlpha = alpha;
+        this.buffer.begin(GL11.GL_QUADS, FORMAT);
+        this.buffer.argentum$appendTranslated(segment.vertices, x, y);
+        this.buffer.end();
+        this.upload(this.buffer);
+    }
+
+    private ByteBuffer uploadBuffer(int[] vertices) {
+        int bytes = vertices.length * Integer.BYTES;
+        if (this.uploadBuffer == null || this.uploadBuffer.capacity() < bytes) {
+            this.uploadBuffer = BufferUtils.createByteBuffer(Math.max(bytes, 16 * 1024));
+        }
+        this.uploadBuffer.clear();
+        this.uploadBuffer.asIntBuffer().put(vertices);
+        this.uploadBuffer.limit(bytes);
+        return this.uploadBuffer;
+    }
+
     private void draw(VertexBuffer buffer, float x, float y) {
         boolean pushed = this.pushBlend();
         GlStateManager.pushMatrix();
@@ -481,25 +547,25 @@ public final class TextBatcher {
     private static final class GeometryKey {
         private String text;
         private boolean shadow;
+        private int style;
         private int red;
         private int green;
         private int blue;
-        private int alpha;
 
         private GeometryKey() {
         }
 
         private GeometryKey(GeometryKey key) {
-            this.set(key.text, key.shadow, key.red, key.green, key.blue, key.alpha);
+            this.set(key.text, key.shadow, key.style, key.red, key.green, key.blue);
         }
 
-        private GeometryKey set(String text, boolean shadow, int red, int green, int blue, int alpha) {
+        private GeometryKey set(String text, boolean shadow, int style, int red, int green, int blue) {
             this.text = text;
             this.shadow = shadow;
+            this.style = style;
             this.red = red;
             this.green = green;
             this.blue = blue;
-            this.alpha = alpha;
             return this;
         }
 
@@ -508,10 +574,10 @@ public final class TextBatcher {
             if (this == object) return true;
             if (!(object instanceof GeometryKey key)) return false;
             return this.shadow == key.shadow
+                    && this.style == key.style
                     && this.red == key.red
                     && this.green == key.green
                     && this.blue == key.blue
-                    && this.alpha == key.alpha
                     && this.text.equals(key.text);
         }
 
@@ -519,14 +585,36 @@ public final class TextBatcher {
         public int hashCode() {
             int hash = this.text.hashCode();
             hash = 31 * hash + Boolean.hashCode(this.shadow);
+            hash = 31 * hash + this.style;
             hash = 31 * hash + this.red;
             hash = 31 * hash + this.green;
-            hash = 31 * hash + this.blue;
-            return 31 * hash + this.alpha;
+            return 31 * hash + this.blue;
         }
     }
 
-    private record Segment(VertexBuffer buffer, Identifier texture, int[] vertices) {}
+    private static final class Segment {
+        private final Identifier texture;
+        private final int[] vertices;
+        private int verticesAlpha;
+        private int lastAlpha;
+        private VertexBuffer buffer;
+        private int bufferAlpha;
 
-    private record Geometry(Segment[] segments, float advance) {}
+        private Segment(Identifier texture, int[] vertices, int alpha) {
+            this.texture = texture;
+            this.vertices = vertices;
+            this.verticesAlpha = alpha;
+            this.lastAlpha = alpha;
+        }
+
+        private void setAlpha(int alpha) {
+            if (alpha == this.verticesAlpha) return;
+            for (int i = COLOR_INDEX; i < this.vertices.length; i += STRIDE) {
+                this.vertices[i] = this.vertices[i] & ~(0xFF << ALPHA_SHIFT) | alpha << ALPHA_SHIFT;
+            }
+            this.verticesAlpha = alpha;
+        }
+    }
+
+    private record Geometry(Segment[] segments, float advance, int style, float red, float green, float blue) {}
 }

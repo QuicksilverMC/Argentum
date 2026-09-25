@@ -49,6 +49,21 @@ public abstract class TextRendererMixin implements TextRendererExtension {
     private boolean unicode;
 
     @Shadow
+    private boolean obfuscated;
+
+    @Shadow
+    private boolean bold;
+
+    @Shadow
+    private boolean italic;
+
+    @Shadow
+    private boolean underlined;
+
+    @Shadow
+    private boolean strikethrough;
+
+    @Shadow
     private Identifier getFontPage(int page) {
         return null;
     }
@@ -97,16 +112,35 @@ public abstract class TextRendererMixin implements TextRendererExtension {
 
     @Inject(method = "drawLayer(Ljava/lang/String;Z)V", at = @At("HEAD"), cancellable = true)
     private void argentum$beginLayer(String text, boolean shadow, CallbackInfo ci) {
-        float advance = this.argentum$batcher.begin(text, shadow, this.x, this.y, this.textureManager);
+        float advance = this.argentum$batcher.begin(text, shadow, this.argentum$style(), this.x, this.y, this.textureManager);
         if (!Float.isNaN(advance)) {
             this.x += advance;
+            this.argentum$setStyle(this.argentum$batcher.endStyle());
             ci.cancel();
         }
     }
 
     @Inject(method = "drawLayer(Ljava/lang/String;Z)V", at = @At("RETURN"))
     private void argentum$endLayer(String text, boolean shadow, CallbackInfo ci) {
-        this.argentum$batcher.end(this.x);
+        this.argentum$batcher.end(this.x, this.argentum$style());
+    }
+
+    @Unique
+    private int argentum$style() {
+        return (this.obfuscated ? TextBatcher.OBFUSCATED : 0)
+                | (this.bold ? TextBatcher.BOLD : 0)
+                | (this.strikethrough ? TextBatcher.STRIKETHROUGH : 0)
+                | (this.underlined ? TextBatcher.UNDERLINED : 0)
+                | (this.italic ? TextBatcher.ITALIC : 0);
+    }
+
+    @Unique
+    private void argentum$setStyle(int style) {
+        this.obfuscated = (style & TextBatcher.OBFUSCATED) != 0;
+        this.bold = (style & TextBatcher.BOLD) != 0;
+        this.strikethrough = (style & TextBatcher.STRIKETHROUGH) != 0;
+        this.underlined = (style & TextBatcher.UNDERLINED) != 0;
+        this.italic = (style & TextBatcher.ITALIC) != 0;
     }
 
     @Inject(method = "drawBasicGlyph", at = @At("HEAD"), cancellable = true)

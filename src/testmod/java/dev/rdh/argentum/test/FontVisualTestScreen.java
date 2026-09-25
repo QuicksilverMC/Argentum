@@ -3,8 +3,10 @@ package dev.rdh.argentum.test;
 import dev.rdh.argentum.impl.render.gui.hud.HudBatch;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.resource.Identifier;
 
 public class FontVisualTestScreen extends Screen {
+    private static final Identifier ICONS = new Identifier("textures/gui/icons.png");
     private final String variant = System.getProperty("argentum.fontTestVariant", "batched");
     private final HudBatch.Colored backgroundBatch = HudBatch.colored();
     private HudBatch.Text textBatch;
@@ -28,6 +30,27 @@ public class FontVisualTestScreen extends Screen {
         this.textRenderer.setBidirectional(bidirectional);
 
         this.renderHudBatchTest(x, y + 112);
+        this.renderCacheStateTest(270, y);
+    }
+
+    private void renderCacheStateTest(int x, int y) {
+        this.textRenderer.draw("Carry: plain §lbold", x, y, 0xFFFFFFFF);
+        this.textRenderer.drawWithShadow("Carry: plain §lbold", x, y + 12, 0xFFFFFFFF);
+        this.textRenderer.drawWithShadow("Carry: §oitalic §lboth", x, y + 24, 0xFFFFFFFF);
+
+        this.textRenderer.drawWithShadow("Alpha: fading text", x, y + 40, 0xFFFFFFFF);
+        this.textRenderer.drawWithShadow("Alpha: fading text", x, y + 52, 0x80FFFFFF);
+        this.textRenderer.drawWithShadow("Alpha: fading text", x, y + 64, 0x40FFFFFF);
+
+        int[] alphas = {0xFF, 0x80, 0x40};
+        HudBatch.Text batch = this.variant.equals("vanilla") ? null : HudBatch.text(this.textRenderer);
+        if (batch != null) batch.begin();
+        for (int i = 0; i < alphas.length; i++) this.textRenderer.draw("Batched alpha", x, y + 80 + i * 12, alphas[i] << 24 | 0xFFFFFF);
+        if (batch != null) batch.draw();
+
+        this.textRenderer.draw("Leak: §cred", x, y + 120, 0xFFFFFFFF);
+        this.minecraft.getTextureManager().bind(ICONS);
+        this.drawTexture(x + 60, y + 120, 16, 0, 9, 9);
     }
 
     private void renderHudBatchTest(int x, int y) {

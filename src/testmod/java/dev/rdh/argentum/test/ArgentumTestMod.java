@@ -15,6 +15,7 @@ public class ArgentumTestMod implements ClientModInitializer {
                 Argentum.CONFIG.fontBatching = true;
                 minecraft.openScreen(new GuiBatchBenchmarkScreen());
             } else {
+                Argentum.CONFIG.fontBatching = !Boolean.getBoolean("argentum.disableFontBatching");
                 minecraft.openScreen(new FontVisualTestScreen());
             }
         });
