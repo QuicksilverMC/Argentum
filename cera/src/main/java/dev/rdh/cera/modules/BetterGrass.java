@@ -86,6 +86,8 @@ public final class BetterGrass {
 
         State state = this.state;
         Block block = blockState.getBlock();
+        if (block != Blocks.GRASS && block != Blocks.MYCELIUM
+                && (block != Blocks.DIRT || blockState.get(DirtBlock.VARIANT) != DirtBlock.Variant.PODZOL)) return original;
         Block above = world.getBlockState(pos.up()).getBlock();
         boolean snowy = above == Blocks.SNOW || above == Blocks.SNOW_LAYER;
 
