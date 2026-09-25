@@ -121,6 +121,10 @@ public final class AnimatedTextures implements ResourceReloadListener {
                 return;
             }
             Animation animation = result.value();
+            if (!resource.sourceName().equals(resources.getResource(animation.target()).map(Resource::sourceName).orElse(null))) {
+                Cera.LOGGER.warn("[AnimatedTextures] Skipping {}: target texture is not from the same resource pack", props.id());
+                return;
+            }
             grouped.computeIfAbsent(animation.target(), _ -> new ArrayList<>()).add(animation);
         } catch (IOException e) {
             Cera.LOGGER.warn("[AnimatedTextures] Failed to read {}", resource.location(), e);
