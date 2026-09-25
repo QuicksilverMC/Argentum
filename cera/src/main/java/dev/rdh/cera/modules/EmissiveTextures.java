@@ -14,13 +14,16 @@ import net.ornithemc.osl.resource.loader.api.resource.manager.ResourceManager;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
+import java.util.WeakHashMap;
 
 public final class EmissiveTextures {
     // used for a multi-texture entity that only has emissives for some of its textures (this is used for the rest)
     private static final Identifier EMPTY = new Identifier("cera", "textures/empty.png");
     private static final Identifier NONE = new Identifier("cera", "none");
+    private static final Map<BakedQuad, BakedQuad> RESPRITED = Collections.synchronizedMap(new WeakHashMap<>());
 
     private volatile String suffix;
     private volatile Map<TextureAtlasSprite, TextureAtlasSprite> spriteMap = Map.of();
@@ -47,6 +50,7 @@ public final class EmissiveTextures {
         this.suffix = load(resources);
         this.spriteMap = Map.of();
         this.boundCache.clear();
+        RESPRITED.clear();
         if (suffix == null) return;
         Map<TextureAtlasSprite, TextureAtlasSprite> spriteMap = new Reference2ReferenceOpenHashMap<>();
         for (var entry : new ArrayList<>(sourcedSprites.entrySet())) {
@@ -66,6 +70,8 @@ public final class EmissiveTextures {
     }
 
     public static BakedQuad resprite(BakedQuad quad, TextureAtlasSprite from, TextureAtlasSprite to) {
+        BakedQuad cached = RESPRITED.get(quad);
+        if (cached != null) return cached;
         int[] v = quad.getVertices().clone();
         int stride = v.length / 4;
         for (int i = 0; i < 4; i++) {
@@ -73,7 +79,9 @@ public final class EmissiveTextures {
             v[o + 4] = Float.floatToRawIntBits(remap(Float.intBitsToFloat(v[o + 4]), from.getUMin(), from.getUMax(), to.getUMin(), to.getUMax()));
             v[o + 5] = Float.floatToRawIntBits(remap(Float.intBitsToFloat(v[o + 5]), from.getVMin(), from.getVMax(), to.getVMin(), to.getVMax()));
         }
-        return new BakedQuad(v, quad.getTintIndex(), quad.getFace());
+        BakedQuad resprited = new BakedQuad(v, quad.getTintIndex(), quad.getFace());
+        RESPRITED.put(quad, resprited);
+        return resprited;
     }
 
     private static float remap(float x, float a0, float a1, float b0, float b1) {
