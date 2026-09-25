@@ -22,6 +22,7 @@ public class EntityGatherer {
     private int gatheredChunkX;
     private int gatheredChunkZ;
     private int gatheredRadius = -1;
+    private int gatheredCount = -1;
 
     public EntityGatherer() {
         this.entityList = new ObjectArrayList<>();
@@ -32,7 +33,8 @@ public class EntityGatherer {
         // tick - so between two frames of the same tick this sweep would produce the same list. Entities are held
         // by reference, so they still move at frame rate.
         if (world == this.gatheredWorld && world.getTime() == this.gatheredTick && radius == this.gatheredRadius
-                && centerChunkX == this.gatheredChunkX && centerChunkZ == this.gatheredChunkZ) {
+                && centerChunkX == this.gatheredChunkX && centerChunkZ == this.gatheredChunkZ
+                && world.entities.size() == this.gatheredCount) {
             return this.entityList;
         }
 
@@ -42,6 +44,7 @@ public class EntityGatherer {
         this.gatheredChunkX = centerChunkX;
         this.gatheredChunkZ = centerChunkZ;
         this.gatheredRadius = radius;
+        this.gatheredCount = world.entities.size();
 
         Consumer<Entity> addEntity = this.entityList::add;
         // Iterate directly over chunk entity lists where possible - mods may create multipart entities that are not
