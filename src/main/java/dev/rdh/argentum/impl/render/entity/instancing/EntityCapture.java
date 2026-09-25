@@ -195,7 +195,7 @@ public final class EntityCapture implements AutoCloseable {
         if (this.finished || !this.recorded) {
             return false;
         }
-        this.owner.nameTags().add(renderer, entity, x, y, z);
+        this.owner.nameTags().add(renderer, entity, x, y, z, this.packedLight);
         return true;
     }
 
