@@ -18,8 +18,11 @@ public final class Patterns {
         if (spec == null) return null;
         boolean negate = spec.startsWith("!");
         if (negate) spec = spec.substring(1);
-        Pattern parsed = parse(spec);
-        Pattern pattern = parsed == null ? Pattern.compile(Pattern.quote(spec)) : parsed;
+        Pattern pattern = parse(spec);
+        if (pattern == null) {
+            String literal = spec;
+            return value -> value != null && literal.equals(value) != negate;
+        }
         return value -> value != null && pattern.matcher(value).matches() != negate;
     }
 
