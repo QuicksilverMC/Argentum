@@ -17,7 +17,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 public final class GuiItemAtlas {
-    private static final int SLOT_SIZE = 64;
+    private static final int SLOT_SIZE = 96;
     private static final int SLOTS_PER_AXIS = 16;
     private static final int ATLAS_SIZE = SLOT_SIZE * SLOTS_PER_AXIS;
     private static final int CAPACITY = SLOTS_PER_AXIS * SLOTS_PER_AXIS;

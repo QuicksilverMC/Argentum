@@ -14,6 +14,7 @@ import org.lwjgl.opengl.GL11;
 
 public final class GuiItemIcons {
     private static final int ICON_SIZE = 16;
+    static final int PADDING = 4;
 
     private static final GuiItemAtlas ATLAS = new GuiItemAtlas();
     private static final HudRecorder RECORDER = new HudRecorder();
@@ -55,7 +56,7 @@ public final class GuiItemIcons {
             GlStateManager.matrixMode(GL11.GL_PROJECTION);
             GlStateManager.pushMatrix();
             GlStateManager.loadIdentity();
-            GlStateManager.ortho(0.0, ICON_SIZE, ICON_SIZE, 0.0, 1000.0, 3000.0);
+            GlStateManager.ortho(-PADDING, ICON_SIZE + PADDING, ICON_SIZE + PADDING, -PADDING, 1000.0, 3000.0);
             GlStateManager.matrixMode(GL11.GL_MODELVIEW);
             GlStateManager.loadIdentity();
             GlStateManager.translatef(0.0F, 0.0F, -2000.0F);
@@ -78,7 +79,7 @@ public final class GuiItemIcons {
 
     private static int iconPixels() {
         int scale = new Window(Minecraft.getInstance()).getScale();
-        return Math.min(ICON_SIZE * Math.max(scale, 1), GuiItemAtlas.maxPixels());
+        return Math.min((ICON_SIZE + 2 * PADDING) * Math.max(scale, 1), GuiItemAtlas.maxPixels());
     }
 
     private static int currentTick() {
@@ -97,7 +98,7 @@ public final class GuiItemIcons {
 
         // the framebuffer's origin is bottom left, so v runs the opposite way to GUI space
         RECORDER.quad(HudRecorder.LAYER_CONTENT, HudRecorder.MATERIAL_PREMULTIPLIED, ATLAS.getTexture(),
-                x, y, x + ICON_SIZE, y + ICON_SIZE,
+                x - PADDING, y - PADDING, x + ICON_SIZE + PADDING, y + ICON_SIZE + PADDING,
                 u0, v0 + extent, u0 + extent, v0,
                 100.0F + zOffset, 0xFFFFFFFF, 0xFFFFFFFF);
     }

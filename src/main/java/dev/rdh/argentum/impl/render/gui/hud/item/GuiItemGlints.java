@@ -109,14 +109,20 @@ final class GuiItemGlints {
             float u = this.data[offsetIndex + 3];
             float v = this.data[offsetIndex + 4];
             float extent = this.data[offsetIndex + 5];
-            float glintU0 = this.data[offsetIndex + 6];
-            float glintV0 = this.data[offsetIndex + 7];
-            float glintU1 = this.data[offsetIndex + 8];
-            float glintV1 = this.data[offsetIndex + 9];
-            this.vertex(x, y + 16, z, u, v, glintU0, glintV1);
-            this.vertex(x + 16, y + 16, z, u + extent, v, glintU1, glintV1);
-            this.vertex(x + 16, y, z, u + extent, v + extent, glintU1, glintV0);
-            this.vertex(x, y, z, u, v + extent, glintU0, glintV0);
+            float padU = (this.data[offsetIndex + 8] - this.data[offsetIndex + 6]) * GuiItemIcons.PADDING / 16.0F;
+            float padV = (this.data[offsetIndex + 9] - this.data[offsetIndex + 7]) * GuiItemIcons.PADDING / 16.0F;
+            float glintU0 = this.data[offsetIndex + 6] - padU;
+            float glintV0 = this.data[offsetIndex + 7] - padV;
+            float glintU1 = this.data[offsetIndex + 8] + padU;
+            float glintV1 = this.data[offsetIndex + 9] + padV;
+            float x0 = x - GuiItemIcons.PADDING;
+            float y0 = y - GuiItemIcons.PADDING;
+            float x1 = x + 16 + GuiItemIcons.PADDING;
+            float y1 = y + 16 + GuiItemIcons.PADDING;
+            this.vertex(x0, y1, z, u, v, glintU0, glintV1);
+            this.vertex(x1, y1, z, u + extent, v, glintU1, glintV1);
+            this.vertex(x1, y0, z, u + extent, v + extent, glintU1, glintV0);
+            this.vertex(x0, y0, z, u, v + extent, glintU0, glintV0);
         }
         this.buffer.end();
         this.uploader.end(this.buffer);
