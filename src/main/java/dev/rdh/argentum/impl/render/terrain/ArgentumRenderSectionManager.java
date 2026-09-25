@@ -12,7 +12,9 @@ import org.embeddedt.embeddium.impl.render.chunk.multidraw.DirectMultiDrawEmitte
 import org.embeddedt.embeddium.impl.render.chunk.occlusion.AsyncOcclusionMode;
 import org.embeddedt.embeddium.impl.render.chunk.lists.SectionTicker;
 import org.embeddedt.embeddium.impl.render.chunk.sprite.GenericSectionSpriteTicker;
+import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkFogMode;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderInterface;
+import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderOptions;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderTextureSlot;
 import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkVertexType;
 import org.embeddedt.embeddium.impl.render.viewport.Viewport;
@@ -28,6 +30,8 @@ import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.client.render.texture.TextureAtlasSprite;
 import net.minecraft.world.World;
+
+import java.util.List;
 
 public class ArgentumRenderSectionManager extends RenderSectionManager {
     private final World world;
@@ -103,6 +107,11 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
 
         public ChunkRenderer(RenderDevice device, RenderPassConfiguration<?> renderPassConfiguration) {
             super(device, renderPassConfiguration, new DirectMultiDrawEmitter());
+            renderPassConfiguration.getAllKnownRenderPasses().forEach(pass -> {
+                for (ChunkFogMode fogMode : ChunkFogMode.values()) {
+                    this.compileProgram(new ChunkShaderOptions(List.of(fogMode), pass));
+                }
+            });
         }
 
         @Override

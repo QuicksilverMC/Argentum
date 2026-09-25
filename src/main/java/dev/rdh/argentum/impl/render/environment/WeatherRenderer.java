@@ -19,6 +19,7 @@ import org.embeddedt.embeddium.impl.gl.shader.ShaderConstants;
 import org.embeddedt.embeddium.impl.gl.shader.ShaderType;
 import org.embeddedt.embeddium.impl.gl.shader.uniform.GlUniformFloat4v;
 import org.embeddedt.embeddium.impl.gl.shader.uniform.GlUniformInt;
+import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkFogMode;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderComponent;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderFogComponent;
 import org.embeddedt.embeddium.impl.render.shader.ShaderLoader;
@@ -217,20 +218,20 @@ public final class WeatherRenderer {
     }
 
     private GlProgram<WeatherShader> program() {
-        ChunkShaderComponent.Factory<?> fogFactory = ChunkShaderFogComponent.FOG_SERVICE.getFogMode();
-        GlProgram<WeatherShader> program = this.programs.get(fogFactory);
-        if (program == null) {
-            program = createProgram(fogFactory);
-            this.programs.put(fogFactory, program);
-            program.bind();
-            try {
-                program.getInterface().texture().setInt(0);
-                program.getInterface().lightmap().setInt(1);
-            } finally {
-                program.unbind();
+        if (this.programs.isEmpty()) {
+            for (ChunkFogMode fogMode : ChunkFogMode.values()) {
+                GlProgram<WeatherShader> program = createProgram(fogMode);
+                this.programs.put(fogMode, program);
+                program.bind();
+                try {
+                    program.getInterface().texture().setInt(0);
+                    program.getInterface().lightmap().setInt(1);
+                } finally {
+                    program.unbind();
+                }
             }
         }
-        return program;
+        return this.programs.get(ChunkShaderFogComponent.FOG_SERVICE.getFogMode());
     }
 
     public void close(CommandList commandList) {

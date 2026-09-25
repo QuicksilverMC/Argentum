@@ -19,6 +19,7 @@ import org.embeddedt.embeddium.impl.gl.shader.GlShader;
 import org.embeddedt.embeddium.impl.gl.shader.ShaderConstants;
 import org.embeddedt.embeddium.impl.gl.shader.ShaderParser;
 import org.embeddedt.embeddium.impl.gl.shader.ShaderType;
+import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkFogMode;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderComponent;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderFogComponent;
 import org.embeddedt.embeddium.impl.render.shader.ShaderLoader;
@@ -301,6 +302,8 @@ public final class ModelInstancer {
                     throw exception;
                 }
                 Argentum.LOGGER.warn("Texture-array shader unavailable", exception);
+                this.programs.values().forEach(GlProgram::delete);
+                this.programs.clear();
                 this.textureArrays.delete();
                 this.textureArraysSupported = false;
                 this.getProgram();
@@ -317,24 +320,22 @@ public final class ModelInstancer {
     }
 
     private GlProgram<InstanceShader> getProgram() {
-        ChunkShaderComponent.Factory<?> fogFactory = ChunkShaderFogComponent.FOG_SERVICE.getFogMode();
-        GlProgram<InstanceShader> program = this.programs.get(fogFactory);
-        if (program != null) {
-            return program;
+        if (this.programs.isEmpty()) {
+            for (ChunkFogMode fogMode : ChunkFogMode.values()) {
+                GlProgram<InstanceShader> program = this.createProgram(fogMode);
+                program.bind();
+                try {
+                    program.getInterface().initialize();
+                } catch (RuntimeException exception) {
+                    program.delete();
+                    throw exception;
+                } finally {
+                    program.unbind();
+                }
+                this.programs.put(fogMode, program);
+            }
         }
-
-        program = this.createProgram(fogFactory);
-        program.bind();
-        try {
-            program.getInterface().initialize();
-        } catch (RuntimeException exception) {
-            program.delete();
-            throw exception;
-        } finally {
-            program.unbind();
-        }
-        this.programs.put(fogFactory, program);
-        return program;
+        return this.programs.get(ChunkShaderFogComponent.FOG_SERVICE.getFogMode());
     }
 
     private GlProgram<InstanceShader> createProgram(ChunkShaderComponent.Factory<?> fogFactory) {

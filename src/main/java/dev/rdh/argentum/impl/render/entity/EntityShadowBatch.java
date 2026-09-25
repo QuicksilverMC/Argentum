@@ -23,6 +23,7 @@ import org.embeddedt.embeddium.impl.gl.shader.ShaderType;
 import org.embeddedt.embeddium.impl.gl.shader.uniform.GlUniformInt;
 import org.embeddedt.embeddium.impl.gl.attribute.GlVertexAttributeFormat;
 import org.embeddedt.embeddium.impl.gl.attribute.GlVertexFormat;
+import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkFogMode;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderComponent;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderFogComponent;
 import org.embeddedt.embeddium.impl.render.shader.ShaderLoader;
@@ -205,22 +206,20 @@ public final class EntityShadowBatch {
         }
 
         try {
-            ChunkShaderComponent.Factory<?> fogFactory = ChunkShaderFogComponent.FOG_SERVICE.getFogMode();
-            program = programs.get(fogFactory);
-            if (program == null) {
-                boolean firstProgram = programs.isEmpty();
-                program = createProgram(fogFactory);
-                programs.put(fogFactory, program);
-                program.bind();
-                try {
-                    program.getInterface().texture().setInt(0);
-                } finally {
-                    program.unbind();
+            if (programs.isEmpty()) {
+                for (ChunkFogMode fogMode : ChunkFogMode.values()) {
+                    program = createProgram(fogMode);
+                    programs.put(fogMode, program);
+                    program.bind();
+                    try {
+                        program.getInterface().texture().setInt(0);
+                    } finally {
+                        program.unbind();
+                    }
                 }
-                if (firstProgram) {
-                    Argentum.LOGGER.info("Instanced entity shadows enabled");
-                }
+                Argentum.LOGGER.info("Instanced entity shadows enabled");
             }
+            program = programs.get(ChunkShaderFogComponent.FOG_SERVICE.getFogMode());
         } catch (RuntimeException exception) {
             supported = false;
             Argentum.LOGGER.error("Instanced entity shadows failed to initialize", exception);

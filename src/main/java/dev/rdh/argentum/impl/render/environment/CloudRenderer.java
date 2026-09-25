@@ -20,6 +20,7 @@ import org.embeddedt.embeddium.impl.gl.shader.uniform.GlUniformFloat4v;
 import org.embeddedt.embeddium.impl.gl.shader.uniform.GlUniformInt;
 import org.embeddedt.embeddium.impl.gl.tessellation.GlVertexArrayTessellation;
 import org.embeddedt.embeddium.impl.gl.tessellation.TessellationBinding;
+import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkFogMode;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderComponent;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderFogComponent;
 import org.embeddedt.embeddium.impl.render.shader.ShaderLoader;
@@ -159,19 +160,19 @@ public final class CloudRenderer {
     }
 
     private GlProgram<CloudShader> program() {
-        ChunkShaderComponent.Factory<?> fogFactory = ChunkShaderFogComponent.FOG_SERVICE.getFogMode();
-        GlProgram<CloudShader> program = this.programs.get(fogFactory);
-        if (program == null) {
-            program = createProgram(fogFactory);
-            this.programs.put(fogFactory, program);
-            program.bind();
-            try {
-                program.getInterface().texture().setInt(0);
-            } finally {
-                program.unbind();
+        if (this.programs.isEmpty()) {
+            for (ChunkFogMode fogMode : ChunkFogMode.values()) {
+                GlProgram<CloudShader> program = createProgram(fogMode);
+                this.programs.put(fogMode, program);
+                program.bind();
+                try {
+                    program.getInterface().texture().setInt(0);
+                } finally {
+                    program.unbind();
+                }
             }
         }
-        return program;
+        return this.programs.get(ChunkShaderFogComponent.FOG_SERVICE.getFogMode());
     }
 
     private void createMesh(CommandList commandList, int firstCell, int lastCell) {
