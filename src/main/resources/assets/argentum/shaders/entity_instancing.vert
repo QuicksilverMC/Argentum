@@ -23,6 +23,7 @@ uniform int uItemGlintPass;
 uniform mat4 uItemGlintMatrix;
 uniform vec3 uLightDirection0;
 uniform vec3 uLightDirection1;
+uniform bool uEyeLight;
 
 out vec2 vTexCoord;
 out vec2 vLightCoord;
@@ -67,7 +68,7 @@ void main() {
     } else {
         vTexCoord = (gl_TextureMatrix[0] * vec4(baseTexCoord, 0.0, 1.0)).xy;
     }
-    vLightCoord = (gl_TextureMatrix[1] * vec4(aLightCoord.xy, 0.0, 1.0)).xy;
+    vLightCoord = (gl_TextureMatrix[1] * vec4(uEyeLight ? vec2(61680.0, 0.0) : aLightCoord.xy, 0.0, 1.0)).xy;
     vTextureLayer = aLightCoord.z;
     vLighting = (light0 + light1) * 0.6 + 0.4;
 #ifdef USE_FOG
