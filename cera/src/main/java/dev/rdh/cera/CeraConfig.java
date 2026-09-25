@@ -28,7 +28,7 @@ public class CeraConfig {
         if (this.betterGrass == null) this.betterGrass = BetterGrass.Mode.OFF;
         if (this.connectedTextures == null) this.connectedTextures = ConnectedTextures.Mode.OFF;
         if (this.dynamicLights == null) this.dynamicLights = DynamicLights.Mode.OFF;
-        if (this.hdFonts) {
+        if (this.hdFonts && Argentum.CONFIG != null) {
             Argentum.CONFIG.fontBatching = true;
         }
     }
