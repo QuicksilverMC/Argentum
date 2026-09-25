@@ -25,34 +25,38 @@ public final class CustomPanorama implements ResourceReloadListener {
 
     @Override
     public void resourcesReloaded(ResourceManager resources) {
+        Props main = Panorama.props(resources, "optifine/gui");
         List<Panorama> candidates = new ArrayList<>();
         for (int i = 0; i < MAX_FOLDERS; i++) {
             String folder = "optifine/gui/background" + i;
             if (resources.getResource(new Identifier(folder + "/panorama_0.png")).isEmpty()) continue;
-            candidates.add(Panorama.parse(resources, folder));
+            Props props = Panorama.props(resources, folder);
+            candidates.add(Panorama.of(folder, props != null ? props : main));
         }
 
         if (candidates.isEmpty()) {
             this.active = null;
             return;
         }
+        candidates.addFirst(Panorama.of("textures/gui/title/background", main));
 
-        int total = 1;
+        int total = 0;
         for (Panorama candidate : candidates) total += candidate.weight();
-        int roll = this.random.nextInt(total) - 1;
         Panorama chosen = null;
-        for (Panorama candidate : candidates) {
-            if (roll < 0) break;
-            roll -= candidate.weight();
-            if (roll < 0) {
-                chosen = candidate;
-                break;
+        if (total > 0) {
+            int roll = this.random.nextInt(total);
+            for (Panorama candidate : candidates) {
+                roll -= candidate.weight();
+                if (roll < 0) {
+                    chosen = candidate;
+                    break;
+                }
             }
         }
 
         this.active = chosen;
         Cera.LOGGER.info("[CustomPanorama] {} alternative panoramas, using {}",
-                candidates.size(), chosen == null ? "vanilla" : chosen.folder());
+                candidates.size() - 1, chosen == null ? "vanilla" : chosen.folder());
     }
 
     public record Panorama(
@@ -61,20 +65,21 @@ public final class CustomPanorama implements ResourceReloadListener {
             int overlay1Top, int overlay1Bottom, int overlay2Top, int overlay2Bottom
     ) {
 
-        private static Panorama parse(ResourceManager resources, String folder) {
+        private static Props props(ResourceManager resources, String folder) {
+            Resource config = resources.getResource(new Identifier(folder + "/background.properties")).orElse(null);
+            if (config == null) return null;
+            try {
+                return new Props(config);
+            } catch (IOException | RuntimeException e) {
+                Cera.LOGGER.warn("[CustomPanorama] Failed to load properties for {}", folder, e);
+                return null;
+            }
+        }
+
+        private static Panorama of(String folder, Props props) {
             Identifier[] textures = new Identifier[6];
             for (int i = 0; i < textures.length; i++) {
                 textures[i] = new Identifier(folder + "/panorama_" + i + ".png");
-            }
-
-            Props props = null;
-            Resource config = resources.getResource(new Identifier(folder + "/background.properties")).orElse(null);
-            if (config != null) {
-                try {
-                    props = new Props(config);
-                } catch (IOException | RuntimeException e) {
-                    Cera.LOGGER.warn("[CustomPanorama] Failed to load properties for {}", folder, e);
-                }
             }
 
             return new Panorama(folder, textures,
