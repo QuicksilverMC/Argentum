@@ -1,6 +1,7 @@
 package dev.rdh.cera.modules;
 
 import dev.rdh.cera.Cera;
+import dev.rdh.cera.mixin.VillagerEntityAccessor;
 import dev.rdh.cera.modules.random.RandomConditions;
 import dev.rdh.cera.props.NumberList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -34,7 +35,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.living.mob.passive.VillagerEntity;
 import net.minecraft.entity.living.mob.passive.animal.HorseBaseEntity;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.resource.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Nameable;
@@ -190,10 +190,7 @@ public final class CustomGuis implements ResourceReloadListener {
 
         private boolean matchesBeacon(BlockEntity blockEntity) {
             if (!(blockEntity instanceof BeaconBlockEntity beacon)) return false;
-            if (levels == null) return true;
-            NbtCompound nbt = new NbtCompound();
-            beacon.writeNbt(nbt);
-            return levels.contains(nbt.getInt("Levels"));
+            return levels == null || levels.contains(beacon.getData(0));
         }
 
         private boolean matchesDispenser(BlockEntity blockEntity) {
@@ -213,9 +210,8 @@ public final class CustomGuis implements ResourceReloadListener {
 
         private boolean matchesVillager(Entity entity) {
             if (!(entity instanceof VillagerEntity villager) || professions == null) return entity instanceof VillagerEntity;
-            NbtCompound nbt = new NbtCompound();
-            villager.writeNbt(nbt);
-            return professions.stream().anyMatch(profession -> profession.matches(villager.getProfession(), nbt.getInt("Career")));
+            int career = ((VillagerEntityAccessor) villager).cera$getCareer();
+            return professions.stream().anyMatch(profession -> profession.matches(villager.getProfession(), career));
         }
 
         private static Map<Identifier, Identifier> textures(Props props, Container container) {
