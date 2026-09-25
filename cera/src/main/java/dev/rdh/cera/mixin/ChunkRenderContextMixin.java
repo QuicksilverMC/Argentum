@@ -29,7 +29,7 @@ public abstract class ChunkRenderContextMixin {
 
     @ModifyReturnValue(method = "getLightColor(IIII)I", at = @At("RETURN"))
     private int cera$applyDynamicLight(int packedLight, int x, int y, int z, int ambientLight) {
-		if(this.getBlockState(x, y, z).getBlock().isOpaque()) {
+		if(!this.cera$dynamicLights.active() || this.getBlockState(x, y, z).getBlock().isOpaque()) {
             return packedLight;
         } else {
             return this.cera$dynamicLights.combine(x, y, z, packedLight);

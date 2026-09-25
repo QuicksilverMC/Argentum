@@ -83,6 +83,10 @@ public final class DynamicLights {
         lights = tracked.values().toArray(Light[]::new);
     }
 
+    public boolean active() {
+        return Cera.CONFIG.dynamicLights != Mode.OFF && lights.length > 0;
+    }
+
     public int combine(int x, int y, int z, int packedLight) {
         if (Cera.CONFIG.dynamicLights == Mode.OFF) return packedLight;
 
