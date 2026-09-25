@@ -16,3 +16,5 @@ transitive-accessible field net/minecraft/client/render/platform/GlStateManager$
 accessible field net/minecraft/client/render/GameRenderer fogRed F
 accessible field net/minecraft/client/render/GameRenderer fogGreen F
 accessible field net/minecraft/client/render/GameRenderer fogBlue F
+accessible class net/minecraft/client/render/platform/GlStateManager$Color
+accessible field net/minecraft/client/render/platform/GlStateManager COLOR Lnet/minecraft/client/render/platform/GlStateManager$Color;

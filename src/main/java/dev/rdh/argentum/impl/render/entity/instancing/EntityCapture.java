@@ -6,6 +6,7 @@ import net.minecraft.client.render.entity.layer.AbstractArmorLayer;
 import net.minecraft.client.render.entity.layer.EntityRenderLayer;
 import net.minecraft.client.render.model.Model;
 import net.minecraft.client.render.model.ModelPart;
+import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.texture.TextureAtlas;
 import net.minecraft.client.resource.model.BakedModel;
 import net.minecraft.entity.ItemEntity;
@@ -129,6 +130,10 @@ public final class EntityCapture implements AutoCloseable {
         this.itemGlintPass = 0;
         this.glintActive = false;
         this.color.set(1);
+        GlStateManager.Color current = GlStateManager.COLOR;
+        if (current.r >= 0.0F) {
+            this.color.set(current.r, current.g, current.b, current.a);
+        }
         this.currentOverlayColor.set(this.overlayColor);
     }
 
