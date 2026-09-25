@@ -23,7 +23,7 @@ public final class EmissiveTextures {
     private static final Identifier NONE = new Identifier("cera", "none");
 
     private volatile String suffix;
-    private final Map<TextureAtlasSprite, TextureAtlasSprite> spriteMap = new Reference2ReferenceOpenHashMap<>();
+    private volatile Map<TextureAtlasSprite, TextureAtlasSprite> spriteMap = Map.of();
 
     private final Map<Identifier, Identifier> boundCache = new Object2ObjectOpenHashMap<>();
     private boolean rendering;
@@ -45,9 +45,10 @@ public final class EmissiveTextures {
 
     public void reload(ResourceManager resources, TextureAtlas atlas, Map<String, TextureAtlasSprite> sourcedSprites) {
         this.suffix = load(resources);
-        this.spriteMap.clear();
+        this.spriteMap = Map.of();
         this.boundCache.clear();
         if (suffix == null) return;
+        Map<TextureAtlasSprite, TextureAtlasSprite> spriteMap = new Reference2ReferenceOpenHashMap<>();
         for (var entry : new ArrayList<>(sourcedSprites.entrySet())) {
             Identifier id = new Identifier(entry.getKey());
             if (id.getPath().endsWith(suffix)) continue;
@@ -55,8 +56,9 @@ public final class EmissiveTextures {
             if (!resources.hasResource(new Identifier(id.getNamespace(), "textures/" + em.getPath() + ".png"))) continue;
             TextureAtlasSprite sprite = sourcedSprites.get(em.toString());
             if (sprite == null) sprite = atlas.registerSprite(em);
-            this.spriteMap.put(entry.getValue(), sprite);
+            spriteMap.put(entry.getValue(), sprite);
         }
+        this.spriteMap = spriteMap;
     }
 
     public TextureAtlasSprite emissiveSprite(TextureAtlasSprite base) {
