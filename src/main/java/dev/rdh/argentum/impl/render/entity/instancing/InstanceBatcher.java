@@ -15,6 +15,7 @@ import net.minecraft.resource.Identifier;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import org.embeddedt.embeddium.impl.gl.device.CommandList;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.joml.Vector4fc;
 import org.lwjgl.opengl.GL11;
 
@@ -25,7 +26,6 @@ final class InstanceBatcher {
     private final Map<Model, ModelGeometry> models = new Reference2ReferenceOpenHashMap<>();
     private final Matrix4f[] itemGlintMatrices = { new Matrix4f(), new Matrix4f() };
     private final boolean[] itemGlintCaptured = new boolean[2];
-    private final float[] matrixValues = new float[16];
     private final EnumMap<InstanceRenderPass, Map<Identifier, TextureBatch>> textures = new EnumMap<>(InstanceRenderPass.class);
     private final EnumMap<InstanceRenderPass, Map<TextureArrayManager.Pool, TextureBatch>> arrayTextures = new EnumMap<>(InstanceRenderPass.class);
 
@@ -42,12 +42,11 @@ final class InstanceBatcher {
         Arrays.fill(this.itemGlintCaptured, false);
     }
 
-    void captureItemGlintMatrix(int pass) {
+    void captureItemGlintMatrix(int pass, Matrix4fc matrix) {
         if (pass < 0 || pass >= this.itemGlintCaptured.length || this.itemGlintCaptured[pass]) {
             return;
         }
-        GL11.glGetFloatv(GL11.GL_TEXTURE_MATRIX, this.matrixValues);
-        this.itemGlintMatrices[pass].set(this.matrixValues);
+        this.itemGlintMatrices[pass].set(matrix);
         this.itemGlintCaptured[pass] = true;
     }
 

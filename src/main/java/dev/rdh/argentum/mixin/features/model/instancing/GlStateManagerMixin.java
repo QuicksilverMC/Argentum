@@ -15,6 +15,12 @@ public abstract class GlStateManagerMixin {
         if (capture != null) capture.setMatrixMode(mode);
     }
 
+    @Inject(method = "loadIdentity", at = @At("HEAD"))
+    private static void celeritas$loadEntityIdentity(CallbackInfo ci) {
+        EntityCapture capture = EntityCapture.current();
+        if (capture != null) capture.loadIdentity();
+    }
+
     @Inject(method = "color4f", at = @At("HEAD"))
     private static void celeritas$captureEntityColor(float red, float green, float blue, float alpha, CallbackInfo ci) {
         EntityCapture capture = EntityCapture.current();

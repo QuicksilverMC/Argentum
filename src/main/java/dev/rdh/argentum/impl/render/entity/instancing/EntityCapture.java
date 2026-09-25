@@ -30,6 +30,7 @@ public final class EntityCapture implements AutoCloseable {
     private final ReferenceOpenHashSet<ModelPart> glintParts = new ReferenceOpenHashSet<>();
 
     private final Matrix4fStack matrices = new Matrix4fStack(64);
+    private final Matrix4fStack textureMatrices = new Matrix4fStack(8);
     private EntityCapture previous;
     private ModelGeometry model;
     private Identifier entityTexture;
@@ -119,6 +120,7 @@ public final class EntityCapture implements AutoCloseable {
     private void resetState() {
         this.matrices.clear();
         this.matrices.pushMatrix();
+        this.textureMatrices.clear();
         this.matrixMode = GL11.GL_MODELVIEW;
         this.recorded = false;
         this.modelActive = false;
@@ -228,7 +230,7 @@ public final class EntityCapture implements AutoCloseable {
         } else if (item == null && this.glintActive && this.itemInstanced && this.itemGlintPass < 2) {
             int glintPass = this.itemGlintPass++;
             this.pass = glintPass == 0 ? InstanceRenderPass.ITEM_GLINT_0 : InstanceRenderPass.ITEM_GLINT_1;
-            this.owner.backend().captureItemGlintMatrix(glintPass);
+            this.owner.backend().captureItemGlintMatrix(glintPass, this.textureMatrices);
             geometry = this.owner.backend().fixedItem(model, color);
         } else {
             return false;
@@ -273,6 +275,7 @@ public final class EntityCapture implements AutoCloseable {
     }
 
     public boolean pushMatrix() {
+        if (this.tracksTexture()) this.textureMatrices.pushMatrix();
         if (!this.tracksModelView()) {
             return false;
         }
@@ -281,6 +284,7 @@ public final class EntityCapture implements AutoCloseable {
     }
 
     public boolean popMatrix() {
+        if (this.tracksTexture()) this.textureMatrices.popMatrix();
         if (!this.tracksModelView()) {
             return false;
         }
@@ -289,6 +293,7 @@ public final class EntityCapture implements AutoCloseable {
     }
 
     public boolean translate(float x, float y, float z) {
+        if (this.tracksTexture()) this.textureMatrices.translate(x, y, z);
         if (!this.tracksModelView()) {
             return false;
         }
@@ -297,22 +302,28 @@ public final class EntityCapture implements AutoCloseable {
     }
 
     public boolean rotate(float angle, float x, float y, float z) {
-        if (!this.tracksModelView()) {
+        boolean texture = this.tracksTexture();
+        if (!texture && !this.tracksModelView()) {
             return false;
         }
         float length = (float)Math.sqrt(x * x + y * y + z * z);
         if (length != 0.0F) {
-            this.matrices.rotate((float)Math.toRadians(angle), x / length, y / length, z / length);
+            (texture ? this.textureMatrices : this.matrices).rotate((float)Math.toRadians(angle), x / length, y / length, z / length);
         }
-        return this.suppressFixedFunction;
+        return !texture && this.suppressFixedFunction;
     }
 
     public boolean scale(float x, float y, float z) {
+        if (this.tracksTexture()) this.textureMatrices.scale(x, y, z);
         if (!this.tracksModelView()) {
             return false;
         }
         this.matrices.scale(x, y, z);
         return this.suppressFixedFunction;
+    }
+
+    public void loadIdentity() {
+        if (this.tracksTexture()) this.textureMatrices.identity();
     }
 
     public void setMatrixMode(int mode) {
@@ -435,5 +446,9 @@ public final class EntityCapture implements AutoCloseable {
 
     private boolean tracksModelView() {
         return !this.finished && this.matrixMode == GL11.GL_MODELVIEW;
+    }
+
+    private boolean tracksTexture() {
+        return !this.finished && this.matrixMode == GL11.GL_TEXTURE;
     }
 }

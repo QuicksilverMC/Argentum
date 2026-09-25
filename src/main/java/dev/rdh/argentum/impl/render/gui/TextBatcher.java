@@ -366,7 +366,7 @@ public final class TextBatcher {
     }
 
     private boolean pushBlend() {
-        if (!this.blend || GL11.glIsEnabled(GL11.GL_BLEND)) return false;
+        if (!this.blend || GlStateManager.BLEND.state.enabled) return false;
         GlStateManager.enableBlend();
         GlStateManager.blendFuncSeparate(770, 771, 1, 0);
         return true;

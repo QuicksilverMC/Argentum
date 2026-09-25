@@ -23,6 +23,7 @@ import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderComponent;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderFogComponent;
 import org.embeddedt.embeddium.impl.render.shader.ShaderLoader;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.joml.Vector4fc;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
@@ -76,8 +77,8 @@ public final class ModelInstancer {
         return this.itemGeometry.isLayered(model);
     }
 
-    public void captureItemGlintMatrix(int pass) {
-        this.batcher.captureItemGlintMatrix(pass);
+    public void captureItemGlintMatrix(int pass, Matrix4fc matrix) {
+        this.batcher.captureItemGlintMatrix(pass, matrix);
     }
 
     public boolean supportsItem(BakedModel model, ItemStack item) {
