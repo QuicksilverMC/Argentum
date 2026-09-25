@@ -39,6 +39,7 @@ import static dev.rdh.cera.modules.ctm.CtmRule.TileAction;
 final class CtmRuleLoader {
     private static final String OPTIFINE_PREFIX = "optifine/ctm/";
     private static final String MCPATCHER_PREFIX = "mcpatcher/ctm/";
+    private static final String DEFAULT_PREFIX = "mcpatcher/ctm/default/";
     private static final Pattern BLOCK_FILE = Pattern.compile("^block(\\d+).*");
     private static final Pattern RANGE = Pattern.compile("(-?\\d+)(?:-(-?\\d+))?");
 
@@ -58,6 +59,7 @@ final class CtmRuleLoader {
             Map<String, TextureAtlasSprite> sourcedSprites, List<CtmRule> rules) {
         for (var location : resources.findResources("minecraft", directory,
                 id -> id.identifier().endsWith(".properties")).keySet()) {
+            if (!defaultEnabled(resources, location.identifier())) continue;
             List<Resource> stack = resources.getResourceStack(location);
             if (stack.isEmpty()) continue;
             Resource resource = stack.getLast();
@@ -68,6 +70,17 @@ final class CtmRuleLoader {
                 Cera.LOGGER.warn("[CTM] Failed to load rule {} from {}", location, resource.sourceName(), e);
             }
         }
+    }
+
+    private static boolean defaultEnabled(ResourceManager resources, String path) {
+        if (!path.startsWith(DEFAULT_PREFIX)) return true;
+        String name = path.substring(DEFAULT_PREFIX.length());
+        String texture = name.startsWith("glass") ? "glass"
+                : name.startsWith("bookshelf") ? "bookshelf"
+                : name.startsWith("sandstone") ? "sandstone_normal"
+                : name.substring(name.indexOf('_') + 1, name.indexOf('/'));
+        return resources.getResource(new Identifier("textures/blocks/" + texture + ".png"))
+                .map(resource -> "Default".equals(resource.sourceName())).orElse(false);
     }
 
     private static CtmRule parse(Props properties, TextureAtlas atlas,
