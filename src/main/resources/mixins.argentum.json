@@ -20,7 +20,7 @@
     "features.blockentity.BlockEntityRenderDispatcherMixin",
     "features.terrain.BakedQuadMixin", "features.terrain.BlockModelRendererMixin",
     "features.text.SignRendererMixin",
-    "features.terrain.FaceBakeryMixin",
+    "features.terrain.FaceBakeryMixin", "features.terrain.FlatLightPipelineMixin",
     "features.terrain.BiomeColorsMixin",
     "features.texture.ItemRendererMixin",
     "features.texture.TextureAtlasMixin", "features.texture.TextureAtlasSpriteMixin",
