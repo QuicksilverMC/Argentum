@@ -204,13 +204,8 @@ final class InstanceBatcher {
 
         int draws = 0;
         int textureCount = 0;
-        program.getInterface().setEmissive(pass != InstanceRenderPass.NORMAL
-                && pass != InstanceRenderPass.CULL_FRONT
-                && pass != InstanceRenderPass.CULL_BACK
-                && pass != InstanceRenderPass.NO_CULL
-                && pass != InstanceRenderPass.ITEM
-                && pass != InstanceRenderPass.TRANSLUCENT
-        );
+        program.getInterface().setLighting(pass.isBase(),
+                pass != InstanceRenderPass.EMISSIVE && pass != InstanceRenderPass.EMISSIVE_REPLACE);
         program.getInterface().setChargePass(pass.chargePass);
         var textureManager = Minecraft.getInstance().getTextureManager();
         for (TextureBatch texture : this.textures.get(pass).values()) {

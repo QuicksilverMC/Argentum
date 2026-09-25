@@ -28,7 +28,8 @@ final class InstanceShader {
     private final GlUniformInt lightmap;
     private final GlUniformInt textureArray;
     private final GlUniformInt textureArrayEnabled;
-    private final GlUniformInt emissive;
+    private final GlUniformInt lit;
+    private final GlUniformInt lightmapped;
     private final GlUniformInt glintPass;
     private final GlUniformInt chargePass;
     private final GlUniformInt itemGlintPass;
@@ -49,7 +50,8 @@ final class InstanceShader {
         this.textureArrayEnabled = textureArraysSupported
                 ? context.bindUniform("uTextureArrayEnabled", GlUniformInt::new)
                 : null;
-        this.emissive = context.bindUniform("uEmissive", GlUniformInt::new);
+        this.lit = context.bindUniform("uLit", GlUniformInt::new);
+        this.lightmapped = context.bindUniform("uLightmapped", GlUniformInt::new);
         this.glintPass = context.bindUniform("uGlintPass", GlUniformInt::new);
         this.chargePass = context.bindUniform("uChargePass", GlUniformInt::new);
         this.itemGlintPass = context.bindUniform("uItemGlintPass", GlUniformInt::new);
@@ -92,8 +94,9 @@ final class InstanceShader {
         }
     }
 
-    void setEmissive(boolean emissive) {
-        this.emissive.setInt(emissive ? 1 : 0);
+    void setLighting(boolean lit, boolean lightmapped) {
+        this.lit.setInt(lit ? 1 : 0);
+        this.lightmapped.setInt(lightmapped ? 1 : 0);
     }
 
     void setGlintPass(int pass) {

@@ -8,7 +8,8 @@ uniform sampler2D uLightmap;
 uniform sampler2DArray uTextureArray;
 uniform bool uTextureArrayEnabled;
 #endif
-uniform bool uEmissive;
+uniform bool uLit;
+uniform bool uLightmapped;
 uniform int uAlphaPass;
 #define ALPHA_OPAQUE_CUTOFF (254.0 / 255.0)
 #ifdef USE_FOG
@@ -51,7 +52,7 @@ void main() {
         color = textureArray(uTextureArray, vec3(vTexCoord, vTextureLayer));
     }
 #endif
-    color *= uEmissive ? vColor : vec4(min(vColor.rgb * vLighting, 1.0), vColor.a);
+    color *= uLit ? vec4(min(vColor.rgb * vLighting, 1.0), vColor.a) : vColor;
     if (color.a <= 0.1) {
         discard;
     }
@@ -63,7 +64,7 @@ void main() {
     }
 
     color.rgb = mix(color.rgb, vOverlay.rgb, vOverlay.a);
-    if (!uEmissive) {
+    if (uLightmapped) {
         color.rgb *= texture(uLightmap, vLightCoord).rgb;
     }
 #ifdef USE_FOG_EXP2
