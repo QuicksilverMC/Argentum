@@ -16,6 +16,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.Nameable;
 import net.minecraft.world.WorldView;
+import net.minecraft.world.biome.Biome;
 
 import org.embeddedt.embeddium.impl.model.quad.BakedQuadView;
 
@@ -50,6 +51,8 @@ record CtmRule(
         Object2IntMap<Block> connectBlocks,
         Set<String> connectTiles
 ) {
+    private static final String[] BIOME_NAMES = new String[256];
+
     boolean matches(WorldView world, BlockState state, BlockPos pos, Direction face, TextureAtlasSprite sprite) {
         int checkedMetadata = checkedMetadata(state);
         if (!matchBlocks.isEmpty()) {
@@ -61,11 +64,17 @@ record CtmRule(
         if ((faces & 1 << logicalFace(face, axis(state)).ordinal()) == 0) return false;
         if (!heights.test(pos.getY())) return false;
         if (!biomes.isEmpty()
-                && !biomes.contains(CtmRuleLoader.normalizeBiome(world.getBiome(pos).name))) return false;
+                && !biomes.contains(biomeName(world.getBiome(pos)))) return false;
         if (name == null) return true;
         BlockEntity blockEntity = world.getBlockEntity(pos);
         return blockEntity instanceof Nameable named && named.hasCustomName()
                 && name.test(named.getName());
+    }
+
+    private static String biomeName(Biome biome) {
+        String name = BIOME_NAMES[biome.id];
+        if (name == null) BIOME_NAMES[biome.id] = name = CtmRuleLoader.normalizeBiome(biome.name);
+        return name;
     }
 
     List<BakedQuad> compact(WorldView world, BlockState state, BlockPos pos, BakedQuad quad,
