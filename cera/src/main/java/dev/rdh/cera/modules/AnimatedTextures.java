@@ -12,6 +12,7 @@ import net.minecraft.client.render.texture.TickableTexture;
 import net.minecraft.resource.Identifier;
 import net.ornithemc.osl.resource.loader.api.resource.Resource;
 import net.ornithemc.osl.resource.loader.api.resource.manager.ResourceManager;
+import net.ornithemc.osl.resource.loader.api.resource.pack.ResourcePack;
 import net.ornithemc.osl.resource.loader.api.resource.reload.ResourceReloadListener;
 import org.embeddedt.embeddium.api.util.ColorMixer;
 import org.lwjgl.BufferUtils;
@@ -121,14 +122,23 @@ public final class AnimatedTextures implements ResourceReloadListener {
                 return;
             }
             Animation animation = result.value();
-            if (!resource.sourceName().equals(resources.getResource(animation.target()).map(Resource::sourceName).orElse(null))) {
-                Cera.LOGGER.warn("[AnimatedTextures] Skipping {}: target texture is not from the same resource pack", props.id());
+            int targetPriority = resources.getResource(animation.target()).map(target -> priority(resources, target.sourceName())).orElse(-1);
+            if (priority(resources, resource.sourceName()) < targetPriority) {
+                Cera.LOGGER.warn("[AnimatedTextures] Skipping {}: target texture is replaced by a higher resource pack", props.id());
                 return;
             }
             grouped.computeIfAbsent(animation.target(), _ -> new ArrayList<>()).add(animation);
         } catch (IOException e) {
             Cera.LOGGER.warn("[AnimatedTextures] Failed to read {}", resource.location(), e);
         }
+    }
+
+    private static int priority(ResourceManager resources, String pack) {
+        List<ResourcePack> packs = resources.getResourcePacks();
+        for (int i = packs.size() - 1; i >= 0; i--) {
+            if (packs.get(i).getName().equals(pack)) return i;
+        }
+        return -1;
     }
 
     private static Target target(ResourceManager resources, Identifier id, List<Animation> animations) {
