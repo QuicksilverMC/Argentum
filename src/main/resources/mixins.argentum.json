@@ -7,7 +7,7 @@
     "core.GameOptionsMixin", "core.MinecraftMixin", "core.render.BufferBuilderMixin", "core.render.DebugOverlayMixin",
     "core.render.FrustumCullerMixin", "core.render.WorldRendererMixin",
     "core.world.ClientChunkCacheAccessor", "core.world.MultiplayerChunkCacheMixin", "features.cloud.WorldRendererMixin",
-    "features.entity.shadow.EntityRendererMixin", "features.font.TextRendererMixin", "features.hud.ChatGuiMixin",
+    "features.entity.shadow.EntityRendererMixin", "features.entity.culling.EntityRendererMixin", "features.font.TextRendererMixin", "features.hud.ChatGuiMixin",
     "features.hud.CreativeInventoryScreenMixin", "features.hud.GameGuiMixin", "features.hud.GuiElementMixin", "features.hud.GuiItemRendererMixin", "features.hud.ScreenMixin", "features.hud.GuiItemFlushMixin", "features.hud.PlayerTabOverlayMixin", "features.model.BufferBuilderAccessor",
     "features.model.ModelPartMixin", "features.model.PolygonMixin", "features.model.instancing.AbstractTextureMixin",
     "features.model.instancing.ArrowRendererMixin", "features.model.instancing.BlockModelRendererMixin",

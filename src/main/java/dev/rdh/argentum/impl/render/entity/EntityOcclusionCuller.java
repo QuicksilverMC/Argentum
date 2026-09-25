@@ -5,9 +5,15 @@ import net.minecraft.client.render.vertex.BufferBuilder;
 import net.minecraft.client.render.vertex.DefaultVertexFormat;
 import net.minecraft.client.render.vertex.Tesselator;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.living.mob.MobEntity;
+import net.minecraft.entity.living.mob.monster.boss.Boss;
 import net.minecraft.util.math.Box;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
+import org.embeddedt.embeddium.impl.render.chunk.ChunkRenderMatrices;
+import org.joml.FrustumIntersection;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15C;
@@ -20,11 +26,16 @@ import java.util.List;
 import java.util.Map;
 
 public class EntityOcclusionCuller {
-    private static final double BOX_MARGIN = 0.2D;
+    private static final double RENDER_MARGIN = 0.5D;
+    private static final double MOTION_MARGIN = 0.1D;
+    private static final double EYE_TOLERANCE = 0.1D;
     private static final double MAX_BOX_VOLUME = 64.0D * 64.0D * 64.0D;
 
     private final ArgentumWorldRenderer renderer;
     private final Map<Entity, Query> queries = new Reference2ReferenceOpenHashMap<>();
+    private final Matrix4f viewProjection = new Matrix4f();
+    private final FrustumIntersection frustum = new FrustumIntersection();
+    private final Vector3f eye = new Vector3f();
     private long frame;
     private int queryMode = 0;
 
@@ -32,11 +43,18 @@ public class EntityOcclusionCuller {
         this.renderer = renderer;
     }
 
-    public void prepare(List<Entity> entities, Entity camera, double cameraX, double cameraY, double cameraZ) {
-        if (!Argentum.CONFIG.entityCulling || !GL.getCapabilities().OpenGL15) {
+    public void prepare(List<Entity> entities, Entity camera, float tickDelta, ChunkRenderMatrices matrices,
+            double cameraX, double cameraY, double cameraZ) {
+        if (!Argentum.CONFIG.entityCulling || matrices == null || !GL.getCapabilities().OpenGL15) {
             this.clear();
             return;
         }
+
+        this.frustum.set(matrices.projection().mul(matrices.modelView(), this.viewProjection));
+        matrices.modelView().originAffine(this.eye);
+        double eyeX = cameraX + this.eye.x;
+        double eyeY = cameraY + this.eye.y;
+        double eyeZ = cameraZ + this.eye.z;
 
         long now = System.nanoTime() / 1_000_000L;
         this.frame++;
@@ -48,17 +66,51 @@ public class EntityOcclusionCuller {
         try {
             for (Entity entity : entities) {
                 Query query = this.queries.get(entity);
-
                 if (query != null) {
                     query.lastSeenFrame = this.frame;
+                    query.culled = false;
                     this.poll(query);
+                }
 
-                    if (query.pending || now - query.lastQueryTime < Argentum.CONFIG.entityOcclusionIntervalMs) {
+                if (!this.isCullable(entity, camera)) {
+                    continue;
+                }
+
+                Box shape = entity.getShape();
+                double offsetX = (entity.prevX - entity.x) * (1.0D - tickDelta);
+                double offsetY = (entity.prevY - entity.y) * (1.0D - tickDelta);
+                double offsetZ = (entity.prevZ - entity.z) * (1.0D - tickDelta);
+                double minX = shape.minX + offsetX;
+                double minY = shape.minY + offsetY;
+                double minZ = shape.minZ + offsetZ;
+                double maxX = shape.maxX + offsetX;
+                double maxY = shape.maxY + offsetY;
+                double maxZ = shape.maxZ + offsetZ;
+
+                if (query != null) {
+                    query.culled = query.occluded
+                            && query.result.covers(eyeX, eyeY, eyeZ, EYE_TOLERANCE, minX, minY, minZ, maxX, maxY, maxZ);
+                    // refresh an occluded result before it stops covering the camera or the entity
+                    if (query.pending || now - query.issuedAt < Argentum.CONFIG.entityOcclusionIntervalMs && (!query.occluded
+                            || query.result.covers(eyeX, eyeY, eyeZ, EYE_TOLERANCE / 2.0D, minX, minY, minZ, maxX, maxY, maxZ))) {
                         continue;
                     }
                 }
 
-                if (!this.shouldQuery(entity, camera, cameraX, cameraY, cameraZ)) {
+                double motion = MOTION_MARGIN + Math.max(Math.abs(entity.x - entity.prevX),
+                        Math.max(Math.abs(entity.y - entity.prevY), Math.abs(entity.z - entity.prevZ)));
+                minX -= motion;
+                minY -= motion;
+                minZ -= motion;
+                maxX += motion;
+                maxY += motion;
+                maxZ += motion;
+
+                // a box partly off screen draws no samples there, so only a box fully on screen can be proven hidden
+                if (this.frustum.intersectAab(
+                        (float) (minX - RENDER_MARGIN - cameraX), (float) (minY - RENDER_MARGIN - cameraY), (float) (minZ - RENDER_MARGIN - cameraZ),
+                        (float) (maxX + RENDER_MARGIN - cameraX), (float) (maxY + RENDER_MARGIN - cameraY), (float) (maxZ + RENDER_MARGIN - cameraZ))
+                        != FrustumIntersection.INSIDE) {
                     continue;
                 }
 
@@ -72,8 +124,9 @@ public class EntityOcclusionCuller {
                     beginQueryPass();
                     queryPass = true;
                 }
-                this.issue(query, entity.getShape(), cameraX, cameraY, cameraZ);
-                query.lastQueryTime = now;
+                query.issued.set(eyeX, eyeY, eyeZ, minX, minY, minZ, maxX, maxY, maxZ);
+                this.issue(query, cameraX, cameraY, cameraZ);
+                query.issuedAt = now;
             }
         } finally {
             if (queryPass) {
@@ -88,7 +141,7 @@ public class EntityOcclusionCuller {
 
     public boolean isVisible(Entity entity) {
         Query query = this.queries.get(entity);
-        return query == null || !query.occluded;
+        return query == null || !query.culled;
     }
 
     public void clear() {
@@ -100,13 +153,14 @@ public class EntityOcclusionCuller {
         this.queries.clear();
     }
 
-    private boolean shouldQuery(Entity entity, Entity camera, double cameraX, double cameraY, double cameraZ) {
-        if (entity == camera || entity.removed) {
+    private boolean isCullable(Entity entity, Entity camera) {
+        if (entity == camera || entity.removed || entity.ignoreCameraFrustum || entity instanceof Boss
+                || entity instanceof MobEntity mob && mob.isLeashed()) {
             return false;
         }
 
         Box box = entity.getShape();
-        if (!isFinite(box) || contains(box, cameraX, cameraY, cameraZ)) {
+        if (!isFinite(box)) {
             return false;
         }
 
@@ -118,19 +172,25 @@ public class EntityOcclusionCuller {
         if (query.pending && GL15C.glGetQueryObjecti(query.id, GL15C.GL_QUERY_RESULT_AVAILABLE) != 0) {
             query.occluded = GL15C.glGetQueryObjecti(query.id, GL15C.GL_QUERY_RESULT) == 0;
             query.pending = false;
+            Snapshot result = query.result;
+            query.result = query.issued;
+            query.issued = result;
         }
     }
 
-    private void issue(Query query, Box box, double cameraX, double cameraY, double cameraZ) {
+    private void issue(Query query, double cameraX, double cameraY, double cameraZ) {
         if (query.id == 0) {
             query.id = GL15C.glGenQueries();
         }
 
         GL15C.glBeginQuery(this.queryMode, query.id);
 
+        Snapshot box = query.issued;
         BufferBuilder buffer = Tesselator.getInstance().getBuffer();
         buffer.begin(GL11.GL_QUAD_STRIP, DefaultVertexFormat.POSITION);
-        addBox(buffer, box, cameraX, cameraY, cameraZ);
+        addBox(buffer,
+                box.minX - RENDER_MARGIN - cameraX, box.minY - RENDER_MARGIN - cameraY, box.minZ - RENDER_MARGIN - cameraZ,
+                box.maxX + RENDER_MARGIN - cameraX, box.maxY + RENDER_MARGIN - cameraY, box.maxZ + RENDER_MARGIN - cameraZ);
         Tesselator.getInstance().end();
 
         GL15C.glEndQuery(this.queryMode);
@@ -164,14 +224,7 @@ public class EntityOcclusionCuller {
         }
     }
 
-    private static void addBox(BufferBuilder buffer, Box box, double cameraX, double cameraY, double cameraZ) {
-        double minX = box.minX - BOX_MARGIN - cameraX;
-        double minY = box.minY - BOX_MARGIN - cameraY;
-        double minZ = box.minZ - BOX_MARGIN - cameraZ;
-        double maxX = box.maxX + BOX_MARGIN - cameraX;
-        double maxY = box.maxY + BOX_MARGIN - cameraY;
-        double maxZ = box.maxZ + BOX_MARGIN - cameraZ;
-
+    private static void addBox(BufferBuilder buffer, double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
         vertex(buffer, maxX, maxY, maxZ);
         vertex(buffer, maxX, maxY, minZ);
         vertex(buffer, minX, maxY, maxZ);
@@ -201,16 +254,42 @@ public class EntityOcclusionCuller {
                 && Double.isFinite(box.maxX) && Double.isFinite(box.maxY) && Double.isFinite(box.maxZ);
     }
 
-    private static boolean contains(Box box, double x, double y, double z) {
-        return x >= box.minX && x <= box.maxX && y >= box.minY && y <= box.maxY
-                && z >= box.minZ && z <= box.maxZ;
-    }
-
     private static class Query {
         private int id;
         private boolean pending;
         private boolean occluded;
-        private long lastQueryTime;
+        private boolean culled;
+        private long issuedAt;
         private long lastSeenFrame;
+        private Snapshot issued = new Snapshot();
+        private Snapshot result = new Snapshot();
+    }
+
+    private static class Snapshot {
+        private double eyeX, eyeY, eyeZ;
+        private double minX, minY, minZ, maxX, maxY, maxZ;
+
+        private void set(double eyeX, double eyeY, double eyeZ,
+                double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+            this.eyeX = eyeX;
+            this.eyeY = eyeY;
+            this.eyeZ = eyeZ;
+            this.minX = minX;
+            this.minY = minY;
+            this.minZ = minZ;
+            this.maxX = maxX;
+            this.maxY = maxY;
+            this.maxZ = maxZ;
+        }
+
+        private boolean covers(double eyeX, double eyeY, double eyeZ, double tolerance,
+                double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+            double dx = eyeX - this.eyeX;
+            double dy = eyeY - this.eyeY;
+            double dz = eyeZ - this.eyeZ;
+            return dx * dx + dy * dy + dz * dz <= tolerance * tolerance
+                    && minX >= this.minX && minY >= this.minY && minZ >= this.minZ
+                    && maxX <= this.maxX && maxY <= this.maxY && maxZ <= this.maxZ;
+        }
     }
 }

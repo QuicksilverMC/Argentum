@@ -204,7 +204,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
         boolean batching = this.entityInstancing.isBatchActive();
         List<Entity> entities = this.entityGatherer.getLoadedEntityList((ClientWorld)this.world,
                 MathHelper.floor(cameraX) >> 4, MathHelper.floor(cameraZ) >> 4, this.getEffectiveRenderDistance() + 1);
-        this.entityOcclusionCuller.prepare(entities, camera, cameraX, cameraY, cameraZ);
+        this.entityOcclusionCuller.prepare(entities, camera, tickDelta, this.matrices, cameraX, cameraY, cameraZ);
 
         int rendered = 0;
         boolean isSelfSleeping = minecraft.getCamera() instanceof LivingEntity living && living.isSleeping();
