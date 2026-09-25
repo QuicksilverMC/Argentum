@@ -1,5 +1,9 @@
 #version 130
 
+#if defined(LEGACY) && defined(TEXTURE_ARRAY)
+#extension GL_EXT_texture_array : require
+#endif
+
 #import <sodium:include/fog.glsl>
 
 uniform sampler2D uTexture;

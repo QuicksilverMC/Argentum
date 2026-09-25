@@ -17,7 +17,6 @@ import org.embeddedt.embeddium.impl.gl.device.CommandList;
 import org.embeddedt.embeddium.impl.gl.shader.GlProgram;
 import org.embeddedt.embeddium.impl.gl.shader.GlShader;
 import org.embeddedt.embeddium.impl.gl.shader.ShaderConstants;
-import org.embeddedt.embeddium.impl.gl.shader.ShaderParser;
 import org.embeddedt.embeddium.impl.gl.shader.ShaderType;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderComponent;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderFogComponent;
@@ -27,13 +26,7 @@ import org.joml.Vector4fc;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 
-import java.util.regex.Pattern;
-
 public final class ModelInstancer {
-    private static final Pattern VERSION_DIRECTIVE = Pattern.compile("^#version.*$", Pattern.MULTILINE);
-    private static final Pattern IN_PARAM = Pattern.compile("^in ", Pattern.MULTILINE);
-    private static final Pattern OUT_PARAM = Pattern.compile("^out ", Pattern.MULTILINE);
-
     private final InstanceBatcher batcher = new InstanceBatcher();
     private final BakedItemGeometryCache itemGeometry = new BakedItemGeometryCache();
     private final TextureArrayManager textureArrays = new TextureArrayManager();
@@ -365,8 +358,8 @@ public final class ModelInstancer {
         }
         ShaderConstants shaderConstants = constants.build();
         GlShader[] shaders = {
-                this.loadShader(ShaderType.VERTEX, "argentum:entity_instancing.vert", shaderConstants),
-                this.loadShader(ShaderType.FRAGMENT, "argentum:entity_instancing.frag", shaderConstants)
+                ShaderLoader.loadShader(ShaderType.VERTEX, "argentum:entity_instancing.vert", shaderConstants),
+                ShaderLoader.loadShader(ShaderType.FRAGMENT, "argentum:entity_instancing.frag", shaderConstants)
         };
         try {
             GlProgram.Builder builder = GlProgram.builder("argentum:model_instancing");
@@ -382,21 +375,6 @@ public final class ModelInstancer {
                 shader.delete();
             }
         }
-    }
-
-    private GlShader loadShader(ShaderType type, String path, ShaderConstants constants) {
-        String source = ShaderParser.parseShader(ShaderLoader.getShaderSource(path), ShaderLoader::getShaderSource, constants);
-        if (!this.textureArrays.usesCoreApi()) {
-            String preamble = "#version 120";
-            if (this.textureArraysSupported) {
-                preamble += "\n#extension GL_EXT_texture_array : require";
-            }
-            preamble += "\n#define LEGACY\n#define texture texture2D";
-            source = VERSION_DIRECTIVE.matcher(source).replaceFirst(preamble);
-            source = IN_PARAM.matcher(source).replaceAll(type == ShaderType.VERTEX ? "attribute " : "varying ");
-            source = OUT_PARAM.matcher(source).replaceAll("varying ");
-        }
-        return new GlShader(type, path, source);
     }
 
     public record BatchStats(int instances, int draws, int textures) {

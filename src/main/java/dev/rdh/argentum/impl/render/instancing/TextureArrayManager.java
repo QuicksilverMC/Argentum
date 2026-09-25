@@ -60,10 +60,6 @@ public final class TextureArrayManager {
         return true;
     }
 
-    public boolean usesCoreApi() {
-        return this.core;
-    }
-
     public int bindFallback() {
         GlStateManager.activeTexture(GLX.GL_TEXTURE2);
         int previous = this.boundArray;
