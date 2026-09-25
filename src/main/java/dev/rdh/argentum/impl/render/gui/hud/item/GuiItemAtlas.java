@@ -114,7 +114,7 @@ public final class GuiItemAtlas {
             } else {
                 slot = this.slots.removeFirstInt();
             }
-            this.slots.putAndMoveToLast(key, slot);
+            this.slots.putAndMoveToLast(key.withCopiedNbt(), slot);
             this.bakedAtVersion[slot] = Integer.MIN_VALUE;
         }
 
@@ -239,9 +239,13 @@ public final class GuiItemAtlas {
     }
 
     public record Key(BakedModel model, Item item, int damage, NbtElement nbt) {
+        public Key withCopiedNbt() {
+            if (this.nbt == null) return this;
+            return new Key(this.model, this.item, this.damage, this.nbt.copy());
+        }
     }
 
     public static Key keyFor(BakedModel model, ItemStack stack) {
-        return new Key(model, stack.getItem(), stack.getDamage(), stack.hasNbt() ? stack.getNbt().copy() : null);
+        return new Key(model, stack.getItem(), stack.getDamage(), stack.getNbt());
     }
 }
