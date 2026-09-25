@@ -75,13 +75,18 @@ public final class CustomItems {
     }
 
     public List<Effect> effects(ItemStack stack) {
-        List<Effect> effects = new ObjectArrayList<>();
-        if (!Cera.CONFIG.customItems || stack == null) return effects;
-        IntSet layers = new IntOpenHashSet();
-        for (CitRule rule : rules.enchantments) {
-            if (rule.matches(stack) && rule.texture() != null && layers.add(rule.layer())) {
-                effects.add(new Effect(file(rule.texture()), rule.blend(), rule.speed(), rule.rotation()));
+        Rules rules = this.rules;
+        if (!Cera.CONFIG.customItems || stack == null || rules.enchantments.isEmpty()) return List.of();
+        List<Effect> effects = List.of();
+        IntSet layers = null;
+        for (int i = 0; i < rules.enchantments.size(); i++) {
+            CitRule rule = rules.enchantments.get(i);
+            if (rules.effects[i] == null || !rule.matches(stack)) continue;
+            if (layers == null) {
+                layers = new IntOpenHashSet();
+                effects = new ObjectArrayList<>();
             }
+            if (layers.add(rule.layer())) effects.add(rules.effects[i]);
         }
         return effects;
     }
@@ -143,7 +148,7 @@ public final class CustomItems {
     public record Effect(Identifier texture, BlendMethod blend, float speed, float rotation) {
     }
 
-    private record Rules(List<CitRule> all, Int2ObjectMap<List<CitRule>> byItem, List<CitRule> enchantments) {
+    private record Rules(List<CitRule> all, Int2ObjectMap<List<CitRule>> byItem, List<CitRule> enchantments, Effect[] effects) {
         private static Rules empty() {
             return of(new ObjectArrayList<>());
         }
@@ -155,7 +160,9 @@ public final class CustomItems {
                 if (rule.type() == CitRule.Type.ENCHANTMENT) enchantments.add(rule);
                 else for (int item : rule.items()) byItem.computeIfAbsent(item, ignored -> new ObjectArrayList<>()).add(rule);
             }
-            return new Rules(List.copyOf(all), byItem, List.copyOf(enchantments));
+            Effect[] effects = enchantments.stream().map(rule -> rule.texture() == null ? null
+                    : new Effect(file(rule.texture()), rule.blend(), rule.speed(), rule.rotation())).toArray(Effect[]::new);
+            return new Rules(List.copyOf(all), byItem, List.copyOf(enchantments), effects);
         }
 
         private Rules registerModels(ResourceManager resources, Map<String, Identifier> itemModels, Map<Identifier, BlockModel> blockModels) {
@@ -166,7 +173,7 @@ public final class CustomItems {
 
         private Rules linkModels(ModelManager manager) {
             for (CitRule rule : all) rule.linkModels(manager);
-            return new Rules(all, byItem, enchantments);
+            return new Rules(all, byItem, enchantments, effects);
         }
     }
 }
