@@ -69,7 +69,7 @@ void main() {
     }
     vLightCoord = (gl_TextureMatrix[1] * vec4(aLightCoord.xy, 0.0, 1.0)).xy;
     vTextureLayer = aLightCoord.z;
-    vLighting = min(1.0, (light0 + light1) * 0.6 + 0.4);
+    vLighting = (light0 + light1) * 0.6 + 0.4;
 #ifdef USE_FOG
     vFogDistance = getFragDistance(u_FogShape, eyePosition.xyz);
 #endif

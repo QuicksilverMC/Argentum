@@ -51,7 +51,7 @@ void main() {
         color = textureArray(uTextureArray, vec3(vTexCoord, vTextureLayer));
     }
 #endif
-    color *= vColor;
+    color *= uEmissive ? vColor : vec4(min(vColor.rgb * vLighting, 1.0), vColor.a);
     if (color.a <= 0.1) {
         discard;
     }
@@ -63,7 +63,7 @@ void main() {
     }
 
     if (!uEmissive) {
-        color.rgb *= texture(uLightmap, vLightCoord).rgb * vLighting;
+        color.rgb *= texture(uLightmap, vLightCoord).rgb;
     }
     color.rgb = mix(color.rgb, vOverlay.rgb, vOverlay.a);
 #ifdef USE_FOG_EXP2
