@@ -24,6 +24,7 @@ import dev.rdh.argentum.impl.render.terrain.compile.task.ChunkBuilderMeshingTask
 import dev.rdh.argentum.impl.world.cloned.ChunkRenderContext;
 import dev.rdh.argentum.impl.world.cloned.ClonedChunkSectionCache;
 
+import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.client.render.texture.TextureAtlasSprite;
 import net.minecraft.world.World;
@@ -59,7 +60,7 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
 
 	@Override
     protected boolean useFogOcclusion() {
-        return Argentum.CONFIG.fogCulling;
+        return Argentum.CONFIG.fogCulling && GlStateManager.FOG.end >= 16.0F;
     }
 
     @Override
