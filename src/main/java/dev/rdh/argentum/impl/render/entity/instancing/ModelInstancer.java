@@ -149,29 +149,7 @@ public final class ModelInstancer {
         );
         this.instanceCount++;
 
-        // If this base instance's texture has an emissive overlay, draw it full-bright over the same
-        // geometry (EMISSIVE_REPLACE). Sharing the exact matrix keeps the overlay from z-fighting.
-        if (isBasePass(pass)) {
-            Identifier overlay = this.emissiveOverlay(texture);
-            if (overlay != null) {
-                this.submit(geometry, overlay, InstanceRenderPass.EMISSIVE_REPLACE, matrix,
-                        packedLight, color, effectTime, overlayColor, box);
-            }
-        }
         return true;
-    }
-
-    // Overridden (e.g. by cera) to resolve a texture to its emissive overlay. Null means none.
-    public Identifier emissiveOverlay(Identifier texture) {
-        return null;
-    }
-
-    private static boolean isBasePass(InstanceRenderPass pass) {
-        return pass == InstanceRenderPass.NORMAL
-                || pass == InstanceRenderPass.CULL_FRONT
-                || pass == InstanceRenderPass.CULL_BACK
-                || pass == InstanceRenderPass.ITEM
-                || pass == InstanceRenderPass.TRANSLUCENT;
     }
 
     public BatchStats flush(CommandList commandList) {

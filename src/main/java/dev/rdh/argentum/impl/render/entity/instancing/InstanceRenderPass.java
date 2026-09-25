@@ -7,6 +7,7 @@ public enum InstanceRenderPass {
     NO_CULL(0),
     ITEM(0),
     TRANSLUCENT(0),
+
     EMISSIVE(0),
     EMISSIVE_REPLACE(0),
     GLINT(0),
@@ -19,5 +20,9 @@ public enum InstanceRenderPass {
 
     InstanceRenderPass(int chargePass) {
         this.chargePass = chargePass;
+    }
+
+    public boolean isBase() {
+        return this.ordinal() <= TRANSLUCENT.ordinal();
     }
 }
