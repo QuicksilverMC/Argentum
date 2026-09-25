@@ -45,7 +45,7 @@ public class RenderPassConfigurationBuilder {
                 .fragmentDiscard(false)
                 .useReverseOrder(false)
                 .build();
-        TerrainRenderPass cutoutMippedPass = builderForRenderType(false, vertexType, extraDefines)
+        TerrainRenderPass cutoutMippedPass = builderForRenderType(true, vertexType, extraDefines)
                 .name("cutout_mipped")
                 .fragmentDiscard(true)
                 .useReverseOrder(false)
@@ -58,7 +58,7 @@ public class RenderPassConfigurationBuilder {
                 .build();
         Material translucentMaterial = new Material(translucentPass, AlphaCutoffParameter.ZERO, true);
         Material solidMaterial = new Material(solidPass, AlphaCutoffParameter.ZERO, true);
-        Material cutoutMippedMaterial = new Material(cutoutMippedPass, AlphaCutoffParameter.HALF, true);
+        Material cutoutMippedMaterial = new Material(cutoutMippedPass, AlphaCutoffParameter.ONE_TENTH, true);
         Material cutoutMaterial = new Material(cutoutMippedPass, AlphaCutoffParameter.ONE_TENTH, false);
 
         Map<BlockLayer, Collection<TerrainRenderPass>> vanillaRenderStages = new Reference2ReferenceOpenHashMap<>();
