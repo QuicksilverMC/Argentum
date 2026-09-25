@@ -350,7 +350,7 @@ public final class CustomColormaps implements ResourceReloadListener {
                 case GRID -> {
                     int cy = pos.getY() - this.yOffset;
                     if (this.yVariance > 0) {
-                        int hash = Cera.intHash(pos.getX() * 31 + pos.getZ()) & 0xFF;
+                        int hash = Cera.intHash(pos.getX() << (16 + pos.getZ())) & 0xFF;
                         cy += hash % (this.yVariance * 2 + 1) - this.yVariance;
                     }
                     yield sample(biome.id, cy);
