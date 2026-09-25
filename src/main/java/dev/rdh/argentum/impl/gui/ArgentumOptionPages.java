@@ -312,17 +312,17 @@ public final class ArgentumOptionPages {
                         OptionImpact.HIGH,
                         (config, value) -> config.animateOnlyVisibleTextures = value,
                         config -> config.animateOnlyVisibleTextures, OptionFlag.REQUIRES_RENDERER_UPDATE))
-                .add(toggle(Option.FONT_BATCHING, OptionImpact.MEDIUM, (config3, value2) -> config3.fontBatching = value2, config4 -> config4.fontBatching))
-                .add(toggle(Option.GUI_ITEM_ATLAS, OptionImpact.MEDIUM,
+                .add(toggle(Option.FONT_BATCHING, OptionImpact.HIGH, (config3, value2) -> config3.fontBatching = value2, config4 -> config4.fontBatching))
+                .add(toggle(Option.GUI_ITEM_ATLAS, OptionImpact.HIGH,
                         (config, value) -> config.guiItemAtlas = value, config -> config.guiItemAtlas))
                 .add(toggle(StandardOptions.Option.TRANSLUCENT_FACE_SORTING,
                         OptionImpact.VARIES,
                         (config, value) -> config.translucencySorting = value,
                         config -> config.translucencySorting, OptionFlag.REQUIRES_RENDERER_RELOAD))
                 .add(toggle(StandardOptions.Option.USE_FASTER_CLOUDS,
-                        OptionImpact.LOW,
+                        OptionImpact.MEDIUM,
                         (config, value) -> config.fasterClouds = value, config -> config.fasterClouds))
-                .add(toggle(Option.FASTER_WEATHER, OptionImpact.LOW,
+                .add(toggle(Option.FASTER_WEATHER, OptionImpact.MEDIUM,
                         (config, value) -> config.fasterWeather = value, config -> config.fasterWeather))
                 .add(toggle(Option.SAFE_CHUNK_EDGES, OptionImpact.LOW, (config1, value1) -> config1.safeChunkEdges = value1, config2 -> config2.safeChunkEdges, OptionFlag.REQUIRES_RENDERER_RELOAD))
                 .add(toggle(StandardOptions.Option.RENDER_PASS_OPTIMIZATION,
@@ -334,7 +334,7 @@ public final class ArgentumOptionPages {
                         (config, value) -> config.compactVertexFormat = value, config -> config.compactVertexFormat,
                         OptionFlag.REQUIRES_RENDERER_RELOAD))
                 .add(toggle(Option.GREEDY_RENDER_THREAD,
-                        OptionImpact.MEDIUM,
+                        OptionImpact.LOW,
                         (config, value) -> config.greedyRenderThread = value, config -> config.greedyRenderThread))
                 .add(toggle(Option.DECOUPLED_PRESENTATION,
                         OptionImpact.MEDIUM,
