@@ -97,7 +97,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
                             renderBlocks.render(blockState, blockPos, this.renderContext, buildContext.getBuffer(pass));
                         }
 
-						if (block.isOpaque()) {
+						if (block.isSolidRender()) {
                             occluder.markOpaque(blockPos.getX(), blockPos.getY(), blockPos.getZ());
                         }
                     }

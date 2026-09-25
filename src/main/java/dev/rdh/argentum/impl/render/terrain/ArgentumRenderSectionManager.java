@@ -69,7 +69,7 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
 
         var block = this.world.getBlockState(new BlockPos(camBlockPos.x(), camBlockPos.y(), camBlockPos.z())).getBlock();
 
-		return !spectator || !block.isOpaque();
+		return !spectator || !block.isSolidRender();
     }
 
     @Override
