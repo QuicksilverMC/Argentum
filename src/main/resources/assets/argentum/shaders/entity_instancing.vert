@@ -43,7 +43,7 @@ void main() {
     // selector; it reuses the colour slot for uv coefficients and has no colour of its own
     vec4 vertexColor = box ? vec4(1.0) : aVertexColor;
     vec4 eyePosition = gl_ModelViewMatrix * model * vec4(aPosition, 1.0);
-    vec3 normal = normalize(gl_NormalMatrix * mat3(model) * aNormal);
+    vec3 normal = normalize(gl_NormalMatrix * mat3(model) * aNormal) * length(aNormal);
     float light0 = max(dot(normal, uLightDirection0), 0.0);
     float light1 = max(dot(normal, uLightDirection1), 0.0);
 

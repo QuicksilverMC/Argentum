@@ -48,7 +48,7 @@ final class ArrowGeometry extends InstanceGeometry {
     }
 
     private static void vertex(FloatBuffer vertices, float x, float y, float z, float u, float v, float nx, float ny, float nz) {
-        vertices.put(x).put(y).put(z).put(u).put(v).put(nx).put(ny).put(nz)
+        vertices.put(x).put(y).put(z).put(u).put(v).put(nx * 0.05625F).put(ny * 0.05625F).put(nz * 0.05625F)
                 .put(1.0F).put(1.0F).put(1.0F).put(1.0F);
     }
 
