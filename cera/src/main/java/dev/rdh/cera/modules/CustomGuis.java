@@ -52,6 +52,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -62,9 +63,13 @@ public final class CustomGuis implements ResourceReloadListener {
     private volatile List<Rule> rules = List.of();
     private BlockPos blockPos;
     private Entity entity;
+    private final Map<Identifier, Identifier> resolved = new HashMap<>();
+    private Screen resolvedScreen;
+    private long resolvedTick;
 
     @Override
     public void resourcesReloaded(ResourceManager resources) {
+        this.resolved.clear();
         List<Rule> loaded = new ArrayList<>();
         List<NamespacedIdentifier> locations = new ArrayList<>(resources.findResources("minecraft", "optifine/gui/container/",
                 id -> id.identifier().endsWith(".properties")).keySet());
@@ -97,6 +102,17 @@ public final class CustomGuis implements ResourceReloadListener {
         if (!Cera.CONFIG.customGuis || !"minecraft".equals(original.getNamespace()) || !original.getPath().startsWith("textures/gui/")) {
             return original;
         }
+        Minecraft minecraft = Minecraft.getInstance();
+        long tick = minecraft.world == null ? Long.MIN_VALUE : minecraft.world.getTime();
+        if (minecraft.screen != this.resolvedScreen || tick != this.resolvedTick) {
+            this.resolved.clear();
+            this.resolvedScreen = minecraft.screen;
+            this.resolvedTick = tick;
+        }
+        return this.resolved.computeIfAbsent(original, this::compute);
+    }
+
+    private Identifier compute(Identifier original) {
         Minecraft minecraft = Minecraft.getInstance();
         Container container = Container.of(minecraft.screen);
         Context context = Context.of(minecraft, container, blockPos, entity);
