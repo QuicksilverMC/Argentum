@@ -62,10 +62,10 @@ void main() {
         discard;
     }
 
+    color.rgb = mix(color.rgb, vOverlay.rgb, vOverlay.a);
     if (!uEmissive) {
         color.rgb *= texture(uLightmap, vLightCoord).rgb;
     }
-    color.rgb = mix(color.rgb, vOverlay.rgb, vOverlay.a);
 #ifdef USE_FOG_EXP2
     color = _exp2Fog(color, vFogDistance, u_FogColor, u_FogDensity);
 #elif defined(USE_FOG_SMOOTH)
