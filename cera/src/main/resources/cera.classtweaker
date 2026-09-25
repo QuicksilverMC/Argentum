@@ -6,3 +6,4 @@ inject-interface net/minecraft/client/render/world/WorldRenderer dev/rdh/cera/ex
 inject-interface net/minecraft/client/render/texture/TextureManager dev/rdh/cera/ext/CeraTextureManagerExtension
 inject-interface net/minecraft/client/render/entity/EntityRenderDispatcher dev/rdh/cera/ext/CeraEntityRenderDispatcherExtension
 inject-interface net/minecraft/client/render/block/entity/BlockEntityRenderDispatcher dev/rdh/cera/ext/CeraBlockEntityRenderDispatcherExtension
+inject-interface net/minecraft/item/ItemStack dev/rdh/cera/ext/CeraItemStackExtension

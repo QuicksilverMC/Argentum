@@ -41,7 +41,7 @@
     "colors.PortalParticleMixin",
     "colors.LiquidDripParticleMixin",
     "ItemModelShaperMixin",
-    "ItemRendererMixin",
+    "ItemRendererMixin", "ItemStackMixin",
     "MinecraftMixin",
     "ModelBakeryMixin",
     "ModelManagerMixin",

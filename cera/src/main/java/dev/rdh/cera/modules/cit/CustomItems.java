@@ -10,6 +10,7 @@ import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.model.block.BlockModel;
 import net.minecraft.client.resource.ModelIdentifier;
 import net.minecraft.client.resource.manager.ResourceManager;
@@ -17,6 +18,7 @@ import net.minecraft.client.resource.model.BakedModel;
 import net.minecraft.client.resource.model.ModelManager;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.resource.Identifier;
 import net.ornithemc.osl.core.api.util.NamespacedIdentifier;
 import net.ornithemc.osl.resource.loader.api.resource.Resource;
@@ -27,20 +29,24 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public final class CustomItems {
     private volatile Rules rules = Rules.empty();
     private final Object2IntOpenHashMap<Identifier> glintWidths = new Object2IntOpenHashMap<>();
+    private int generation;
 
     public void registerModels(ResourceManager resources, Map<String, Identifier> itemModels,
                                Map<Identifier, BlockModel> blockModels) {
         rules = load().registerModels(resources, itemModels, blockModels);
+        generation++;
         glintWidths.clear();
         Cera.LOGGER.info("[CIT] Loaded {} rules", rules.all.size());
     }
 
     public void linkModels(ModelManager manager) {
         rules = rules.linkModels(manager);
+        generation++;
     }
 
     public void discardEmptyModels(Map<String, Identifier> itemModels, Map<Identifier, BlockModel> blockModels) {
@@ -52,6 +58,20 @@ public final class CustomItems {
         if (!Cera.CONFIG.customItems || stack == null) return original;
         List<CitRule> candidates = rules.byItem.get(Item.getId(stack.getItem()));
         if (candidates == null) return original;
+        StackCache cache = cache(stack);
+        if (cache != null && cache.model != null && cache.original == original && Objects.equals(cache.location, location)) {
+            return cache.model;
+        }
+        BakedModel model = resolve(stack, original, location, candidates);
+        if (cache != null) {
+            cache.original = original;
+            cache.location = location;
+            cache.model = model;
+        }
+        return model;
+    }
+
+    private static BakedModel resolve(ItemStack stack, BakedModel original, ModelIdentifier location, List<CitRule> candidates) {
         String variant = location == null ? null : location.getPath();
         for (CitRule rule : candidates) {
             if (rule.type() != CitRule.Type.ITEM || !rule.matches(stack)) continue;
@@ -77,6 +97,8 @@ public final class CustomItems {
     public List<Effect> effects(ItemStack stack) {
         Rules rules = this.rules;
         if (!Cera.CONFIG.customItems || stack == null || rules.enchantments.isEmpty()) return List.of();
+        StackCache cache = cache(stack);
+        if (cache != null && cache.effects != null) return cache.effects;
         List<Effect> effects = List.of();
         IntSet layers = null;
         for (int i = 0; i < rules.enchantments.size(); i++) {
@@ -88,7 +110,22 @@ public final class CustomItems {
             }
             if (layers.add(rule.layer())) effects.add(rules.effects[i]);
         }
+        if (cache != null) cache.effects = effects;
         return effects;
+    }
+
+    private StackCache cache(ItemStack stack) {
+        ClientWorld world = Minecraft.getInstance().world;
+        if (world == null) return null;
+        StackCache cache = stack.cera$getCitCache();
+        if (cache == null) stack.cera$setCitCache(cache = new StackCache());
+        long key = (long) generation << 32 | world.getTime() & 0xFFFFFFFFL;
+        if (cache.key != key) {
+            cache.key = key;
+            cache.model = null;
+            cache.effects = null;
+        }
+        return cache;
     }
 
     public int glintWidth(Identifier texture) {
@@ -146,6 +183,14 @@ public final class CustomItems {
     }
 
     public record Effect(Identifier texture, BlendMethod blend, float speed, float rotation) {
+    }
+
+    public static final class StackCache {
+        private long key;
+        private BakedModel original;
+        private ModelIdentifier location;
+        private BakedModel model;
+        private List<Effect> effects;
     }
 
     private record Rules(List<CitRule> all, Int2ObjectMap<List<CitRule>> byItem, List<CitRule> enchantments, Effect[] effects) {
