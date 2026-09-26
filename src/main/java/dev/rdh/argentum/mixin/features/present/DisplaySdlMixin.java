@@ -18,7 +18,7 @@ import static org.lwjgl.sdl.SDLVideo.SDL_GetDisplayForWindow;
 @Mixin(value = DisplaySdl.class, remap = false)
 public abstract class DisplaySdlMixin {
     @Unique
-    private long argentum$lastPresentNanos;
+    private long argentum$nextPresentNanos = Long.MIN_VALUE;
 
     @Shadow
     public abstract long getHandle();
@@ -35,10 +35,10 @@ public abstract class DisplaySdlMixin {
         }
 
         long now = System.nanoTime();
-        if (now - this.argentum$lastPresentNanos < (long) (1.0e9 / mode.refresh_rate())) {
+        if (now < this.argentum$nextPresentNanos) {
             ci.cancel();
             return;
         }
-        this.argentum$lastPresentNanos = now;
+        this.argentum$nextPresentNanos = Math.max(this.argentum$nextPresentNanos + (long) (1.0e9 / mode.refresh_rate()), now);
     }
 }
