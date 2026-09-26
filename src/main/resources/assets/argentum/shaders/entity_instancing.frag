@@ -1,5 +1,9 @@
 #version 130
 
+#if defined(LEGACY) && defined(TEXTURE_ARRAY)
+#extension GL_EXT_texture_array : require
+#endif
+
 #import <sodium:include/fog.glsl>
 
 uniform sampler2D uTexture;
@@ -18,7 +22,7 @@ uniform vec4 u_FogColor;
 uniform float u_FogStart;
 uniform float u_FogEnd;
 #endif
-#ifdef USE_FOG_EXP2
+#if defined(USE_FOG_EXP) || defined(USE_FOG_EXP2)
 uniform float u_FogDensity;
 #endif
 #endif
@@ -69,6 +73,8 @@ void main() {
     }
 #ifdef USE_FOG_EXP2
     color = _exp2Fog(color, vFogDistance, u_FogColor, u_FogDensity);
+#elif defined(USE_FOG_EXP)
+    color = _expFog(color, vFogDistance, u_FogColor, u_FogDensity);
 #elif defined(USE_FOG_SMOOTH)
     color = _linearFog(color, vFogDistance, u_FogColor, u_FogStart, u_FogEnd);
 #endif

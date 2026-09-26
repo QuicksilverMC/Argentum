@@ -21,7 +21,6 @@ import org.embeddedt.embeddium.impl.gl.shader.uniform.GlUniformFloat4v;
 import org.embeddedt.embeddium.impl.gl.shader.uniform.GlUniformInt;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkFogMode;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderComponent;
-import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderFogComponent;
 import org.embeddedt.embeddium.impl.render.shader.ShaderLoader;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL;
@@ -29,6 +28,7 @@ import org.lwjgl.opengl.GL;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.instancing.InstanceDataBuffer;
 import dev.rdh.argentum.impl.render.instancing.InstancedGeometryBuffer;
+import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
 
 import java.nio.FloatBuffer;
 import java.util.List;
@@ -231,7 +231,7 @@ public final class WeatherRenderer {
                 }
             }
         }
-        return this.programs.get(ChunkShaderFogComponent.FOG_SERVICE.getFogMode());
+        return this.programs.get(ArgentumFogService.INSTANCE.getFogMode());
     }
 
     public void close(CommandList commandList) {
@@ -296,7 +296,7 @@ public final class WeatherRenderer {
                     ctx.bindUniform("uFrame0", GlUniformFloat4v::new),
                     ctx.bindUniform("uFrame1", GlUniformFloat4v::new),
                     ctx.bindUniform("uFrame2", GlUniformFloat4v::new),
-                    fogFactory.create(ctx));
+                    fogFactory.create(ctx, ArgentumFogService.ENVIRONMENT));
         }
     }
 

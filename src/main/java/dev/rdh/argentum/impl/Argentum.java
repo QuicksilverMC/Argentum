@@ -2,8 +2,6 @@ package dev.rdh.argentum.impl;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
-import org.embeddedt.embeddium.impl.gl.device.GLRenderDevice;
-import org.lwjgl.opengl.GL15C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +23,6 @@ public class Argentum implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        GLRenderDevice.VANILLA_STATE_RESETTER = () -> GL15C.glBindBuffer(GL15C.GL_ARRAY_BUFFER, 0);
         FabricLoader loader = FabricLoader.getInstance();
         VERSION = loader.getModContainer(ID).orElseThrow().getMetadata().getVersion().toString();
         CONFIG_STORAGE = JsonOptionStorage.load(getConfigPath(loader.getConfigDir()), ArgentumConfig.class, ArgentumConfig::new, ArgentumConfig::validate);

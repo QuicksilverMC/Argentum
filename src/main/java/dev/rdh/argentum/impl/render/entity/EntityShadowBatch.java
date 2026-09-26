@@ -25,7 +25,6 @@ import org.embeddedt.embeddium.impl.gl.attribute.GlVertexAttributeFormat;
 import org.embeddedt.embeddium.impl.gl.attribute.GlVertexFormat;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkFogMode;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderComponent;
-import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderFogComponent;
 import org.embeddedt.embeddium.impl.render.shader.ShaderLoader;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL;
@@ -33,6 +32,7 @@ import org.lwjgl.opengl.GL;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.instancing.InstancedGeometryBuffer;
 import dev.rdh.argentum.impl.render.instancing.InstanceDataBuffer;
+import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
 
 import java.nio.FloatBuffer;
 import java.util.List;
@@ -219,7 +219,7 @@ public final class EntityShadowBatch {
                 }
                 Argentum.LOGGER.info("Instanced entity shadows enabled");
             }
-            program = programs.get(ChunkShaderFogComponent.FOG_SERVICE.getFogMode());
+            program = programs.get(ArgentumFogService.INSTANCE.getFogMode());
         } catch (RuntimeException exception) {
             supported = false;
             Argentum.LOGGER.error("Instanced entity shadows failed to initialize", exception);
@@ -276,7 +276,7 @@ public final class EntityShadowBatch {
 
     private record ShadowShader(GlUniformInt texture, ChunkShaderComponent fog) {
         ShadowShader(ShaderBindingContext ctx, ChunkShaderComponent.Factory<?> fogFactory) {
-            this(ctx.bindUniform("uTexture", GlUniformInt::new), fogFactory.create(ctx));
+            this(ctx.bindUniform("uTexture", GlUniformInt::new), fogFactory.create(ctx, ArgentumFogService.ENVIRONMENT));
         }
     }
 

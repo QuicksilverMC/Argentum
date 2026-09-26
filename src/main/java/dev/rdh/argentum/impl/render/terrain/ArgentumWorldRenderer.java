@@ -3,7 +3,6 @@ package dev.rdh.argentum.impl.render.terrain;
 import org.embeddedt.embeddium.impl.gl.device.CommandList;
 import org.embeddedt.embeddium.impl.gl.device.RenderDevice;
 import org.embeddedt.embeddium.impl.render.chunk.ChunkRenderMatrices;
-import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderFogComponent;
 import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkMeshFormats;
 import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkVertexType;
 import org.embeddedt.embeddium.impl.render.chunk.map.ChunkTrackerHolder;
@@ -18,6 +17,7 @@ import dev.rdh.argentum.impl.render.entity.EntityShadowBatch;
 import dev.rdh.argentum.impl.render.entity.instancing.EntityInstancing;
 import dev.rdh.argentum.impl.render.entity.instancing.ModelInstancer;
 import dev.rdh.argentum.impl.render.environment.WeatherRenderer;
+import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
 
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.SignBlockEntity;
@@ -151,7 +151,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
 
         float pitch = viewEntity.pitch;
         float yaw = viewEntity.yaw;
-        float fogDistance = ChunkShaderFogComponent.FOG_SERVICE.getFogCutoff();
+        float fogDistance = ArgentumFogService.INSTANCE.getFogCutoff();
 
         return new CameraState(x, y, z, pitch, yaw, fogDistance);
     }

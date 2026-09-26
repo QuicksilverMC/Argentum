@@ -12,7 +12,12 @@ import java.nio.FloatBuffer;
 
 public record ModelPartGeometry(FloatBuffer vertices, int vertexCount) {
     public static ModelPartGeometry create(ModelPart part, float scale) {
-        int vertexCount = part.boxes.size() * 24;
+        int vertexCount = 0;
+        for (Box box : part.boxes) {
+            for (Polygon polygon : ((BoxAccessor)box).celeritas$getFaces()) {
+                vertexCount += polygon.vertices.length;
+            }
+        }
         FloatBuffer vertices = BufferUtils.createFloatBuffer(vertexCount * 12);
         for (Box box : part.boxes) {
             for (Polygon polygon : ((BoxAccessor)box).celeritas$getFaces()) {

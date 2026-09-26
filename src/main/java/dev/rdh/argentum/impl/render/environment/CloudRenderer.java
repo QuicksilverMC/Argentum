@@ -22,13 +22,13 @@ import org.embeddedt.embeddium.impl.gl.tessellation.GlVertexArrayTessellation;
 import org.embeddedt.embeddium.impl.gl.tessellation.TessellationBinding;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkFogMode;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderComponent;
-import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderFogComponent;
 import org.embeddedt.embeddium.impl.render.shader.ShaderLoader;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 
 import dev.rdh.argentum.impl.Argentum;
+import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -172,7 +172,7 @@ public final class CloudRenderer {
                 }
             }
         }
-        return this.programs.get(ChunkShaderFogComponent.FOG_SERVICE.getFogMode());
+        return this.programs.get(ArgentumFogService.INSTANCE.getFogMode());
     }
 
     private void createMesh(CommandList commandList, int firstCell, int lastCell) {
@@ -296,7 +296,7 @@ public final class CloudRenderer {
             this(ctx.bindUniform("uTexture", GlUniformInt::new),
                     ctx.bindUniform("uFrame0", GlUniformFloat4v::new),
                     ctx.bindUniform("uFrame1", GlUniformFloat4v::new),
-                    fogFactory.create(ctx)
+                    fogFactory.create(ctx, ArgentumFogService.ENVIRONMENT)
             );
         }
     }

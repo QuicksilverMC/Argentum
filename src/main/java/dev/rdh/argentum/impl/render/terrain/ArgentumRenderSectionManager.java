@@ -8,8 +8,8 @@ import org.embeddedt.embeddium.impl.render.chunk.RenderSection;
 import org.embeddedt.embeddium.impl.render.chunk.RenderSectionManager;
 import org.embeddedt.embeddium.impl.render.chunk.compile.ChunkBuildOutput;
 import org.embeddedt.embeddium.impl.render.chunk.data.BuiltRenderSectionData;
+import org.embeddedt.embeddium.impl.render.chunk.fog.FogService;
 import org.embeddedt.embeddium.impl.render.chunk.compile.tasks.ChunkBuilderTask;
-import org.embeddedt.embeddium.impl.render.chunk.multidraw.DirectMultiDrawEmitter;
 import org.embeddedt.embeddium.impl.render.chunk.occlusion.AsyncOcclusionMode;
 import org.embeddedt.embeddium.impl.render.chunk.lists.SectionTicker;
 import org.embeddedt.embeddium.impl.render.chunk.sprite.GenericSectionSpriteTicker;
@@ -26,6 +26,7 @@ import dev.rdh.argentum.impl.render.blockentity.SlotSheet;
 import dev.rdh.argentum.impl.render.terrain.compile.ArgentumChunkBuildContext;
 import dev.rdh.argentum.impl.render.terrain.compile.PrimitiveBuiltRenderSectionData;
 import dev.rdh.argentum.impl.render.terrain.compile.task.ChunkBuilderMeshingTask;
+import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
 import dev.rdh.argentum.impl.world.cloned.ChunkRenderContext;
 import dev.rdh.argentum.impl.world.cloned.ClonedChunkSectionCache;
 
@@ -71,6 +72,16 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
     }
 
     @Override
+    protected boolean useRasterOcclusionCulling() {
+        return Argentum.CONFIG.rasterCulling;
+    }
+
+    @Override
+    public FogService getFogService() {
+        return ArgentumFogService.INSTANCE;
+    }
+
+    @Override
     protected boolean shouldUseOcclusionCulling(Viewport positionedViewport, boolean spectator) {
         var camBlockPos = positionedViewport.getBlockCoord();
 
@@ -110,7 +121,7 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
             return null;
         }
 
-        return new ChunkBuilderMeshingTask(render, context, frame, this.cameraPosition);
+        return new ChunkBuilderMeshingTask(render, context, frame, this.cameraPosition, this.useRasterOcclusionCulling());
     }
 
     @Override
@@ -126,7 +137,7 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
     private static class ChunkRenderer extends DefaultChunkRenderer {
 
         public ChunkRenderer(RenderDevice device, RenderPassConfiguration<?> renderPassConfiguration) {
-            super(device, renderPassConfiguration, new DirectMultiDrawEmitter());
+            super(device, renderPassConfiguration, ArgentumFogService.INSTANCE);
             renderPassConfiguration.getAllKnownRenderPasses().forEach(pass -> {
                 for (ChunkFogMode fogMode : ChunkFogMode.values()) {
                     this.compileProgram(new ChunkShaderOptions(List.of(fogMode), pass));

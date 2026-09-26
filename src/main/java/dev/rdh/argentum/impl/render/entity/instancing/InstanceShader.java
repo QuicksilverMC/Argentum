@@ -7,6 +7,7 @@ import org.embeddedt.embeddium.impl.gl.shader.uniform.GlUniformMatrix4f;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderComponent;
 
 import dev.rdh.argentum.impl.render.terrain.ArgentumWorldRenderer;
+import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
 import org.joml.Matrix4fc;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
@@ -62,7 +63,7 @@ final class InstanceShader {
         this.itemGlintMatrix = context.bindUniform("uItemGlintMatrix", GlUniformMatrix4f::new);
         this.lightDirection0 = context.bindUniform("uLightDirection0", GlUniformFloat3v::new);
         this.lightDirection1 = context.bindUniform("uLightDirection1", GlUniformFloat3v::new);
-        this.fog = fogFactory.create(context);
+        this.fog = fogFactory.create(context, ArgentumFogService.ENVIRONMENT);
     }
 
     void initialize() {

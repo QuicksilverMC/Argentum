@@ -50,6 +50,8 @@ celeritas.async_graph_search.tooltip=Performs occlusion/frustum culling asynchro
 
 celeritas.block_face_culling.name=Use Block Face Culling
 celeritas.block_face_culling.tooltip=If enabled only the sides of blocks which are facing the camera will be submitted for rendering. This can eliminate a large number of block faces very early in the rendering process saving memory bandwidth and time on the GPU. Some resource packs may have issues with this option so try disabling it if you're seeing holes in blocks.
+celeritas.raster_occlusion_culling.name=Rasterized Occlusion Culling
+celeritas.raster_occlusion_culling.tooltip=Rasterizes nearby terrain into a small software coverage buffer and uses it to skip chunks hidden behind solid terrain, such as a valley behind a hill. This can substantially reduce the amount of terrain drawn, but costs extra CPU time each frame, so it helps most when the GPU is the bottleneck.
 celeritas.fog_occlusion.name=Use Fog Occlusion
 celeritas.fog_occlusion.tooltip=If enabled chunks which are determined to be fully hidden by fog effects will not be rendered helping to improve performance. The improvement can be more dramatic when fog effects are heavier (such as while underwater) but it may cause undesirable visual artifacts between the sky and fog in some scenarios.
 celeritas.entity_culling.name=Use Entity Culling
@@ -106,3 +108,4 @@ argentum.options.value.threads=%s threads
 argentum.options.value.milliseconds=%s ms
 argentum.options.value.spherical=Spherical
 argentum.options.value.cylindrical=Cylindrical
+argentum.options.value.planar=Planar

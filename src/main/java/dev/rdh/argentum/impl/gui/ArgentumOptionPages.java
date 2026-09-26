@@ -220,7 +220,8 @@ public final class ArgentumOptionPages {
                         .setControl(option -> new CyclingControl<>(option, FogShape.class,
 								new TextComponent[]{
 										text("value.spherical"),
-										text("value.cylindrical")
+										text("value.cylindrical"),
+                                        text("value.planar")
 								}))
                         .setBinding((config, value) -> config.fogShape = value, config -> config.fogShape)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
@@ -287,6 +288,10 @@ public final class ArgentumOptionPages {
                 .add(toggle(StandardOptions.Option.BLOCK_FACE_CULLING,
                         OptionImpact.MEDIUM,
                         (config, value) -> config.blockFaceCulling = value, config -> config.blockFaceCulling,
+                        OptionFlag.REQUIRES_RENDERER_RELOAD))
+                .add(toggle(StandardOptions.Option.RASTER_OCCLUSION_CULLING,
+                        OptionImpact.VARIES,
+                        (config, value) -> config.rasterCulling = value, config -> config.rasterCulling,
                         OptionFlag.REQUIRES_RENDERER_RELOAD))
                 .add(toggle(StandardOptions.Option.FOG_OCCLUSION,
                         OptionImpact.MEDIUM,

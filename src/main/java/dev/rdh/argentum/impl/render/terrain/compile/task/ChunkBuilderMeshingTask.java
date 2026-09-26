@@ -28,12 +28,14 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
     private final int buildTime;
     private final Vector3d camera;
     private final ChunkRenderContext renderContext;
+    private final boolean rasterOcclusion;
 
-    public ChunkBuilderMeshingTask(RenderSection render, ChunkRenderContext context, int time, Vector3d camera) {
+    public ChunkBuilderMeshingTask(RenderSection render, ChunkRenderContext context, int time, Vector3d camera, boolean rasterOcclusion) {
         this.render = render;
         this.buildTime = time;
         this.camera = camera;
         this.renderContext = context;
+        this.rasterOcclusion = rasterOcclusion;
     }
 
     @Override
@@ -87,6 +89,10 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
                             }
                         }
 
+                        if (this.rasterOcclusion) {
+                            occluder.markRenderable(blockPos.getX(), blockPos.getY(), blockPos.getZ());
+                        }
+
                         var pass = block.getRenderLayer();
 
                         if (block.getRenderType() == 3) {
@@ -113,6 +119,10 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
 
         if (!meshes.isEmpty()) {
             renderData.hasBlockGeometry = true;
+        }
+
+        if (this.rasterOcclusion) {
+            renderData.occluderBoxes = occluder.computeOccluderBoxes();
         }
 
         renderData.visibilityData = occluder.computeVisibilityEncoding();
