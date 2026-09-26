@@ -6,9 +6,11 @@ import net.minecraft.client.render.texture.AbstractTexture;
 import net.minecraft.client.render.texture.TextureAtlas;
 import net.minecraft.client.render.texture.TextureAtlasSprite;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import it.unimi.dsi.fastutil.HashCommon;
 import org.embeddedt.embeddium.impl.util.collections.quadtree.QuadTree;
 import org.embeddedt.embeddium.impl.util.collections.quadtree.Rect2i;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.opengl.EXTTextureFilterAnisotropic;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
@@ -18,13 +20,11 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.ext.TextureAtlasExtension;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 @Mixin(TextureAtlas.class)
@@ -66,12 +66,11 @@ public abstract class TextureAtlasMixin extends AbstractTexture implements Textu
         }
     }
 
-    @Redirect(method = "bindAndTick", at = @At(value = "INVOKE", target = "Ljava/util/List;iterator()Ljava/util/Iterator;"))
-    private Iterator<TextureAtlasSprite> celeritas$visibleAnimations(List<TextureAtlasSprite> sprites) {
-        Iterator<TextureAtlasSprite> iterator = sprites.iterator();
+    @ModifyExpressionValue(method = "bindAndTick", at = @At(value = "INVOKE", target = "Ljava/util/List;iterator()Ljava/util/Iterator;"))
+    private Iterator<TextureAtlasSprite> celeritas$visibleAnimations(@NotNull Iterator<TextureAtlasSprite> original) {
         return Argentum.CONFIG.animateOnlyVisibleTextures
-                ? Iterators.filter(iterator, TextureAtlasSprite::argentum$shouldUpdate)
-                : iterator;
+                ? Iterators.filter(original, TextureAtlasSprite::argentum$shouldUpdate)
+                : original;
     }
 
     @Override

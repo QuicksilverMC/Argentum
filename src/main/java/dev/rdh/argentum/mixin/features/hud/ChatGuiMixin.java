@@ -6,13 +6,14 @@ import net.minecraft.client.gui.GuiElement;
 import net.minecraft.client.gui.chat.ChatGui;
 import net.minecraft.client.render.platform.GlStateManager;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ChatGui.class)
@@ -41,15 +42,15 @@ public abstract class ChatGuiMixin extends GuiElement {
         this.argentum$textBatch.begin();
     }
 
-    @Redirect(
+    @WrapOperation(
             method = "render",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/chat/ChatGui;fill(IIIII)V")
     )
-    private void argentum$captureBackground(int left, int top, int right, int bottom, int color) {
+    private void argentum$captureBackground(int left, int top, int right, int bottom, int color, Operation<Void> original) {
         if (this.argentum$textBatch.isDrawing()) {
             this.argentum$backgroundBatch.fill(left, top, right, bottom, color);
         } else {
-            GuiElement.fill(left, top, right, bottom, color);
+            original.call(left, top, right, bottom, color);
         }
     }
 

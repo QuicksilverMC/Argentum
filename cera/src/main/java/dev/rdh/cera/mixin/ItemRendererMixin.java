@@ -1,12 +1,12 @@
 package dev.rdh.cera.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.rdh.cera.modules.EmissiveTextures;
 import dev.rdh.cera.modules.cit.CustomItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.entity.ItemRenderer;
-import net.minecraft.client.render.model.block.ModelTransformations;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.texture.TextureAtlas;
 import net.minecraft.client.render.texture.TextureAtlasSprite;
@@ -15,19 +15,18 @@ import net.minecraft.client.render.vertex.BufferBuilder;
 import net.minecraft.client.resource.ModelIdentifier;
 import net.minecraft.client.resource.model.BakedModel;
 import net.minecraft.client.resource.model.BakedQuad;
-import net.minecraft.client.resource.model.ModelManager;
-import net.minecraft.entity.living.LivingEntity;
 import net.minecraft.item.ItemStack;
+
+import com.llamalad7.mixinextras.sugar.Local;
 import org.embeddedt.embeddium.impl.model.quad.BakedQuadView;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(ItemRenderer.class)
-public class ItemRendererMixin {
+public abstract class ItemRendererMixin {
     @Shadow @Final
     private TextureManager textureManager;
 
@@ -37,26 +36,20 @@ public class ItemRendererMixin {
     private boolean cera$emissive;
 
     @Shadow
-    private void render(BakedModel model, int color) {
-    }
+	protected abstract void render(BakedModel model, int color);
 
-    @Shadow
-    private void renderEnchantmentGlint(BakedModel model) {
-    }
-
-    @Redirect(method = "renderItemInHand(Lnet/minecraft/item/ItemStack;Lnet/minecraft/entity/living/LivingEntity;Lnet/minecraft/client/render/model/block/ModelTransformations$Type;)V",
+    @ModifyExpressionValue(method = "renderItemInHand(Lnet/minecraft/item/ItemStack;Lnet/minecraft/entity/living/LivingEntity;Lnet/minecraft/client/render/model/block/ModelTransformations$Type;)V",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/resource/model/ModelManager;getModel(Lnet/minecraft/client/resource/ModelIdentifier;)Lnet/minecraft/client/resource/model/BakedModel;"))
-    private BakedModel cera$resolveCustomItemVariant(ModelManager manager, ModelIdentifier location, ItemStack stack,
-                                                       LivingEntity entity, ModelTransformations.Type transform) {
-        return Minecraft.getInstance().cera$getCustomItems().resolve(stack, manager.getModel(location), location);
+    private BakedModel cera$resolveCustomItemVariant(BakedModel original, @Local(argsOnly = true) ItemStack stack, @Local ModelIdentifier location) {
+        return Minecraft.getInstance().cera$getCustomItems().resolve(stack, original, location);
     }
 
-    @Redirect(method = "renderItem(Lnet/minecraft/item/ItemStack;Lnet/minecraft/client/resource/model/BakedModel;)V",
+    @WrapOperation(method = "renderItem(Lnet/minecraft/item/ItemStack;Lnet/minecraft/client/resource/model/BakedModel;)V",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/ItemRenderer;renderEnchantmentGlint(Lnet/minecraft/client/resource/model/BakedModel;)V"))
-    private void cera$renderCustomGlint(ItemRenderer renderer, BakedModel model, ItemStack stack) {
+    private void cera$renderCustomGlint(ItemRenderer instance, BakedModel model, Operation<Void> original, @Local(argsOnly = true) ItemStack stack) {
         var effects = Minecraft.getInstance().cera$getCustomItems().effects(stack);
         if (effects.isEmpty()) {
-            this.renderEnchantmentGlint(model);
+            original.call(instance, model);
             return;
         }
         GlStateManager.depthMask(false);

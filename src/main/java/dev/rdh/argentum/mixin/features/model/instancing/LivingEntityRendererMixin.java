@@ -9,12 +9,13 @@ import net.minecraft.client.render.model.entity.PlayerModel;
 import net.minecraft.entity.living.LivingEntity;
 import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.resource.Identifier;
+
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import dev.rdh.argentum.impl.render.entity.instancing.EntityCapture;
@@ -104,18 +105,18 @@ public abstract class LivingEntityRendererMixin {
         }
     }
 
-    @Redirect(
+    @WrapOperation(
             method = "renderLayers",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/layer/EntityRenderLayer;render(Lnet/minecraft/entity/living/LivingEntity;FFFFFFF)V")
     )
     private void celeritas$captureLayer(EntityRenderLayer<LivingEntity> layer, LivingEntity entity,
             float walkAnimationProgress, float walkAnimationSpeed, float tickDelta, float bob,
-            float yaw, float pitch, float scale) {
+            float yaw, float pitch, float scale, Operation<Void> original) {
         EntityCapture active = EntityCapture.current();
         boolean capture = active != null && active.beginLayer(layer, entity);
         EntityInstancing.beginLayerRender();
         try {
-            layer.render(entity, walkAnimationProgress, walkAnimationSpeed, tickDelta, bob, yaw, pitch, scale);
+            original.call(layer, entity, walkAnimationProgress, walkAnimationSpeed, tickDelta, bob, yaw, pitch, scale);
         } finally {
             EntityInstancing.endLayerRender();
             if (capture) {
