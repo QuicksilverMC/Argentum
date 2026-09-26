@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.Map;
 
 public class RenderPassConfigurationBuilder {
+    public static final Object DECAL = new Object();
+    public static final Object UNMIPPED_SOLID = new Object();
+
     private static final TerrainRenderPass.PipelineState DISABLE_BLEND_PIPELINE_STATE = new PipelineState() {
         @Override
         public void setup() {
@@ -25,6 +28,21 @@ public class RenderPassConfigurationBuilder {
 
         @Override
         public void clear() {
+            GlStateManager.enableAlphaTest();
+        }
+    };
+
+    private static final TerrainRenderPass.PipelineState DECAL_PIPELINE_STATE = new PipelineState() {
+        @Override
+        public void setup() {
+            GlStateManager.disableAlphaTest();
+            GlStateManager.enablePolygonOffset();
+            GlStateManager.polygonOffset(-1.0F, -1.0F);
+        }
+
+        @Override
+        public void clear() {
+            GlStateManager.disablePolygonOffset();
             GlStateManager.enableAlphaTest();
         }
     };
@@ -50,6 +68,12 @@ public class RenderPassConfigurationBuilder {
                 .fragmentDiscard(true)
                 .useReverseOrder(false)
                 .build();
+        TerrainRenderPass decalPass = builderForRenderType(true, vertexType, extraDefines)
+                .pipelineState(DECAL_PIPELINE_STATE)
+                .name("decal")
+                .fragmentDiscard(true)
+                .useReverseOrder(false)
+                .build();
         TerrainRenderPass translucentPass = builderForRenderType(false, vertexType, extraDefines)
                 .name("translucent")
                 .fragmentDiscard(false)
@@ -60,16 +84,19 @@ public class RenderPassConfigurationBuilder {
         Material solidMaterial = new Material(solidPass, AlphaCutoffParameter.ZERO, true);
         Material cutoutMippedMaterial = new Material(cutoutMippedPass, AlphaCutoffParameter.ONE_TENTH, true);
         Material cutoutMaterial = new Material(cutoutMippedPass, AlphaCutoffParameter.ONE_TENTH, false);
+        Material decalMaterial = new Material(decalPass, AlphaCutoffParameter.ONE_TENTH, false);
 
-        Map<BlockLayer, Collection<TerrainRenderPass>> vanillaRenderStages = new Reference2ReferenceOpenHashMap<>();
-        vanillaRenderStages.put(BlockLayer.SOLID, List.of(solidPass, cutoutMippedPass));
+        Map<Object, Collection<TerrainRenderPass>> vanillaRenderStages = new Reference2ReferenceOpenHashMap<>();
+        vanillaRenderStages.put(BlockLayer.SOLID, List.of(solidPass, cutoutMippedPass, decalPass));
         vanillaRenderStages.put(BlockLayer.TRANSLUCENT, List.of(translucentPass));
 
-        Map<BlockLayer, Material> renderTypeToMaterialMap = new Reference2ReferenceOpenHashMap<>();
+        Map<Object, Material> renderTypeToMaterialMap = new Reference2ReferenceOpenHashMap<>();
         renderTypeToMaterialMap.put(BlockLayer.SOLID, solidMaterial);
         renderTypeToMaterialMap.put(BlockLayer.CUTOUT, cutoutMaterial);
         renderTypeToMaterialMap.put(BlockLayer.CUTOUT_MIPPED, cutoutMippedMaterial);
         renderTypeToMaterialMap.put(BlockLayer.TRANSLUCENT, translucentMaterial);
+        renderTypeToMaterialMap.put(DECAL, decalMaterial);
+        renderTypeToMaterialMap.put(UNMIPPED_SOLID, new Material(solidPass, AlphaCutoffParameter.ZERO, false));
 
         return new RenderPassConfiguration<>(renderTypeToMaterialMap, vanillaRenderStages, solidMaterial, cutoutMippedMaterial, translucentMaterial);
     }

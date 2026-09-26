@@ -63,6 +63,8 @@ argentum.particle_culling.tooltip=If enabled particles outside the camera frustu
 
 argentum.entity_instancing.name=Entity Instancing
 argentum.entity_instancing.tooltip=If enabled compatible entity models will be batched into instanced draw calls. This can significantly improve performance when many similar entities are visible, but may cause rendering issues with mods that use unusual entity renderers.
+argentum.bake_block_entities.name=Bake Block Entities
+argentum.bake_block_entities.tooltip=When enabled, closed chests, skulls and player heads, signs and banner poles are built into the terrain mesh instead of being drawn every frame. Disable this if mods' changes to those models aren't visible.
 celeritas.animate_only_visible_textures.name=Animate Only Visible Textures
 celeritas.animate_only_visible_textures.tooltip=If enabled only animated textures determined to be visible will be updated. This can provide a significant boost to frame rates on some hardware especially with heavier resource packs. If you experience issues with some textures not being animated try disabling this option.
 argentum.font_batching.name=Font Batching

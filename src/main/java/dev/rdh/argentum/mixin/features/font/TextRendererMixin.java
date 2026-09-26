@@ -30,8 +30,7 @@ public abstract class TextRendererMixin implements TextRendererExtension {
     @Shadow
     private byte[] glyphSizes;
 
-    // Not @Final: cera makes this mutable to swap in an HD font, and a @Final shadow would then
-    // mismatch the target. Argentum only ever reads it.
+    @Final
     @Shadow
     private Identifier fontLocation;
 
@@ -213,6 +212,16 @@ public abstract class TextRendererMixin implements TextRendererExtension {
     )
     private boolean argentum$deferTextureState() {
         return !this.argentum$batcher.isBatching();
+    }
+
+    @Override
+    public Identifier argentum$getFontLocation() {
+        return this.fontLocation;
+    }
+
+    @Override
+    public byte[] argentum$getGlyphSizes() {
+        return this.glyphSizes;
     }
 
     @Override

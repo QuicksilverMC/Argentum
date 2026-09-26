@@ -11,6 +11,7 @@ import org.embeddedt.embeddium.impl.render.terrain.SimpleWorldRenderer;
 import org.joml.Matrix4f;
 
 import dev.rdh.argentum.impl.Argentum;
+import dev.rdh.argentum.impl.render.blockentity.BakedBlockEntities;
 import dev.rdh.argentum.impl.render.entity.EntityOcclusionCuller;
 import dev.rdh.argentum.impl.render.entity.EntityGatherer;
 import dev.rdh.argentum.impl.render.entity.EntityShadowBatch;
@@ -19,6 +20,8 @@ import dev.rdh.argentum.impl.render.entity.instancing.ModelInstancer;
 import dev.rdh.argentum.impl.render.environment.WeatherRenderer;
 
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.SignBlockEntity;
+import net.minecraft.block.entity.SkullBlockEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.client.entity.particle.Particle;
@@ -33,6 +36,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -48,6 +52,8 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     private final WeatherRenderer weatherRenderer = new WeatherRenderer();
 
     private ChunkRenderMatrices matrices = null;
+    private boolean renderingBlockEntities;
+    private final List<BlockEntity> bakeCandidates = new ArrayList<>();
 
     /**
      * @return The ArgentumWorldRenderer based on the current dimension
@@ -96,7 +102,12 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
                 this.weatherRenderer.close(commandList);
             }
         }
+        BakedBlockEntities.clearSlotSheets();
         super.reload();
+    }
+
+    public boolean isRenderingBlockEntities() {
+        return this.renderingBlockEntities;
     }
 
     public EntityInstancing getEntityInstancing() {
@@ -272,10 +283,13 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
         boolean batching = this.entityInstancing.resumeBatch();
         int count;
         try {
+            this.renderingBlockEntities = true;
             count = super.renderBlockEntities(partialTicks);
         } catch (RuntimeException | Error exception) {
             this.entityInstancing.discardBatch();
             throw exception;
+        } finally {
+            this.renderingBlockEntities = false;
         }
         if (batching) {
             RenderDevice.enterManagedCode();
@@ -285,6 +299,8 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
                 RenderDevice.exitManagedCode();
             }
         }
+        BakedBlockEntities.prepare(this.bakeCandidates);
+        this.bakeCandidates.clear();
         return count;
     }
 
@@ -292,6 +308,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     protected void renderBlockEntityList(List<BlockEntity> list, Float partialTicksBoxed) {
         float partialTicks = partialTicksBoxed;
         for (var blockEntity : list) {
+            if (blockEntity instanceof SkullBlockEntity || blockEntity instanceof SignBlockEntity) this.bakeCandidates.add(blockEntity);
             try {
                 BlockEntityRenderDispatcher.INSTANCE.render(blockEntity, partialTicks, -1);
             } catch(RuntimeException e) {

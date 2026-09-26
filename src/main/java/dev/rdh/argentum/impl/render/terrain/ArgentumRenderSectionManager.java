@@ -7,6 +7,7 @@ import org.embeddedt.embeddium.impl.render.chunk.RenderPassConfiguration;
 import org.embeddedt.embeddium.impl.render.chunk.RenderSection;
 import org.embeddedt.embeddium.impl.render.chunk.RenderSectionManager;
 import org.embeddedt.embeddium.impl.render.chunk.compile.ChunkBuildOutput;
+import org.embeddedt.embeddium.impl.render.chunk.data.BuiltRenderSectionData;
 import org.embeddedt.embeddium.impl.render.chunk.compile.tasks.ChunkBuilderTask;
 import org.embeddedt.embeddium.impl.render.chunk.multidraw.DirectMultiDrawEmitter;
 import org.embeddedt.embeddium.impl.render.chunk.occlusion.AsyncOcclusionMode;
@@ -21,7 +22,9 @@ import org.embeddedt.embeddium.impl.render.viewport.Viewport;
 import org.embeddedt.embeddium.impl.util.position.SectionPos;
 import org.jetbrains.annotations.Nullable;
 import dev.rdh.argentum.impl.Argentum;
+import dev.rdh.argentum.impl.render.blockentity.SlotSheet;
 import dev.rdh.argentum.impl.render.terrain.compile.ArgentumChunkBuildContext;
+import dev.rdh.argentum.impl.render.terrain.compile.PrimitiveBuiltRenderSectionData;
 import dev.rdh.argentum.impl.render.terrain.compile.task.ChunkBuilderMeshingTask;
 import dev.rdh.argentum.impl.world.cloned.ChunkRenderContext;
 import dev.rdh.argentum.impl.world.cloned.ClonedChunkSectionCache;
@@ -74,6 +77,23 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
         var block = this.world.getBlockState(new BlockPos(camBlockPos.x(), camBlockPos.y(), camBlockPos.z())).getBlock();
 
 		return !spectator || !block.isSolidRender();
+    }
+
+    @Override
+    protected boolean updateSectionInfo(RenderSection render, @Nullable BuiltRenderSectionData info) {
+        BuiltRenderSectionData previous = render.getBuiltContext();
+        boolean changed = super.updateSectionInfo(render, info);
+        if (changed) {
+            if (previous instanceof PrimitiveBuiltRenderSectionData data) {
+                data.slots.forEach(SlotSheet.Entry::release);
+            }
+            if (info instanceof PrimitiveBuiltRenderSectionData data) {
+                for (SlotSheet.Entry entry : data.slots) {
+                    if (!entry.acquire()) this.scheduleRebuild(render.getChunkX(), render.getChunkY(), render.getChunkZ(), false);
+                }
+            }
+        }
+        return changed;
     }
 
     @Override

@@ -23,6 +23,7 @@ import net.minecraft.client.render.vertex.DefaultVertexFormat;
 
 import java.nio.IntBuffer;
 import dev.rdh.argentum.impl.Argentum;
+import dev.rdh.argentum.impl.render.blockentity.BlockEntityBaker;
 import dev.rdh.argentum.impl.render.terrain.compile.light.LightDataCache;
 import dev.rdh.argentum.impl.render.terrain.compile.light.SmoothFluidLighter;
 import dev.rdh.argentum.impl.render.terrain.compile.pipeline.FastBlockRenderer;
@@ -43,6 +44,7 @@ public class ArgentumChunkBuildContext extends ChunkBuildContext {
     private final LightPipelineProvider lighters = new LightPipelineProvider(this.lightCache, DiffuseProvider.NONE, true);
     private final FastBlockRenderer blockRenderer = new FastBlockRenderer(this, this.lighters);
     private final SmoothFluidLighter fluidLighter = new SmoothFluidLighter(this.lighters);
+    private final BlockEntityBaker blockEntityBaker;
     private int originX;
     private int originY;
     private int originZ;
@@ -51,6 +53,7 @@ public class ArgentumChunkBuildContext extends ChunkBuildContext {
         super(renderPassConfiguration);
         this.renderPassConfiguration = renderPassConfiguration;
         this.textureAtlas = Minecraft.getInstance().getBlocksAtlas();
+        this.blockEntityBaker = new BlockEntityBaker(this.textureAtlas);
     }
 
     public void beginSection(ChunkRenderContext world, int x, int y, int z) {
@@ -67,6 +70,10 @@ public class ArgentumChunkBuildContext extends ChunkBuildContext {
 
     public FastBlockRenderer getBlockRenderer() {
         return this.blockRenderer;
+    }
+
+    public BlockEntityBaker getBlockEntityBaker() {
+        return this.blockEntityBaker;
     }
 
     public void renderFluid(BlockState state, BlockPos pos, ChunkRenderContext world, BlockLayer layer) {

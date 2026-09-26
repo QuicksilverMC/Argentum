@@ -1,5 +1,7 @@
 package dev.rdh.argentum.impl.ext;
 
+import net.minecraft.resource.Identifier;
+
 import dev.rdh.argentum.impl.render.gui.TextBatcher;
 
 public interface TextRendererExtension {
@@ -12,6 +14,14 @@ public interface TextRendererExtension {
     }
 
     default void argentum$endBatch() {
+        throw new UnsupportedOperationException();
+    }
+
+    default Identifier argentum$getFontLocation() {
+        throw new UnsupportedOperationException();
+    }
+
+    default byte[] argentum$getGlyphSizes() {
         throw new UnsupportedOperationException();
     }
 
