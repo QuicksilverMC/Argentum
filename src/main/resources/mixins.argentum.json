@@ -2,6 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "dev.rdh.argentum.mixin",
+  "plugin": "dev.rdh.argentum.impl.ArgentumMixinPlugin",
   "compatibilityLevel": "JAVA_25",
   "client": [
     "core.GameOptionsMixin", "core.MinecraftMixin", "core.render.BufferBuilderMixin", "core.render.DebugOverlayMixin",
@@ -17,7 +18,6 @@
     "features.model.instancing.MobSpawnerRendererMixin",
     "features.model.instancing.ModelPartAccessor", "features.model.instancing.PolygonAccessor", "features.options.OptionPageFrameMixin",
     "features.options.OptionsScreenMixin", "features.particle.ParticleManagerMixin", "features.particle.ParticleMixin",
-    "features.present.DisplaySdlMixin", "features.present.LegacyGlfwDisplayMixin", "features.present.LegacySdlDisplayMixin",
     "features.blockentity.BlockEntityRenderDispatcherMixin",
     "features.blockentity.baking.BannerRendererMixin", "features.blockentity.baking.ChestBlockEntityMixin",
     "features.blockentity.baking.ClientPlayNetworkHandlerMixin", "features.blockentity.baking.EnderChestBlockEntityMixin",
