@@ -19,8 +19,7 @@
     "modmenu": ["dev.rdh.argentum.impl.config.ModMenuCompat"]
   },
   "depends": {
-    "minecraft": "1.8.9",
-    "lenis": "*"
+    "minecraft": "1.8.9"
   },
   "accessWidener": "argentum.classtweaker",
   "mixins": ["mixins.argentum.json"]

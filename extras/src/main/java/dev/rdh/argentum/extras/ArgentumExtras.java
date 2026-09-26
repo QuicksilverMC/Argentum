@@ -9,7 +9,7 @@ import org.lwjgl.sdl.SDLHints;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.taumc.celeritas.api.OptionGUIConstructionEvent;
-import pl.tomgirl.lenis.window.DisplaySdl;
+import pl.tomgirl.pylon.window.DisplaySdl;
 
 public class ArgentumExtras implements ClientModInitializer, PreLaunchEntrypoint {
 	public static final Logger LOGGER = LoggerFactory.getLogger("argentum-extras");

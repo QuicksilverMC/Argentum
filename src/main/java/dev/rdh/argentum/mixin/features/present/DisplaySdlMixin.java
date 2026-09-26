@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import dev.rdh.argentum.impl.Argentum;
-import pl.tomgirl.lenis.window.DisplaySdl;
+import pl.tomgirl.pylon.window.DisplaySdl;
 
 import static org.lwjgl.sdl.SDLVideo.SDL_GetCurrentDisplayMode;
 import static org.lwjgl.sdl.SDLVideo.SDL_GetDisplayForWindow;
