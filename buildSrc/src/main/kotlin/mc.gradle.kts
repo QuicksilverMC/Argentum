@@ -97,7 +97,7 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:${v("fabric")}")
     ploceus.dependOsl(v("osl"))
 
-    modImplementation("pl.tomgirl:lenis:${v("lenis")}")
+    modImplementation("pl.tomgirl:pylon:${v("pylon")}")
 
     modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:${v("devauth")}")
     modImplementation("com.terraformersmc:modmenu:${v("modmenu")}+mc${v("minecraft")}")
