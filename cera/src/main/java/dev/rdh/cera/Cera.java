@@ -25,7 +25,7 @@ public class Cera implements ClientModInitializer {
         );
         CONFIG_STORAGE = JsonOptionStorage.load(FabricLoader.getInstance().getConfigDir().resolve("cera.json"), CeraConfig.class, CeraConfig::new, CeraConfig::validate);
         CONFIG = CONFIG_STORAGE.getData();
-        OptionGUIConstructionEvent.BUS.addListener(event -> event.addPage(CeraOptionPage.create()));
+        OptionGUIConstructionEvent.BUS.addListener(event -> CeraOptionPages.create().forEach(event::addPage));
         ClientResourceLoaderEvents.INIT_RESOURCE_MANAGER.register(resources -> {
             Minecraft minecraft = Minecraft.getInstance();
             resources.addReloader(minecraft.getTextureManager().cera$getAnimatedTextures());

@@ -1,4 +1,7 @@
-cera.options.pages.cera=Cera
+cera.options.pages.world=World
+cera.options.pages.colors=Colors
+cera.options.pages.entities=Entities
+cera.options.pages.interfaces=Interfaces
 cera.options.better_grass.name=Better Grass
 cera.options.better_grass.tooltip=Extends top textures onto block sides. Fast applies them everywhere; Fancy connects only to matching lower neighbors.
 cera.options.value.better_grass.off=Off
