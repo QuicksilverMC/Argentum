@@ -7,7 +7,7 @@
     "AbstractArmorLayerMixin", "AbstractLeavesBlockMixin", "AnvilScreenMixin", "DebugOverlayMixin",
     "EntityRendererMixin", "GameGuiMixin", "TextRendererMixin",
     "FastBlockRendererMixin", "GameRendererMixin", "LivingEntityRendererMixin", "MobRendererMixin",
-    "ParticleManagerMixin", "WorldRendererMixin"
+    "LegacyGlfwMouseMixin", "ParticleManagerMixin", "WorldRendererMixin"
   ],
   "mixinextras": {
     "minVersion": "0.5.1"

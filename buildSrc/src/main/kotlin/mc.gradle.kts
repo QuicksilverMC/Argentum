@@ -98,6 +98,7 @@ dependencies {
     ploceus.dependOsl(v("osl"))
 
     modImplementation("pl.tomgirl:pylon:${v("pylon")}")
+    compileOnly("org.lwjgl:lwjgl-glfw:3.4.2")
 
     modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:${v("devauth")}")
     modImplementation("com.terraformersmc:modmenu:${v("modmenu")}+mc${v("minecraft")}")

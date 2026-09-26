@@ -1,5 +1,6 @@
 package dev.rdh.argentum.impl.gui;
 
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.Window;
 import org.embeddedt.embeddium.impl.gui.framework.TextComponent;
@@ -345,9 +346,10 @@ public final class ArgentumOptionPages {
                 .add(toggle(Option.GREEDY_RENDER_THREAD,
                         OptionImpact.LOW,
                         (config, value) -> config.greedyRenderThread = value, config -> config.greedyRenderThread))
-                .add(toggle(Option.DECOUPLED_PRESENTATION,
-                        OptionImpact.MEDIUM,
-                        (config, value) -> config.decoupledPresentation = value, config -> config.decoupledPresentation, OptionFlag.REQUIRES_GAME_RESTART))
+                .addConditionally(FabricLoader.getInstance().isModLoaded("pylon") || FabricLoader.getInstance().isModLoaded("legacy-lwjgl3"),
+                        () -> toggle(Option.DECOUPLED_PRESENTATION,
+                                OptionImpact.MEDIUM,
+                                (config, value) -> config.decoupledPresentation = value, config -> config.decoupledPresentation, OptionFlag.REQUIRES_GAME_RESTART))
                 .build();
 
         return page(Page.PERFORMANCE, chunkUpdates, culling, rendering);

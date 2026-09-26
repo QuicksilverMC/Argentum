@@ -124,13 +124,17 @@ final class ArgentumExtrasOptionPage {
         OptionGroup misc = OptionGroup.createBuilder()
                 .setId(id("misc"))
                 .add(toggle("disable_text_shadows", (c, v) -> c.disableTextShadows = v, c -> c.disableTextShadows))
-                .add(toggle("high_dpi_screen", (c, v) -> c.highDpiScreen = v, c -> c.highDpiScreen, OptionFlag.REQUIRES_GAME_RESTART))
                 .addConditionally(
-                        Platform.get() == Platform.MACOSX,
+                        ArgentumExtras.isPylonLoaded() || ArgentumExtras.isLegacyLwjgl3Loaded(),
+                        () -> toggle("high_dpi_screen", (c, v) -> c.highDpiScreen = v, c -> c.highDpiScreen, OptionFlag.REQUIRES_GAME_RESTART)
+                )
+                .addConditionally(
+                        (ArgentumExtras.isPylonLoaded() || ArgentumExtras.isLegacyLwjgl3Loaded() && ArgentumExtras.usesLegacySdl())
+                                && Platform.get() == Platform.MACOSX,
                         () -> toggle("macos_smooth_scrolling", (c, v) -> c.macosSmoothScrolling = v, c -> c.macosSmoothScrolling, OptionFlag.REQUIRES_GAME_RESTART)
                 )
                 .addConditionally(
-                        Platform.get() == Platform.MACOSX,
+                        (ArgentumExtras.isPylonLoaded() || ArgentumExtras.isLegacyLwjgl3Loaded()) && Platform.get() == Platform.MACOSX,
                         () -> toggle("macos_right_click_emulation", (c, v) -> c.macosRightClickEmulation = v, c -> c.macosRightClickEmulation, OptionFlag.REQUIRES_GAME_RESTART)
                 )
                 .build();

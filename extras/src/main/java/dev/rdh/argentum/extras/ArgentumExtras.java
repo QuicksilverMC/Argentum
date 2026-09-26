@@ -28,9 +28,33 @@ public class ArgentumExtras implements ClientModInitializer, PreLaunchEntrypoint
 		);
 		CONFIG = CONFIG_STORAGE.getData();
 
-		DisplaySdl d = DisplaySdl.instance();
-		d.setHighPixelDensity(CONFIG.highDpiScreen);
-		d.setWindowHint(SDLHints.SDL_HINT_MAC_SCROLL_MOMENTUM, CONFIG.macosSmoothScrolling ? "1" : "0");
-		d.setWindowHint(SDLHints.SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK, CONFIG.macosRightClickEmulation ? "1" : "0");
+		if (isPylonLoaded()) {
+			DisplaySdl d = DisplaySdl.instance();
+			d.setHighPixelDensity(CONFIG.highDpiScreen);
+			d.setWindowHint(SDLHints.SDL_HINT_MAC_SCROLL_MOMENTUM, CONFIG.macosSmoothScrolling ? "1" : "0");
+			d.setWindowHint(SDLHints.SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK, CONFIG.macosRightClickEmulation ? "1" : "0");
+		} else if (isLegacyLwjgl3Loaded()) {
+			System.getProperties().putIfAbsent("legacy_lwjgl3.scale_framebuffer", Boolean.toString(CONFIG.highDpiScreen));
+			if (usesLegacySdl()) {
+				SDLHints.SDL_SetHint(SDLHints.SDL_HINT_MAC_SCROLL_MOMENTUM, CONFIG.macosSmoothScrolling ? "1" : "0");
+				SDLHints.SDL_SetHint(SDLHints.SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK, CONFIG.macosRightClickEmulation ? "1" : "0");
+			}
+		}
+	}
+
+	static boolean isPylonLoaded() {
+		return FabricLoader.getInstance().isModLoaded("pylon");
+	}
+
+	static boolean isLegacyLwjgl3Loaded() {
+		return FabricLoader.getInstance().isModLoaded("legacy-lwjgl3");
+	}
+
+	static boolean usesLegacySdl() {
+		try {
+			return Class.forName("io.github.moehreag.legacylwjgl3.LegacyLWJGL3").getField("USE_SDL").getBoolean(null);
+		} catch (ReflectiveOperationException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 }
