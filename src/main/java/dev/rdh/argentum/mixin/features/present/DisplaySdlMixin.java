@@ -30,7 +30,8 @@ public abstract class DisplaySdlMixin {
         }
 
         SDL_DisplayMode mode = SDL_GetCurrentDisplayMode(SDL_GetDisplayForWindow(this.getHandle()));
-        if (mode == null || mode.refresh_rate() <= 0.0F) {
+        float refreshRate;
+        if (mode == null || (refreshRate = mode.refresh_rate()) <= 0.0F) {
             return;
         }
 
@@ -39,6 +40,6 @@ public abstract class DisplaySdlMixin {
             ci.cancel();
             return;
         }
-        this.argentum$nextPresentNanos = Math.max(this.argentum$nextPresentNanos + (long) (1.0e9 / mode.refresh_rate()), now);
+        this.argentum$nextPresentNanos = Math.max(this.argentum$nextPresentNanos + (long) (1.0e9 / refreshRate), now);
     }
 }
