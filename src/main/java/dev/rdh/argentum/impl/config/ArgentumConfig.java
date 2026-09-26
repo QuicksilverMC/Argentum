@@ -26,7 +26,7 @@ public class ArgentumConfig {
     public int cpuRenderAheadLimit = 3;
     public int biomeBlendRadius = 3;
     public boolean safeChunkEdges = true;
-    public boolean compactVertexFormat = false;
+    public boolean compactVertexFormat = true;
     public boolean checkGlErrors = false;
     public boolean fontBatching = true;
     public boolean guiItemAtlas = true;
