@@ -22,6 +22,8 @@ import org.embeddedt.embeddium.impl.render.viewport.Viewport;
 import org.embeddedt.embeddium.impl.util.position.SectionPos;
 import org.jetbrains.annotations.Nullable;
 import dev.rdh.argentum.impl.Argentum;
+import dev.rdh.argentum.impl.ext.ItemFrameEntityExtension;
+import dev.rdh.argentum.impl.render.blockentity.BakedItemFrames;
 import dev.rdh.argentum.impl.render.blockentity.SlotSheet;
 import dev.rdh.argentum.impl.render.terrain.compile.ArgentumChunkBuildContext;
 import dev.rdh.argentum.impl.render.terrain.compile.PrimitiveBuiltRenderSectionData;
@@ -97,10 +99,17 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
         if (changed) {
             if (previous instanceof PrimitiveBuiltRenderSectionData data) {
                 data.slots.forEach(SlotSheet.Entry::release);
+                for (BakedItemFrames.Baked frame : data.frames) {
+                    ItemFrameEntityExtension entity = (ItemFrameEntityExtension)frame.entity();
+                    if (entity.argentum$getBakedFrame() == frame.state()) entity.argentum$setBakedFrame(BakedItemFrames.NONE);
+                }
             }
             if (info instanceof PrimitiveBuiltRenderSectionData data) {
                 for (SlotSheet.Entry entry : data.slots) {
                     if (!entry.acquire()) this.scheduleRebuild(render.getChunkX(), render.getChunkY(), render.getChunkZ(), false);
+                }
+                for (BakedItemFrames.Baked frame : data.frames) {
+                    ((ItemFrameEntityExtension)frame.entity()).argentum$setBakedFrame(frame.state());
                 }
             }
         }

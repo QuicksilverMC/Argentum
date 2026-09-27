@@ -11,6 +11,7 @@ import org.joml.Matrix4f;
 
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.blockentity.BakedBlockEntities;
+import dev.rdh.argentum.impl.render.blockentity.BakedItemFrames;
 import dev.rdh.argentum.impl.render.entity.EntityOcclusionCuller;
 import dev.rdh.argentum.impl.render.entity.EntityGatherer;
 import dev.rdh.argentum.impl.render.entity.EntityShadowBatch;
@@ -105,6 +106,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
             }
         }
         BakedBlockEntities.clearSlotSheets();
+        BakedItemFrames.forget(this.world);
         super.reload();
     }
 
@@ -229,6 +231,9 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
         this.nameTagBatch.begin(this.matrices.modelView());
         try {
             for (Entity entity : entities) {
+                if (BakedItemFrames.fullyBaked(entity)) {
+                    continue;
+                }
                 boolean inFrustum = dispatcher.shouldRender(entity, culler, cameraX, cameraY, cameraZ);
                 boolean visible = inFrustum && this.isEntityVisible(entity);
 

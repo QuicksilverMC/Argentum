@@ -16,9 +16,11 @@ import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.WorldChunkSection;
 import net.minecraft.world.gen.WorldGeneratorType;
+import dev.rdh.argentum.impl.render.blockentity.BakedItemFrames;
 import dev.rdh.argentum.impl.world.biome.BiomeColorCache;
 
 import java.util.Arrays;
+import java.util.List;
 
 public final class ChunkRenderContext implements WorldView {
     private static final int SECTION_LENGTH = 3;
@@ -29,11 +31,13 @@ public final class ChunkRenderContext implements WorldView {
     private final ClonedChunkSection originSection;
     private final WorldGeneratorType generatorType;
     private final boolean hasSky;
+    private final List<BakedItemFrames.Snapshot> frames;
     private short[] lightCache;
     private BiomeColorCache biomeColorCache;
 
     private ChunkRenderContext(World world, SectionPos origin, ClonedChunkSection[] sections) {
         this.origin = origin;
+        this.frames = BakedItemFrames.collect(world, origin);
         this.sections = sections;
         this.originSection = sections[getSectionIndex(1, 1, 1)];
         this.generatorType = world.getGeneratorType();
@@ -75,6 +79,10 @@ public final class ChunkRenderContext implements WorldView {
 
     public SectionPos origin() {
         return this.origin;
+    }
+
+    public List<BakedItemFrames.Snapshot> frames() {
+        return this.frames;
     }
 
     /**

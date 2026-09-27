@@ -48,9 +48,11 @@ public final class BakedBlockEntities {
     static final String BANNER = "entity/banner_base";
     static final String PLAYER_HEADS = "argentum:entity/player_heads";
     static final String FONT_PAGES = "argentum:entity/font_pages";
+    static final String MAPS = "argentum:entity/maps";
     private static final int SKIN_WIDTH = 64;
     private static final int HEAD_HEIGHT = 16;
     private static final int FONT_PAGE_SIZE = 256;
+    private static final int MAP_SIZE = 128;
     private static final List<String> TEXTURES = List.of(
             CHEST, TRAPPED_CHEST, CHRISTMAS_CHEST, ENDER_CHEST, DOUBLE_CHEST, TRAPPED_DOUBLE_CHEST, CHRISTMAS_DOUBLE_CHEST,
             SKELETON_SKULL, WITHER_SKULL, ZOMBIE_SKULL, CREEPER_SKULL, SIGN, BANNER
@@ -163,7 +165,8 @@ public final class BakedBlockEntities {
 
     public static List<TextureAtlasSprite> slotSheets(int mipLevels) {
         return List.of(EntityTextureSprite.blank(PLAYER_HEADS, 512, 256, mipLevels),
-                EntityTextureSprite.blank(FONT_PAGES, 1024, 512, mipLevels));
+                EntityTextureSprite.blank(FONT_PAGES, 1024, 512, mipLevels),
+                EntityTextureSprite.blank(MAPS, 1024, 1024, mipLevels));
     }
 
     public static SlotSheet playerHeads(TextureAtlas atlas, int mipLevels) {
@@ -174,9 +177,13 @@ public final class BakedBlockEntities {
         return SlotSheet.of(atlas, FONT_PAGES, mipLevels, FONT_PAGE_SIZE, FONT_PAGE_SIZE, FONT_PAGE_SIZE, BakedBlockEntities::fontPagePixels);
     }
 
+    public static SlotSheet maps(TextureAtlas atlas, int mipLevels) {
+        return SlotSheet.of(atlas, MAPS, mipLevels, MAP_SIZE, MAP_SIZE, MAP_SIZE, BakedItemFrames::mapPixels);
+    }
+
     public static void clearSlotSheets() {
         TextureAtlas atlas = Minecraft.getInstance().getBlocksAtlas();
-        for (SlotSheet sheet : new SlotSheet[]{atlas.argentum$getPlayerHeads(), atlas.argentum$getFontPages()}) {
+        for (SlotSheet sheet : new SlotSheet[]{atlas.argentum$getPlayerHeads(), atlas.argentum$getFontPages(), atlas.argentum$getMaps()}) {
             if (sheet != null) sheet.clear();
         }
     }

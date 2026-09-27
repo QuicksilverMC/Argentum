@@ -19,6 +19,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15C;
 import org.lwjgl.opengl.GL33C;
 import dev.rdh.argentum.impl.Argentum;
+import dev.rdh.argentum.impl.render.blockentity.BakedItemFrames;
 import dev.rdh.argentum.impl.render.terrain.ArgentumWorldRenderer;
 
 import java.util.Iterator;
@@ -155,7 +156,7 @@ public class EntityOcclusionCuller {
 
     private boolean isCullable(Entity entity, Entity camera) {
         if (entity == camera || entity.removed || entity.ignoreCameraFrustum || entity instanceof Boss
-                || entity instanceof MobEntity mob && mob.isLeashed()) {
+                || entity instanceof MobEntity mob && mob.isLeashed() || BakedItemFrames.fullyBaked(entity)) {
             return false;
         }
 

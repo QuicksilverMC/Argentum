@@ -39,6 +39,9 @@ public abstract class TextureAtlasMixin implements TextureAtlasExtension {
     @Unique
     private volatile SlotSheet argentum$fontPages;
 
+    @Unique
+    private volatile SlotSheet argentum$maps;
+
     @Override
     public BakedBlockEntities.Region argentum$getEntityTextureRegion(String texture) {
         return this.argentum$entityTextureRegions.get(texture);
@@ -52,6 +55,11 @@ public abstract class TextureAtlasMixin implements TextureAtlasExtension {
     @Override
     public SlotSheet argentum$getFontPages() {
         return this.argentum$fontPages;
+    }
+
+    @Override
+    public SlotSheet argentum$getMaps() {
+        return this.argentum$maps;
     }
 
     @Inject(method = "loadAndStitch", at = @At("HEAD"))
@@ -74,6 +82,7 @@ public abstract class TextureAtlasMixin implements TextureAtlasExtension {
             this.argentum$entityTextureRegions = BakedBlockEntities.findRegions((TextureAtlas)(Object)this);
             this.argentum$playerHeads = BakedBlockEntities.playerHeads((TextureAtlas)(Object)this, this.maxMipLevel);
             this.argentum$fontPages = BakedBlockEntities.fontPages((TextureAtlas)(Object)this, this.maxMipLevel);
+            this.argentum$maps = BakedBlockEntities.maps((TextureAtlas)(Object)this, this.maxMipLevel);
         }
     }
 }

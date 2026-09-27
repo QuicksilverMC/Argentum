@@ -11,6 +11,7 @@ import org.embeddedt.embeddium.impl.render.chunk.occlusion.SectionVisibilityBuil
 import org.embeddedt.embeddium.impl.render.chunk.terrain.TerrainRenderPass;
 import org.embeddedt.embeddium.impl.util.task.CancellationToken;
 import org.joml.Vector3d;
+import dev.rdh.argentum.impl.render.blockentity.BakedItemFrames;
 import dev.rdh.argentum.impl.render.terrain.compile.PrimitiveBuiltRenderSectionData;
 import dev.rdh.argentum.impl.render.terrain.compile.ArgentumChunkBuildContext;
 import dev.rdh.argentum.impl.world.cloned.ChunkRenderContext;
@@ -108,6 +109,9 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
                         }
                     }
                 }
+            }
+            for (BakedItemFrames.Snapshot frame : this.renderContext.frames()) {
+                buildContext.getBlockEntityBaker().bakeFrame(frame, this.renderContext, buffers, renderData, minX, minY, minZ);
             }
         } catch (Throwable exception) {
             throw this.addCrashContext(CrashReport.of(exception, "Encountered exception while building chunk meshes"), blockPos);

@@ -82,17 +82,34 @@ public final class SlotSheet {
 
         int slotX = this.x + slot % this.columns * this.slotWidth;
         int slotY = this.y + slot / this.columns * this.slotHeight;
+        this.write(slotX, slotY, pixels);
+
+        entry = new Entry(key, new BakedBlockEntities.Region(slotX / this.atlasWidth, slotY / this.atlasHeight,
+                this.slotWidth / this.atlasWidth, this.textureHeight / this.atlasHeight, pixels, this.slotWidth, this.textureHeight),
+                slotX, slotY);
+        this.slots[slot] = entry;
+        this.entries.put(key, entry);
+        return entry;
+    }
+
+    public void refresh(Identifier key) {
+        Entry entry = this.entries.get(key);
+        if (entry == null) return;
+        int[] pixels;
+        try {
+            pixels = this.source.pixels(key);
+        } catch (IOException exception) {
+            return;
+        }
+        if (pixels != null) this.write(entry.slotX, entry.slotY, pixels);
+    }
+
+    private void write(int slotX, int slotY, int[] pixels) {
         int[][] levels = new int[this.mipLevels + 1][];
         levels[0] = pixels;
         GlStateManager.bindTexture(this.glId);
         TextureUtil.upload(TextureUtil.generateMipmaps(this.mipLevels, this.slotWidth, levels), this.slotWidth, this.slotHeight,
                 slotX, slotY, false, false);
-
-        entry = new Entry(key, new BakedBlockEntities.Region(slotX / this.atlasWidth, slotY / this.atlasHeight,
-                this.slotWidth / this.atlasWidth, this.textureHeight / this.atlasHeight, pixels, this.slotWidth, this.textureHeight));
-        this.slots[slot] = entry;
-        this.entries.put(key, entry);
-        return entry;
     }
 
     private int freeSlot() {
@@ -126,13 +143,17 @@ public final class SlotSheet {
     public static final class Entry {
         private final Identifier key;
         private final BakedBlockEntities.Region region;
+        private final int slotX;
+        private final int slotY;
         private volatile long lastUsed = System.nanoTime();
         private volatile boolean evicted;
         private int references;
 
-        private Entry(Identifier key, BakedBlockEntities.Region region) {
+        private Entry(Identifier key, BakedBlockEntities.Region region, int slotX, int slotY) {
             this.key = key;
             this.region = region;
+            this.slotX = slotX;
+            this.slotY = slotY;
         }
 
         public BakedBlockEntities.Region region() {

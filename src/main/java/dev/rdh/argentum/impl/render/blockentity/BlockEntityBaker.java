@@ -6,11 +6,13 @@ import dev.rdh.argentum.impl.render.terrain.compile.PrimitiveBuiltRenderSectionD
 import dev.rdh.argentum.impl.world.cloned.ChunkRenderContext;
 import dev.rdh.argentum.mixin.features.model.instancing.BoxAccessor;
 import org.embeddedt.embeddium.api.util.ColorABGR;
+import org.embeddedt.embeddium.impl.model.quad.BakedQuadView;
 import org.embeddedt.embeddium.impl.model.quad.properties.ModelQuadFacing;
 import org.embeddedt.embeddium.impl.render.chunk.compile.ChunkBuildBuffers;
 import org.embeddedt.embeddium.impl.render.chunk.terrain.material.Material;
 import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkVertexEncoder;
 import org.embeddedt.embeddium.impl.util.QuadUtil;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
@@ -29,8 +31,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.block.BlockLayer;
 import net.minecraft.client.render.model.Box;
 import net.minecraft.client.render.model.ModelPart;
+import net.minecraft.client.resource.model.BakedModel;
+import net.minecraft.client.resource.model.BakedQuad;
 import net.minecraft.client.render.model.Polygon;
 import net.minecraft.client.render.model.Vertex;
+import net.minecraft.client.render.model.block.ModelTransformation;
+import net.minecraft.client.render.model.block.ModelTransformations;
 import net.minecraft.client.render.model.block.entity.BannerModel;
 import net.minecraft.client.render.model.block.entity.ChestModel;
 import net.minecraft.client.render.model.block.entity.HumanoidSkullModel;
@@ -38,11 +44,13 @@ import net.minecraft.client.render.model.block.entity.LargeChestModel;
 import net.minecraft.client.render.model.block.entity.SignModel;
 import net.minecraft.client.render.model.block.entity.SkullModel;
 import net.minecraft.client.render.texture.TextureAtlas;
+import net.minecraft.client.render.texture.TextureAtlasSprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.Calendar;
+import java.util.List;
 
 import static dev.rdh.argentum.impl.render.blockentity.BakedBlockEntities.*;
 
@@ -53,6 +61,9 @@ public final class BlockEntityBaker {
     private static final Vector3fc LIGHT_0 = new Vector3f(0.2F, 1.0F, -0.7F).normalize();
     private static final Vector3fc LIGHT_1 = new Vector3f(-0.2F, 1.0F, 0.7F).normalize();
     private static final boolean CHRISTMAS = isChristmas();
+    private static final Direction[] DIRECTIONS = Direction.values();
+    private static final float[][] MAP_CORNERS = {{0.0F, 128.0F, 0.0F, 1.0F}, {128.0F, 128.0F, 1.0F, 1.0F},
+            {128.0F, 0.0F, 1.0F, 0.0F}, {0.0F, 0.0F, 0.0F, 0.0F}};
 
     private final ChestModel singleChestModel = new ChestModel();
     private final ChestModel doubleChestModel = new LargeChestModel();
@@ -67,6 +78,8 @@ public final class BlockEntityBaker {
     private final Matrix4f transform = new Matrix4f();
     private final Matrix4f partTransform = new Matrix4f();
     private final Matrix4f textTransform = new Matrix4f();
+    private final Matrix4f itemTransform = new Matrix4f();
+    private final Matrix3f normalMatrix = new Matrix3f();
     private final Vector3f position = new Vector3f();
     private final Vector3f normal = new Vector3f();
     private ChunkBuildBuffers buffers;
@@ -102,6 +115,105 @@ public final class BlockEntityBaker {
             case BannerBlockEntity _ -> this.banner(state);
             default -> false;
         };
+    }
+
+    public void bakeFrame(BakedItemFrames.Snapshot frame, ChunkRenderContext world, ChunkBuildBuffers buffers,
+            PrimitiveBuiltRenderSectionData data, int originX, int originY, int originZ) {
+        this.buffers = buffers;
+        this.light = world.getLightColor(frame.hanging(), 0);
+        BlockPos hanging = frame.hanging();
+        this.transform.identity()
+                .translate(hanging.getX() - originX + 0.5F, hanging.getY() - originY + 0.5F, hanging.getZ() - originZ + 0.5F)
+                .rotateY((float)Math.toRadians(180.0F - frame.yaw()));
+        this.partTransform.set(this.transform).translate(-0.5F, -0.5F, -0.5F);
+        this.partTransform.normal(this.normalMatrix);
+        Material solid = buffers.getRenderPassConfiguration().getMaterialForRenderType(BlockLayer.SOLID);
+        this.modelQuads(frame.model(), solid, null, false, data);
+
+        BakedModel item = frame.item();
+        if (item != null) {
+            ModelTransformation fixed = item.getTransformations().get(ModelTransformations.Type.FIXED);
+            this.itemTransform.scaling(item.isGui3d() ? 1.0F : 2.0F)
+                    .translate(fixed.translation.x, fixed.translation.y, fixed.translation.z)
+                    .rotateY((float)Math.toRadians(fixed.rotation.y))
+                    .rotateX((float)Math.toRadians(fixed.rotation.x))
+                    .rotateZ((float)Math.toRadians(fixed.rotation.z))
+                    .scale(fixed.scale.x, fixed.scale.y, fixed.scale.z)
+                    .scale(0.5F)
+                    .translate(-0.5F, -0.5F, -0.5F);
+            this.itemTransform.normal(this.normalMatrix);
+            this.partTransform.set(this.transform).translate(0.0F, 0.0F, 0.4375F)
+                    .rotateZ((float)Math.toRadians(frame.rotation() * 45))
+                    .scale(0.5F);
+            if (!item.isGui3d()) this.partTransform.rotateY((float)Math.PI);
+            this.partTransform.mul(this.itemTransform);
+            Material cutout = buffers.getRenderPassConfiguration().getMaterialForRenderType(BlockLayer.CUTOUT);
+            this.modelQuads(item, cutout, frame.tints(), this.partTransform.determinant3x3() < 0.0F, data);
+        }
+
+        SlotSheet.Entry map = frame.map();
+        if (map != null) {
+            Region region = map.region();
+            this.partTransform.set(this.transform).translate(0.0F, 0.0F, 0.4375F)
+                    .rotateZ((float)Math.toRadians(frame.rotation() % 4 * 90))
+                    .rotateZ((float)Math.PI)
+                    .scale(0.0078125F)
+                    .translate(-64.0F, -64.0F, -1.0F);
+            for (int corner = 0; corner < 4; corner++) {
+                float[] source = MAP_CORNERS[corner];
+                this.partTransform.transformPosition(source[0], source[1], -0.01F, this.position);
+                ChunkVertexEncoder.Vertex vertex = this.quad[corner];
+                vertex.x = this.position.x;
+                vertex.y = this.position.y;
+                vertex.z = this.position.z;
+                vertex.color = 0xFFFFFFFF;
+                vertex.rdhFactor = 0;
+                vertex.u = region.u() + source[2] * region.width();
+                vertex.v = region.v() + source[3] * region.height();
+                vertex.light = this.light;
+            }
+            this.push(this.quad, buffers.getRenderPassConfiguration().getMaterialForRenderType(RenderPassConfigurationBuilder.DECAL));
+            data.slots.add(map);
+        }
+        data.frames.add(new BakedItemFrames.Baked(frame.entity(), frame.state()));
+    }
+
+    private void modelQuads(BakedModel model, Material material, int[] tints, boolean flip, PrimitiveBuiltRenderSectionData data) {
+        for (Direction direction : DIRECTIONS) {
+            this.modelQuads(model.getQuads(direction), material, tints, flip, data);
+        }
+        this.modelQuads(model.getQuads(), material, tints, flip, data);
+    }
+
+    private void modelQuads(List<BakedQuad> quads, Material material, int[] tints, boolean flip, PrimitiveBuiltRenderSectionData data) {
+        for (BakedQuad quad : quads) {
+            int[] vertices = quad.getVertices();
+            int stride = vertices.length / 4;
+            Direction face = quad.getFace();
+            float brightness = light(this.normalMatrix.transform(this.normal.set(face.getOffsetX(), face.getOffsetY(), face.getOffsetZ()))
+                    .normalize());
+            int rgb = quad.hasTint() && tints != null ? tints[quad.getTintIndex()] : 0xFFFFFF;
+            int color = ColorABGR.pack(Math.min(255, Math.round((rgb >> 16 & 0xFF) * brightness)),
+                    Math.min(255, Math.round((rgb >> 8 & 0xFF) * brightness)), Math.min(255, Math.round((rgb & 0xFF) * brightness)), 0xFF);
+            for (int corner = 0; corner < 4; corner++) {
+                int offset = corner * stride;
+                this.partTransform.transformPosition(Float.intBitsToFloat(vertices[offset]), Float.intBitsToFloat(vertices[offset + 1]),
+                        Float.intBitsToFloat(vertices[offset + 2]), this.position);
+                ChunkVertexEncoder.Vertex vertex = this.quad[flip ? 3 - corner : corner];
+                vertex.x = this.position.x;
+                vertex.y = this.position.y;
+                vertex.z = this.position.z;
+                vertex.color = color;
+                vertex.rdhFactor = 0;
+                vertex.u = Float.intBitsToFloat(vertices[offset + 4]);
+                vertex.v = Float.intBitsToFloat(vertices[offset + 5]);
+                vertex.light = this.light;
+            }
+            if (BakedQuadView.of(quad).celeritas$getSprite() instanceof TextureAtlasSprite sprite && sprite.isAnimated()) {
+                data.animatedSprites.add(sprite);
+            }
+            this.push(this.quad, material);
+        }
     }
 
     private boolean chest(ChestBlockEntity chest, BlockState state, BlockPos pos, ChunkRenderContext world) {
@@ -354,7 +466,11 @@ public final class BlockEntityBaker {
     }
 
     private static float shade(Vector3f normal) {
-        return Math.min(1.0F, 0.4F + 0.6F * Math.max(0.0F, normal.dot(LIGHT_0)) + 0.6F * Math.max(0.0F, normal.dot(LIGHT_1)));
+        return Math.min(1.0F, light(normal));
+    }
+
+    private static float light(Vector3f normal) {
+        return 0.4F + 0.6F * Math.max(0.0F, normal.dot(LIGHT_0)) + 0.6F * Math.max(0.0F, normal.dot(LIGHT_1));
     }
 
     private static void copy(ChunkVertexEncoder.Vertex from, ChunkVertexEncoder.Vertex to) {

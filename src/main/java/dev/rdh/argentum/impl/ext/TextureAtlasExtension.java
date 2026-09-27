@@ -21,4 +21,8 @@ public interface TextureAtlasExtension {
     default SlotSheet argentum$getFontPages() {
         throw new UnsupportedOperationException();
     }
+
+    default SlotSheet argentum$getMaps() {
+        throw new UnsupportedOperationException();
+    }
 }
