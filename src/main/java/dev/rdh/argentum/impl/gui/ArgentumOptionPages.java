@@ -383,7 +383,7 @@ public final class ArgentumOptionPages {
                 .setId(Group.DIAGNOSTICS)
                 .add(toggle(Option.CHECK_GL_ERRORS, OptionImpact.LOW, (config, value) -> config.checkGlErrors = value, config1 -> config1.checkGlErrors, OptionFlag.REQUIRES_GAME_RESTART))
                 .build();
-        return page(Page.ADVANCED, cpuSaving, diagnostics);
+        return Argentum.renderAheadSupported() ? page(Page.ADVANCED, cpuSaving, diagnostics) : page(Page.ADVANCED, diagnostics);
     }
 
     private static OptionImpl<ArgentumConfig, Boolean> toggle(OptionIdentifier<?> id,

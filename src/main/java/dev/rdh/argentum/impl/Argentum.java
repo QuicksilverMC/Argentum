@@ -2,6 +2,8 @@ package dev.rdh.argentum.impl;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
+import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GLCapabilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +31,11 @@ public class Argentum implements ClientModInitializer {
         CONFIG = CONFIG_STORAGE.getData();
 
         LOGGER.info("Argentum v{}", VERSION);
+    }
+
+    public static boolean renderAheadSupported() {
+        GLCapabilities caps = GL.getCapabilities();
+        return caps.OpenGL32 || caps.GL_ARB_sync;
     }
 
     private Path getConfigPath(Path c) {

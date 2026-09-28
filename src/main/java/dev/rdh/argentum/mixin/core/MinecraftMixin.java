@@ -23,7 +23,7 @@ import java.util.List;
 @Mixin(Minecraft.class)
 public abstract class MinecraftMixin {
     @Unique
-    private final RenderAheadManager celeritas$renderAheadManager = new RenderAheadManager();
+    private RenderAheadManager celeritas$renderAheadManager;
 
     @Shadow
     private boolean logGlErrors;
@@ -54,17 +54,18 @@ public abstract class MinecraftMixin {
         if (!missing.isEmpty()) {
             throw new IllegalStateException("Argentum requires " + String.join(", ", missing) + " (GL_VERSION " + GL11.glGetString(GL11.GL_VERSION) + ", GL_RENDERER " + GL11.glGetString(GL11.GL_RENDERER) + ")");
         }
+        if (Argentum.renderAheadSupported()) this.celeritas$renderAheadManager = new RenderAheadManager();
     }
 
     @Inject(method = "runGame", at = @At("HEAD"))
     private void celeritas$startFrame(CallbackInfo ci) {
-        this.celeritas$renderAheadManager.startFrame(Argentum.CONFIG.cpuRenderAheadLimit);
+        if (this.celeritas$renderAheadManager != null) this.celeritas$renderAheadManager.startFrame(Argentum.CONFIG.cpuRenderAheadLimit);
     }
 
     @Inject(method = "runGame", at = @At("RETURN"))
     private void celeritas$endFrame(CallbackInfo ci) {
         GuiItemIcons.warnIfPending();
-        this.celeritas$renderAheadManager.endFrame();
+        if (this.celeritas$renderAheadManager != null) this.celeritas$renderAheadManager.endFrame();
     }
 
     @WrapWithCondition(method = "runGame", at = @At(value = "INVOKE", target = "Ljava/lang/Thread;yield()V"))
