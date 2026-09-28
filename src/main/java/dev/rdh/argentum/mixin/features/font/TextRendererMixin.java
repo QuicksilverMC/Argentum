@@ -48,6 +48,9 @@ public abstract class TextRendererMixin implements TextRendererExtension {
     private boolean unicode;
 
     @Shadow
+    private int color;
+
+    @Shadow
     private boolean obfuscated;
 
     @Shadow
@@ -115,13 +118,14 @@ public abstract class TextRendererMixin implements TextRendererExtension {
         if (!Float.isNaN(advance)) {
             this.x += advance;
             this.argentum$setStyle(this.argentum$batcher.endStyle());
+            if (this.argentum$batcher.endColor() != -1) this.color = this.argentum$batcher.endColor();
             ci.cancel();
         }
     }
 
     @Inject(method = "drawLayer(Ljava/lang/String;Z)V", at = @At("RETURN"))
     private void argentum$endLayer(String text, boolean shadow, CallbackInfo ci) {
-        this.argentum$batcher.end(this.x, this.argentum$style());
+        this.argentum$batcher.end(this.x, this.argentum$style(), this.color);
     }
 
     @Unique

@@ -81,6 +81,7 @@ public final class TextBatcher {
     private Runnable beforeImmediateText;
 
     private int endStyle;
+    private int endColor;
     private ByteBuffer uploadBuffer;
 
     public void readWidths(Identifier fontLocation, int[] characterWidths) {
@@ -274,6 +275,7 @@ public final class TextBatcher {
             GlStateManager.color4f(geometry.red(), geometry.green(), geometry.blue(), this.alpha);
             this.setColor(geometry.red(), geometry.green(), geometry.blue(), this.alpha);
             this.endStyle = geometry.style();
+            this.endColor = geometry.color();
             this.batching = false;
             return geometry.advance();
         }
@@ -288,12 +290,17 @@ public final class TextBatcher {
         return this.endStyle;
     }
 
-    public void end(float x, int style) {
+    public int endColor() {
+        return this.endColor;
+    }
+
+    public void end(float x, int style, int color) {
         this.flush();
         this.flushDecorations();
         if (!this.pendingSegments.isEmpty()) {
             this.geometryCache.put(this.pendingKey, new Geometry(this.pendingSegments.toArray(new Segment[0]),
-                    x - this.originX, style, this.red, this.green, this.blue));
+                    x - this.originX, style, this.red, this.green, this.blue,
+                    hasColorCode(this.pendingKey.text) ? color : -1));
             if (this.geometryCache.size() > GEOMETRY_CACHE_SIZE) {
                 delete(this.geometryCache.removeFirst());
             }
@@ -485,6 +492,13 @@ public final class TextBatcher {
             GlStateManager.enableTexture();
         }
         this.drawingDecorations = false;
+    }
+
+    private static boolean hasColorCode(String text) {
+        for (int i = 0; i + 1 < text.length(); i++) {
+            if (text.charAt(i) == SECTION && "klmnor".indexOf(Character.toLowerCase(text.charAt(i + 1))) == -1) return true;
+        }
+        return false;
     }
 
     private static boolean cacheable(String text) {
@@ -682,5 +696,5 @@ public final class TextBatcher {
         }
     }
 
-    private record Geometry(Segment[] segments, float advance, int style, float red, float green, float blue) {}
+    private record Geometry(Segment[] segments, float advance, int style, float red, float green, float blue, int color) {}
 }
