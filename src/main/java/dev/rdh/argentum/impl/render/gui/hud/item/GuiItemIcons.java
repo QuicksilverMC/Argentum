@@ -21,7 +21,7 @@ public final class GuiItemIcons {
     private static final GuiItemGlints GLINTS = new GuiItemGlints();
 
     private static boolean initialized;
-    private static int readyTick;
+    private static boolean ready;
     private static boolean baking;
     private static boolean flushing;
     private static boolean warned;
@@ -34,10 +34,9 @@ public final class GuiItemIcons {
         if (!initialized) {
             initialized = true;
             ATLAS.initialize();
-            readyTick = currentTick() + 1;
         }
         // the atlas is created mid-frame, so leave that frame on the vanilla path
-        return ATLAS.isSupported() && currentTick() >= readyTick;
+        return ATLAS.isSupported() && ready;
     }
 
     public static boolean canBake(ItemStack item) {
@@ -107,7 +106,8 @@ public final class GuiItemIcons {
         GLINTS.quad(slot, x, y, 100.0F + zOffset, ATLAS.uvExtent(), model.getParticleIcon());
     }
 
-    public static void warnIfPending() {
+    public static void endFrame() {
+        ready = initialized;
         if (RECORDER.isEmpty() && GLINTS.isEmpty() || warned) return;
         warned = true;
         Argentum.LOGGER.warn("GUI item icons were recorded but never flushed; they will draw late and misplaced. "

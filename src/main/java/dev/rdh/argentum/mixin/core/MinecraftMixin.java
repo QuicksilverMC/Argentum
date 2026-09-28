@@ -64,7 +64,7 @@ public abstract class MinecraftMixin {
 
     @Inject(method = "runGame", at = @At("RETURN"))
     private void celeritas$endFrame(CallbackInfo ci) {
-        GuiItemIcons.warnIfPending();
+        GuiItemIcons.endFrame();
         if (this.celeritas$renderAheadManager != null) this.celeritas$renderAheadManager.endFrame();
     }
 
