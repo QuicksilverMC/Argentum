@@ -102,7 +102,7 @@ public final class EntityInstancing {
     public EntityCapture beginEntity(Model model, Identifier texture, boolean player, boolean preserveFixedFunction,
             int packedLight, float effectTime, float overlayRed, float overlayGreen, float overlayBlue,
             float overlayAlpha) {
-        if (!this.isBatchActive() || model == null || texture == null) {
+        if (!this.isBatchActive() || model == null || texture == null || this.activeCapture != null) {
             return null;
         }
         EntityCapture capture = this.acquire();
@@ -126,7 +126,7 @@ public final class EntityInstancing {
     }
 
     public EntityCapture beginItemEntity(ItemEntity entity, BakedModel model, int packedLight) {
-        if (!this.isBatchActive() || entity.getItem() == null
+        if (!this.isBatchActive() || entity.getItem() == null || this.activeCapture != null
                 || !this.backend.supportsItem(model, entity.getItem())
                 || this.itemLayerPassDetected && this.backend.isLayeredItem(model)) {
             return null;
