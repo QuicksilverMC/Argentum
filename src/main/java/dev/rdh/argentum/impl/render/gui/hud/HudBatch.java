@@ -12,7 +12,6 @@ import java.util.function.Supplier;
 
 public final class HudBatch {
     private static final BufferUploader UPLOADER = new BufferUploader();
-    private static final HudRecorder RECORDER = new HudRecorder();
 
     private HudBatch() {
     }
@@ -88,6 +87,7 @@ public final class HudBatch {
     }
 
     public static final class Colored implements Runnable {
+        private final HudRecorder recorder = new HudRecorder();
         private boolean drawing;
 
         private Colored() {
@@ -95,7 +95,7 @@ public final class HudBatch {
 
         public void fill(int left, int top, int right, int bottom, int color) {
             this.drawing = true;
-            RECORDER.fill(HudRecorder.LAYER_BACKGROUND, left, top, right, bottom, color);
+            this.recorder.fill(HudRecorder.LAYER_BACKGROUND, left, top, right, bottom, color);
         }
 
         public void draw() {
@@ -103,7 +103,7 @@ public final class HudBatch {
                 return;
             }
 
-            RECORDER.flush();
+            this.recorder.flush();
             this.drawing = false;
         }
 
