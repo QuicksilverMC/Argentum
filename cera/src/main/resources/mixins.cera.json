@@ -46,7 +46,6 @@
     "MinecraftMixin",
     "ModelBakeryMixin",
     "ModelManagerMixin",
-    "NamespacedIdentifiersMixin",
     "ClientPlayerEntityMixin",
     "PlayerRendererMixin",
     "TextureAtlasMixin",
