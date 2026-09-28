@@ -167,7 +167,7 @@ public final class EntityCapture implements AutoCloseable {
 
     public boolean beginLayer(Object layer, LivingEntity entity) {
         InstanceRenderPass layerPass = EntityLayerSupport.pass(layer, entity);
-        if (this.finished || layerPass == null) {
+        if (this.finished || layerPass == null || !this.modelPassSeen) {
             return false;
         }
         this.pass = layerPass;
