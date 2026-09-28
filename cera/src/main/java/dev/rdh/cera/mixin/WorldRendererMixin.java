@@ -83,6 +83,18 @@ public abstract class WorldRendererMixin implements CeraWorldRendererExtension {
 
     @ModifyArg(method = "renderSky(FI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/texture/TextureManager;bind(Lnet/minecraft/resource/Identifier;)V", ordinal = 1))
     private Identifier cera$renderCustomMoon(Identifier source) {
+        this.cera$restoreCelestialState();
         return this.cera$customSky.resolveMoon(source);
+    }
+
+    @Inject(method = "renderSky(FI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientWorld;getStarBrightness(F)F"))
+    private void cera$restoreBeforeStars(float tickDelta, int anaglyphRenderPass, CallbackInfo ci) {
+        this.cera$restoreCelestialState();
+    }
+
+    @Unique
+    private void cera$restoreCelestialState() {
+        GlStateManager.blendFuncSeparate(770, 1, 1, 0);
+        GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F - this.world.getRain(this.cera$tickDelta));
     }
 }
