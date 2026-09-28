@@ -27,6 +27,7 @@
     "colors.SpawnEggItemMixin",
     "colors.LilyPadBlockMixin",
     "colors.SignRendererMixin",
+    "colors.SignTextMixin",
     "colors.RedstoneParticleMixin",
     "colors.ExperienceOrbRendererMixin",
     "colors.ItemDurabilityMixin",

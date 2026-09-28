@@ -18,6 +18,10 @@ public record SignText(Text[] lines, String font, BakedBlockEntities.Region regi
         float[] vertices, int[] colors, byte[] textures) {
     private static final String FORMATTING = "0123456789abcdefklmnor";
 
+    private static int baseColor() {
+        return 0;
+    }
+
     public boolean current(Text[] lines, BakedBlockEntities.Region region, boolean unicode) {
         if (this.region != region || this.unicode != unicode) return false;
         for (int i = 0; i < this.lines.length; i++) {
@@ -79,7 +83,7 @@ public record SignText(Text[] lines, String font, BakedBlockEntities.Region regi
         }
 
         private boolean line(String text, float x, float y) {
-            int color = 0;
+            int color = baseColor();
             boolean bold = false;
             boolean italic = false;
             for (int i = 0; i < text.length(); i++) {
@@ -97,7 +101,7 @@ public record SignText(Text[] lines, String font, BakedBlockEntities.Region regi
                     } else if (code == 21) {
                         bold = false;
                         italic = false;
-                        color = 0;
+                        color = baseColor();
                     } else {
                         return false;
                     }
