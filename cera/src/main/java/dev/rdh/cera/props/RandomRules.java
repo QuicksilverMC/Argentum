@@ -20,15 +20,11 @@ public final class RandomRules<T> {
         this.rules = rules;
     }
 
-    /**
-     * Returns the variant number (starting at 1) selected for {@code subject}, falling back to a uniform pick among
-     * {@code fallbackVariants} when no rule matches. Returns 0 when nothing could be selected.
-     */
-    public int select(T subject, int seed, int fallbackVariants) {
+    public int select(T subject, int seed) {
         for (Rule<T> rule : this.rules) {
             if (rule.condition.test(subject)) return rule.pick(seed);
         }
-        return fallbackVariants > 0 ? Math.floorMod(seed, fallbackVariants) + 1 : 0;
+        return 1;
     }
 
     public boolean isEmpty() {

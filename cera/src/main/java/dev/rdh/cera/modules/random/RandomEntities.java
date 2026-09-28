@@ -74,7 +74,7 @@ public final class RandomEntities implements ResourceReloadListener {
         int seed = subject.seed();
         int variant = base.rules() == null
                 ? Math.floorMod(seed, base.count()) + 1
-                : base.rules().select(subject, seed, base.count());
+                : base.rules().select(subject, seed);
         this.cache.put(subject.key(), new Entry(variant, base.rules() == null ? Long.MAX_VALUE : now + 20));
         if (this.cache.size() > CACHE_LIMIT) this.cache.clear();
         return variant;
