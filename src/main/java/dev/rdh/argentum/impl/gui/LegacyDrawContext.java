@@ -24,6 +24,7 @@ import dev.rdh.argentum.impl.Argentum;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -143,26 +144,31 @@ final class LegacyDrawContext implements DrawContext {
     public @Nullable String getModLogoPath(String modId) {
         return FabricLoader.getInstance().getModContainer(modId)
                 .flatMap(container -> container.getMetadata().getIconPath(32).flatMap(container::findPath))
-                .map(this::rememberPath)
+                .map(path -> this.rememberPath(modId, path))
                 .orElse(null);
     }
 
     private final Map<Path, Identifier> loadedLogos = new Object2ObjectOpenHashMap<>();
     private final Set<Path> erroredModLogos = new ObjectOpenHashSet<>();
 
-    private String rememberPath(Path path) {
+    private String rememberPath(String modId, Path path) {
         if (erroredModLogos.contains(path)) return null;
         Identifier tex = loadedLogos.get(path);
         if (tex != null) return tex.toString();
-        try {
-            BufferedImage img = ImageIO.read(Files.newInputStream(path));
-            if (img.getWidth() != img.getHeight()) {
+        tex = new Identifier(Argentum.ID, "mod_logo/" + modId);
+        if (this.minecraft.getTextureManager().get(tex) != null) {
+            loadedLogos.put(path, tex);
+            return tex.toString();
+        }
+        try (InputStream stream = Files.newInputStream(path)) {
+            BufferedImage img = ImageIO.read(stream);
+            if (img == null || img.getWidth() != img.getHeight()) {
                 Argentum.LOGGER.warn("Mod icon {} is not square, ignoring", path);
                 erroredModLogos.add(path);
                 return null;
             }
 
-            tex = this.minecraft.getTextureManager().register("mod_logo", new DynamicTexture(img));
+            this.minecraft.getTextureManager().register(tex, new DynamicTexture(img));
             loadedLogos.put(path, tex);
             return tex.toString();
         } catch (IOException e) {
