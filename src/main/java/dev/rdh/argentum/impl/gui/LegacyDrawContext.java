@@ -74,7 +74,7 @@ final class LegacyDrawContext implements DrawContext {
         Window window = new Window(this.minecraft);
         int scale = window.getScale();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(x * scale, this.minecraft.height - y2 * scale, (x2 - x + 1) * scale, (y2 - y + 1) * scale);
+        GL11.glScissor(x * scale, this.minecraft.height - y2 * scale, (x2 - x) * scale, (y2 - y) * scale);
     }
 
     @Override
