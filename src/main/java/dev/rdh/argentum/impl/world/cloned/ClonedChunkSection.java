@@ -111,7 +111,8 @@ final class ClonedChunkSection {
 
         for (int y = 0; y < 16; y++) {
             for (int z = 0; z < 16; z++) {
-                for (int x = 0; x < 16; x++) {
+                for (int row = this.nonAirRows[y << 4 | z] & 0xFFFF; row != 0; row &= row - 1) {
+                    int x = Integer.numberOfTrailingZeros(row);
 					if (!getBlockState(x, y, z).getBlock().hasBlockEntity()) {
                         continue;
                     }
