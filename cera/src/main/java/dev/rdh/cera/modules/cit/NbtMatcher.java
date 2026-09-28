@@ -3,9 +3,15 @@ package dev.rdh.cera.modules.cit;
 import dev.rdh.cera.props.NumberList;
 import dev.rdh.cera.props.Patterns;
 import dev.rdh.cera.props.Result;
+import net.minecraft.nbt.NbtByte;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtDouble;
 import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtFloat;
+import net.minecraft.nbt.NbtInt;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtLong;
+import net.minecraft.nbt.NbtShort;
 import net.minecraft.nbt.NbtString;
 
 import java.util.regex.Pattern;
@@ -73,10 +79,23 @@ public record NbtMatcher(String[] path, ValueMatcher matcher) {
             else if (element == null) matched = false;
             else if (range != null) matched = element instanceof NbtElement.Number number && range.contains(number.getInt());
             else {
-                String actual = raw ? element.toString() : element instanceof NbtString string ? string.asString() : element.toString();
+                String actual = raw ? element.toString() : text(element);
                 matched = pattern == null ? value.equals(actual) : pattern.matcher(actual).matches();
             }
             return negate != matched;
+        }
+
+        private static String text(NbtElement element) {
+            return switch (element) {
+                case NbtString string -> string.asString();
+                case NbtByte number -> Byte.toString(number.getByte());
+                case NbtShort number -> Short.toString(number.getShort());
+                case NbtInt number -> Integer.toString(number.getInt());
+                case NbtLong number -> Long.toString(number.getLong());
+                case NbtFloat number -> Float.toString(number.getFloat());
+                case NbtDouble number -> Double.toString(number.getDouble());
+                default -> element.toString();
+            };
         }
 
         boolean matches(int value) {
