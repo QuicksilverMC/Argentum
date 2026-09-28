@@ -134,6 +134,12 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
     }
 
     @Override
+    protected void scheduleSectionForRebuild(int x, int y, int z, boolean important) {
+        this.sectionCache.invalidate(x, y, z);
+        super.scheduleSectionForRebuild(x, y, z, important);
+    }
+
+    @Override
     protected void invalidateCachedSectionData(RenderSection section) {
         this.sectionCache.invalidate(section.getChunkX(), section.getChunkY(), section.getChunkZ());
     }
