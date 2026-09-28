@@ -29,9 +29,12 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class CustomColormaps implements ResourceReloadListener {
     private static final String[] DIRECTORIES = {"optifine/colormap/", "mcpatcher/colormap/"};
+    private static final Pattern NUMBERED_BLOCK = Pattern.compile("^block([0-9]+).*$");
 
     private volatile State state = State.EMPTY;
 
@@ -209,7 +212,14 @@ public final class CustomColormaps implements ResourceReloadListener {
     private static void loadCustom(Resource resource, ResourceManager resources, Map<Block, List<Colormap>> byBlock) {
         try {
             Props props = new Props(resource);
-            Object2IntMap<Block> blocks = BlockMatcher.parseBlocks(props.get("blocks"));
+            String spec = props.get("blocks");
+            String path = props.id().identifier();
+            if (spec == null && (path.contains("/colormap/custom/") || path.contains("/colormap/blocks/"))) {
+                String name = path.substring(path.lastIndexOf('/') + 1, path.length() - ".properties".length());
+                Matcher numbered = NUMBERED_BLOCK.matcher(name);
+                spec = numbered.matches() ? numbered.group(1) : name;
+            }
+            Object2IntMap<Block> blocks = BlockMatcher.parseBlocks(spec);
             if (blocks.isEmpty()) return;
 
             Format format = parseFormat(props.get("format"));
