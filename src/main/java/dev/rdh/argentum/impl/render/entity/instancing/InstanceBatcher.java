@@ -41,7 +41,7 @@ final class InstanceBatcher {
     }
 
     void clear() {
-        this.textures.values().forEach(map -> map.values().forEach(TextureBatch::clear));
+        this.textures.values().forEach(map -> map.values().removeIf(TextureBatch::expire));
         this.arrayTextures.values().forEach(map -> map.values().forEach(TextureBatch::clear));
         this.queued.values().forEach(List::clear);
         Arrays.fill(this.itemGlintCaptured, false);
@@ -244,6 +244,7 @@ final class InstanceBatcher {
         private final Reference2ObjectLinkedOpenHashMap<InstanceGeometry, Instances> parts = new Reference2ObjectLinkedOpenHashMap<>();
         private int count;
         private boolean queued;
+        private int idleFlushes;
 
         private TextureBatch(Identifier texture, TextureArrayManager.Pool pool) {
             this.texture = texture;
@@ -254,6 +255,12 @@ final class InstanceBatcher {
             this.parts.values().forEach(Instances::clear);
             this.count = 0;
             this.queued = false;
+        }
+
+        private boolean expire() {
+            this.idleFlushes = this.queued ? 0 : this.idleFlushes + 1;
+            this.clear();
+            return this.idleFlushes > 600;
         }
 
         void add(InstanceGeometry geometry, Matrix4f matrix, float u, float v, int layer,
