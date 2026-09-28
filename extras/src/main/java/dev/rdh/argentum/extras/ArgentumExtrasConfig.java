@@ -67,6 +67,9 @@ public class ArgentumExtrasConfig {
         this.weatherRenderDistance = Math.clamp(this.weatherRenderDistance, 0, 15);
         this.weatherDensity = Math.clamp(this.weatherDensity, 0, 100);
         this.blockOutlineWidth = Math.clamp(this.blockOutlineWidth, 1.0f, 5.0f);
+        if (this.leafQuality == null) {
+            this.leafQuality = LeafQuality.FANCY;
+        }
     }
 
 }
