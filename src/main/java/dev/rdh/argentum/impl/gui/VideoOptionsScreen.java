@@ -79,6 +79,10 @@ public final class VideoOptionsScreen extends Screen {
             this.minecraft.openScreen(new net.minecraft.client.gui.screen.VideoOptionsScreen(this, this.minecraft.options));
             return;
         }
+        if (keyCode == Keyboard.KEY_ESCAPE) {
+            if (!this.controller.isHasPendingChanges()) this.minecraft.openScreen(this.parent);
+            return;
+        }
         super.keyPressed(character, keyCode);
     }
 
