@@ -290,7 +290,7 @@ public final class RandomConditions {
         if (range == null) return null;
         return subject -> {
             var world = subject.world();
-            return world != null && range.contains((int) world.getTimeOfDay());
+            return world != null && range.contains((int) (world.getTimeOfDay() % 24000L));
         };
     }
 
