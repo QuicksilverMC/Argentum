@@ -571,7 +571,7 @@ public final class TextBatcher {
         }
         BufferBuilder buffer = this.elementBuffers.get(texture);
         if (buffer == null) {
-            buffer = new BufferBuilder(32 * 1024 / Integer.BYTES);
+            buffer = new BufferBuilder(256 * 1024 / Integer.BYTES);
             this.elementBuffers.put(texture, buffer);
         }
         if (buffer.getVertexCount() == 0) {
