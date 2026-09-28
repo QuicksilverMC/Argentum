@@ -19,6 +19,8 @@
   "accessWidener": "cera.classtweaker",
   "mixins": ["mixins.cera.json"],
   "depends": {
-    "argentum": "*"
+    "argentum": "*",
+    "osl-core": "*",
+    "osl-resource-loader": "*"
   }
 }
