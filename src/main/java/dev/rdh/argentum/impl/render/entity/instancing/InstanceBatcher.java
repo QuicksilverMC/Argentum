@@ -5,6 +5,7 @@ import dev.rdh.argentum.impl.render.instancing.BoxTemplate;
 import org.embeddedt.embeddium.impl.gl.shader.GlProgram;
 import dev.rdh.argentum.impl.render.instancing.TextureArrayManager;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.model.Model;
@@ -20,6 +21,7 @@ import org.joml.Vector4fc;
 import org.lwjgl.opengl.GL11;
 
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 final class InstanceBatcher {
@@ -28,17 +30,20 @@ final class InstanceBatcher {
     private final boolean[] itemGlintCaptured = new boolean[2];
     private final EnumMap<InstanceRenderPass, Map<Identifier, TextureBatch>> textures = new EnumMap<>(InstanceRenderPass.class);
     private final EnumMap<InstanceRenderPass, Map<TextureArrayManager.Pool, TextureBatch>> arrayTextures = new EnumMap<>(InstanceRenderPass.class);
+    private final EnumMap<InstanceRenderPass, List<TextureBatch>> queued = new EnumMap<>(InstanceRenderPass.class);
 
     InstanceBatcher() {
         for (InstanceRenderPass pass : InstanceRenderPass.values()) {
             this.textures.put(pass, new Object2ObjectLinkedOpenHashMap<>());
             this.arrayTextures.put(pass, new Reference2ReferenceOpenHashMap<>());
+            this.queued.put(pass, new ObjectArrayList<>());
         }
     }
 
     void clear() {
         this.textures.values().forEach(map -> map.values().forEach(TextureBatch::clear));
         this.arrayTextures.values().forEach(map -> map.values().forEach(TextureBatch::clear));
+        this.queued.values().forEach(List::clear);
         Arrays.fill(this.itemGlintCaptured, false);
     }
 
@@ -59,14 +64,23 @@ final class InstanceBatcher {
         this.models.clear();
         this.textures.values().forEach(Map::clear);
         this.arrayTextures.values().forEach(Map::clear);
+        this.queued.values().forEach(List::clear);
     }
 
     TextureBatch texture(Identifier texture, InstanceRenderPass pass) {
-        return this.textures.get(pass).computeIfAbsent(texture, TextureBatch::new);
+        return this.queue(this.textures.get(pass).computeIfAbsent(texture, key -> new TextureBatch(key, null)), pass);
     }
 
     TextureBatch texture(TextureArrayManager.Pool pool, InstanceRenderPass pass) {
-        return this.arrayTextures.get(pass).computeIfAbsent(pool, ignored -> new TextureBatch(null));
+        return this.queue(this.arrayTextures.get(pass).computeIfAbsent(pool, key -> new TextureBatch(null, key)), pass);
+    }
+
+    private TextureBatch queue(TextureBatch batch, InstanceRenderPass pass) {
+        if (!batch.queued) {
+            batch.queued = true;
+            this.queued.get(pass).add(batch);
+        }
+        return batch;
     }
 
     Stats render(CommandList commandList, GlProgram<InstanceShader> program) {
@@ -188,10 +202,7 @@ final class InstanceBatcher {
     }
 
     private boolean has(InstanceRenderPass pass) {
-        for (TextureBatch batch : this.textures.get(pass).values()) {
-            if (batch.count != 0) return true;
-        }
-        for (TextureBatch batch : this.arrayTextures.get(pass).values()) {
+        for (TextureBatch batch : this.queued.get(pass)) {
             if (batch.count != 0) return true;
         }
         return false;
@@ -206,19 +217,18 @@ final class InstanceBatcher {
                 pass != InstanceRenderPass.EMISSIVE_REPLACE, pass == InstanceRenderPass.EMISSIVE);
         program.getInterface().setChargePass(pass.chargePass);
         var textureManager = Minecraft.getInstance().getTextureManager();
-        for (TextureBatch texture : this.textures.get(pass).values()) {
-            if (texture.count == 0) continue;
-            textureManager.bind(texture.texture);
-            program.getInterface().setTextureArray(false);
-            draws += texture.render(commandList, program, pass == InstanceRenderPass.TRANSLUCENT);
-            textureCount++;
-        }
-        for (var entry : this.arrayTextures.get(pass).entrySet()) {
-            if (entry.getValue().count == 0) continue;
-            int previous = entry.getKey().bind();
-            program.getInterface().setTextureArray(true);
-            draws += entry.getValue().render(commandList, program, pass == InstanceRenderPass.TRANSLUCENT);
-            entry.getKey().restore(previous);
+        for (TextureBatch batch : this.queued.get(pass)) {
+            if (batch.count == 0) continue;
+            if (batch.pool == null) {
+                textureManager.bind(batch.texture);
+                program.getInterface().setTextureArray(false);
+                draws += batch.render(commandList, program, pass == InstanceRenderPass.TRANSLUCENT);
+            } else {
+                int previous = batch.pool.bind();
+                program.getInterface().setTextureArray(true);
+                draws += batch.render(commandList, program, pass == InstanceRenderPass.TRANSLUCENT);
+                batch.pool.restore(previous);
+            }
             textureCount++;
         }
         return new Stats(draws, textureCount);
@@ -230,16 +240,20 @@ final class InstanceBatcher {
 
     static final class TextureBatch {
         private final Identifier texture;
+        private final TextureArrayManager.Pool pool;
         private final Reference2ObjectLinkedOpenHashMap<InstanceGeometry, Instances> parts = new Reference2ObjectLinkedOpenHashMap<>();
         private int count;
+        private boolean queued;
 
-        private TextureBatch(Identifier texture) {
+        private TextureBatch(Identifier texture, TextureArrayManager.Pool pool) {
             this.texture = texture;
+            this.pool = pool;
         }
 
         private void clear() {
             this.parts.values().forEach(Instances::clear);
             this.count = 0;
+            this.queued = false;
         }
 
         void add(InstanceGeometry geometry, Matrix4f matrix, float u, float v, int layer,
