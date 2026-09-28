@@ -122,21 +122,13 @@ final class InstanceBatcher {
         }
         GlStateManager.enableBlend();
         GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        if (this.has(InstanceRenderPass.ITEM)) {
-            var textureManager = Minecraft.getInstance().getTextureManager();
-            textureManager.bind(TextureAtlas.BLOCKS_LOCATION);
-            var blockAtlas = textureManager.get(TextureAtlas.BLOCKS_LOCATION);
-            blockAtlas.pushFilter(false, false);
-            try {
-                Stats items = this.renderPass(commandList, program, InstanceRenderPass.ITEM);
-                draws += items.draws;
-                textureCount += items.textures;
-            } finally {
-                textureManager.bind(TextureAtlas.BLOCKS_LOCATION);
-                blockAtlas.popFilter();
-            }
-        }
+        Stats items = this.renderItems(commandList, program, InstanceRenderPass.ITEM);
+        draws += items.draws;
+        textureCount += items.textures;
         GlStateManager.disableCull();
+        items = this.renderItems(commandList, program, InstanceRenderPass.ITEM_NO_CULL);
+        draws += items.draws;
+        textureCount += items.textures;
         if (this.has(InstanceRenderPass.TRANSLUCENT)) {
             GlStateManager.disableBlend();
             program.getInterface().setAlphaPass(InstanceShader.ALPHA_OPAQUE);
@@ -199,6 +191,20 @@ final class InstanceBatcher {
             GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         }
         return new Stats(draws, textureCount);
+    }
+
+    private Stats renderItems(CommandList commandList, GlProgram<InstanceShader> program, InstanceRenderPass pass) {
+        if (!this.has(pass)) return Stats.EMPTY;
+        var textureManager = Minecraft.getInstance().getTextureManager();
+        textureManager.bind(TextureAtlas.BLOCKS_LOCATION);
+        var blockAtlas = textureManager.get(TextureAtlas.BLOCKS_LOCATION);
+        blockAtlas.pushFilter(false, false);
+        try {
+            return this.renderPass(commandList, program, pass);
+        } finally {
+            textureManager.bind(TextureAtlas.BLOCKS_LOCATION);
+            blockAtlas.popFilter();
+        }
     }
 
     private boolean has(InstanceRenderPass pass) {

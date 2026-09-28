@@ -6,6 +6,7 @@ public enum InstanceRenderPass {
     CULL_BACK(0),
     NO_CULL(0),
     ITEM(0),
+    ITEM_NO_CULL(0),
     TRANSLUCENT(0),
 
     EMISSIVE(0),

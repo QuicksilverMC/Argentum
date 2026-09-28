@@ -222,7 +222,7 @@ public final class EntityCapture implements AutoCloseable {
                 this.itemInstanced = false;
                 return false;
             }
-            this.pass = InstanceRenderPass.ITEM;
+            this.pass = this.item ? InstanceRenderPass.ITEM : InstanceRenderPass.ITEM_NO_CULL;
             geometry = this.owner.backend().item(model, item);
             // the glint is depth-tested against the item with GL_EQUAL, so it can only be instanced if the item
             // was: a vanilla-drawn item and an instanced glint do not produce bit-identical depth
