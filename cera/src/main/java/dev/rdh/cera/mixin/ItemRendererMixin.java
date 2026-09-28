@@ -49,7 +49,7 @@ public abstract class ItemRendererMixin {
     private void cera$renderCustomGlint(ItemRenderer instance, BakedModel model, Operation<Void> original, @Local(argsOnly = true) ItemStack stack) {
         var effects = Minecraft.getInstance().cera$getCustomItems().effects(stack);
         if (effects.isEmpty()) {
-            original.call(instance, model);
+            if (Minecraft.getInstance().cera$getCustomItems().useGlint()) original.call(instance, model);
             return;
         }
         GlStateManager.depthMask(false);

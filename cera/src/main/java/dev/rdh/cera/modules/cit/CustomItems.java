@@ -35,10 +35,12 @@ public final class CustomItems {
     private volatile Rules rules = Rules.empty();
     private final Object2IntOpenHashMap<Identifier> glintWidths = new Object2IntOpenHashMap<>();
     private int generation;
+    private boolean useGlint = true;
 
     public void registerModels(ResourceManager resources, Map<String, Identifier> itemModels,
                                Map<Identifier, BlockModel> blockModels) {
         rules = load().registerModels(resources, itemModels, blockModels);
+        useGlint = readUseGlint();
         generation++;
         glintWidths.clear();
         Cera.LOGGER.info("[CIT] Loaded {} rules", rules.all.size());
@@ -126,6 +128,25 @@ public final class CustomItems {
             cache.effects = null;
         }
         return cache;
+    }
+
+    public boolean useGlint() {
+        return !Cera.CONFIG.customItems || useGlint;
+    }
+
+    private static boolean readUseGlint() {
+        var resources = net.ornithemc.osl.resource.loader.api.resource.manager.ResourceManager.client();
+        for (String file : List.of("optifine/cit.properties", "mcpatcher/cit.properties")) {
+            Resource resource = resources.getResource(new Identifier(file)).orElse(null);
+            if (resource == null) continue;
+            try {
+                String value = new Props(resource).get("useGlint");
+                return value == null || !value.trim().equals("false");
+            } catch (IOException e) {
+                Cera.LOGGER.warn("[CIT] Failed to read {}", file, e);
+            }
+        }
+        return true;
     }
 
     public int glintWidth(Identifier texture) {
