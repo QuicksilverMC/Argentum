@@ -121,6 +121,10 @@ public abstract class PlayerTabOverlayMixin extends GuiElement {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/overlay/PlayerTabOverlay;drawTexture(IIIIII)V")
     )
     private void argentum$capturePing(PlayerTabOverlay overlay, int x, int y, int u, int v, int width, int height) {
+        if (!this.argentum$textBatch.isDrawing()) {
+            overlay.drawTexture(x, y, u, v, width, height);
+            return;
+        }
         this.argentum$iconBatch.quad(x, y, u, v, width, height, width, height, 256, 256, this.drawOffset);
     }
 
@@ -129,6 +133,10 @@ public abstract class PlayerTabOverlayMixin extends GuiElement {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/overlay/PlayerTabOverlay;drawTexture(FFIIII)V")
     )
     private void argentum$captureHeart(PlayerTabOverlay overlay, float x, float y, int u, int v, int width, int height) {
+        if (!this.argentum$textBatch.isDrawing()) {
+            overlay.drawTexture(x, y, u, v, width, height);
+            return;
+        }
         this.argentum$iconBatch.quad(x, y, u, v, width, height, width, height, 256, 256, this.drawOffset);
     }
 

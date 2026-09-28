@@ -69,6 +69,10 @@ public abstract class GameGuiMixin extends GuiElement {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GameGui;fill(IIIII)V")
     )
     private void argentum$captureScoreboardBackground(int left, int top, int right, int bottom, int color) {
+        if (!this.argentum$scoreboardTextBatch.isDrawing()) {
+            GameGui.fill(left, top, right, bottom, color);
+            return;
+        }
         this.argentum$scoreboardBackgroundBatch.fill(left, top, right, bottom, color);
     }
 }
