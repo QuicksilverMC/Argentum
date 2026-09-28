@@ -2,6 +2,7 @@ package dev.rdh.argentum.mixin.features.hud;
 
 import dev.rdh.argentum.impl.render.gui.hud.item.GuiItemIcons;
 
+import net.minecraft.client.gui.GuiElement;
 import net.minecraft.client.gui.screen.inventory.menu.InventoryMenuScreen;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.platform.Lighting;
@@ -11,9 +12,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin({GlStateManager.class, Lighting.class, InventoryMenuScreen.class})
+@Mixin({GlStateManager.class, Lighting.class, InventoryMenuScreen.class, GuiElement.class})
 public class GuiItemFlushMixin {
-    @Inject(method = {"disableDepthTest", "turnOff", "pushMatrix", "popMatrix"}, at = @At("HEAD"), require = 0)
+    @Inject(method = {"disableDepthTest", "turnOff", "pushMatrix", "popMatrix", "fill", "fillGradient", "drawTexture", "drawSprite"}, at = @At("HEAD"), require = 0)
     private static void argentum$flushBeforeOverlay(CallbackInfo ci) {
         GuiItemIcons.flush();
     }
