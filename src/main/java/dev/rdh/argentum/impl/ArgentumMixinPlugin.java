@@ -17,7 +17,7 @@ public final class ArgentumMixinPlugin implements IMixinConfigPlugin {
         } else if (l.isModLoaded("legacy-lwjgl3")) {
             return List.of("features.present.LegacyGlfwDisplayMixin", "features.present.LegacySdlDisplayMixin");
         } else {
-            return null;
+            throw new IllegalStateException("Argentum requires Pylon or legacy-lwjgl3");
         }
     }
 
