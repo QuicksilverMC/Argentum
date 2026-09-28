@@ -155,11 +155,8 @@ public final class BakedBlockEntities {
         String path = location.getPath();
         if (!path.endsWith(".png")) return null;
         path = path.substring(0, path.length() - ".png".length());
-        if (path.startsWith("textures/")) {
-            path = path.substring("textures/".length());
-        } else if (!path.startsWith("mcpatcher/") && !path.startsWith("optifine/")) {
-            return null;
-        }
+        if (!path.startsWith("textures/")) return null;
+        path = path.substring("textures/".length());
         return new Identifier(location.getNamespace(), path).toString();
     }
 
