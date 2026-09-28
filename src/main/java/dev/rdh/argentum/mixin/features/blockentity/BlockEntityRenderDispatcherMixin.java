@@ -12,6 +12,7 @@ import dev.rdh.argentum.impl.render.entity.instancing.InstanceRenderPass;
 
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
@@ -26,6 +27,13 @@ public class BlockEntityRenderDispatcherMixin {
 
     @Unique
     private int argentum$pendingLight = -1;
+
+    @WrapMethod(method = "getRenderer(Ljava/lang/Class;)Lnet/minecraft/client/render/block/entity/BlockEntityRenderer;")
+    private BlockEntityRenderer<?> argentum$lockRendererLookup(Class<? extends BlockEntity> type, Operation<BlockEntityRenderer<?>> original) {
+        synchronized (this) {
+            return original.call(type);
+        }
+    }
 
     @WrapMethod(method = "render(Lnet/minecraft/block/entity/BlockEntity;DDDFI)V")
     private void argentum$instanceBlockEntity(BlockEntity blockEntity, double x, double y, double z, float tickDelta, int blockMiningProgress, Operation<Void> original) {
