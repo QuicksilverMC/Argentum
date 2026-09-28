@@ -16,7 +16,6 @@
     "EntityRenderDispatcherMixin",
     "ArrowRendererMixin",
     "BlockEntityRenderDispatcherMixin",
-    "EntityRendererMixin",
     "GLXMixin",
     "ModelInstancerMixin",
     "LivingEntityRendererMixin",
