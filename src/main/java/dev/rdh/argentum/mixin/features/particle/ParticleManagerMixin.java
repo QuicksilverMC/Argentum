@@ -8,6 +8,7 @@ import net.minecraft.entity.Entity;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import dev.rdh.argentum.impl.render.terrain.ArgentumWorldRenderer;
 
 @Mixin(ParticleManager.class)
 public abstract class ParticleManagerMixin {
@@ -18,6 +19,8 @@ public abstract class ParticleManagerMixin {
     )
     private boolean celeritas$renderVisibleParticle(Particle particle, BufferBuilder buffer, Entity camera,
             float tickDelta, float rotationX, float rotationZ, float rotationYZ, float rotationXY, float rotationXZ) {
-        return particle.argentum$isVisible();
+        if (!particle.argentum$isVisible()) return false;
+        ArgentumWorldRenderer renderer = ArgentumWorldRenderer.instanceNullable();
+        return renderer == null || renderer.isParticleInFrustum(particle);
     }
 }

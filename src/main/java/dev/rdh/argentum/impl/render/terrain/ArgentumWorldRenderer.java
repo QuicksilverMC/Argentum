@@ -37,6 +37,7 @@ import net.minecraft.entity.projectile.WitherSkullEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
+import net.minecraft.util.math.Box;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -279,18 +280,26 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     }
 
     public boolean isParticleVisible(Particle particle) {
+        var box = this.cullableParticleBox(particle);
+        return box == null || this.isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
+    }
+
+    public boolean isParticleInFrustum(Particle particle) {
+        var box = this.cullableParticleBox(particle);
+        return box == null || this.getLastViewport().isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
+    }
+
+    private Box cullableParticleBox(Particle particle) {
         if (!Argentum.CONFIG.particleCulling || this.getLastViewport() == null) {
-            return true;
+            return null;
         }
 
         var box = particle.getShape();
         if (!Double.isFinite(box.minX) || !Double.isFinite(box.minY) || !Double.isFinite(box.minZ)
                 || !Double.isFinite(box.maxX) || !Double.isFinite(box.maxY) || !Double.isFinite(box.maxZ)) {
-            return true;
+            return null;
         }
-
-        return this.getLastViewport().isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ)
-                && this.isBoxVisible(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
+        return box;
     }
 
     @Override
