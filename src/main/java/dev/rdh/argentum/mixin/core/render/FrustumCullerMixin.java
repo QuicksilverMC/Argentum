@@ -31,7 +31,7 @@ public class FrustumCullerMixin implements ViewportProvider {
         modelMatrix.invert();
         Vector3f offset = new Vector3f();
         modelMatrix.transformPosition(offset);
-        final float[] planes = this.argentum$flattenPlanes();
+        final float[] planes = this.argentum$flattenPlanes(offset);
         return new Viewport(
                 (minX, minY, minZ, maxX, maxY, maxZ) -> argentum$isVisible(planes, minX, minY, minZ, maxX, maxY, maxZ),
                 new Vector3d(this.offsetX + offset.x, this.offsetY + offset.y, this.offsetZ + offset.z),
@@ -46,7 +46,7 @@ public class FrustumCullerMixin implements ViewportProvider {
     }
 
     @Unique
-    private float[] argentum$flattenPlanes() {
+    private float[] argentum$flattenPlanes(Vector3f offset) {
         final float[][] source = this.frustum.frustum;
         final float[] planes = new float[source.length * 4];
 
@@ -56,7 +56,7 @@ public class FrustumCullerMixin implements ViewportProvider {
             planes[base] = plane[0];
             planes[base + 1] = plane[1];
             planes[base + 2] = plane[2];
-            planes[base + 3] = plane[3];
+            planes[base + 3] = plane[3] + plane[0] * offset.x + plane[1] * offset.y + plane[2] * offset.z;
         }
 
         return planes;
