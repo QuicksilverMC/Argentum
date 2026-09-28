@@ -6,6 +6,7 @@ import net.minecraft.client.render.vertex.DefaultVertexFormat;
 import net.minecraft.client.render.vertex.Tesselator;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.living.mob.MobEntity;
+import net.minecraft.entity.living.mob.monster.GuardianEntity;
 import net.minecraft.entity.living.mob.monster.boss.Boss;
 import net.minecraft.util.math.Box;
 
@@ -156,7 +157,8 @@ public class EntityOcclusionCuller {
 
     private boolean isCullable(Entity entity, Entity camera) {
         if (entity == camera || entity.removed || entity.ignoreCameraFrustum || entity instanceof Boss
-                || entity instanceof MobEntity mob && mob.isLeashed() || BakedItemFrames.fullyBaked(entity)) {
+                || entity instanceof MobEntity mob && mob.isLeashed() || BakedItemFrames.fullyBaked(entity)
+                || entity instanceof GuardianEntity guardian && guardian.hasBeamTarget()) {
             return false;
         }
 
