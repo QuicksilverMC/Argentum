@@ -68,6 +68,11 @@ public abstract class MinecraftMixin {
         if (this.celeritas$renderAheadManager != null) this.celeritas$renderAheadManager.endFrame();
     }
 
+    @Inject(method = "runGame", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/pipeline/RenderTarget;unbindWrite()V"))
+    private void argentum$flushGuiItems(CallbackInfo ci) {
+        GuiItemIcons.flush();
+    }
+
     @WrapWithCondition(method = "runGame", at = @At(value = "INVOKE", target = "Ljava/lang/Thread;yield()V"))
     private boolean argentum$conditionallyYield() {
         return !Argentum.CONFIG.greedyRenderThread;
