@@ -227,7 +227,6 @@ public final class ArgentumOptionPages {
                                         text("value.planar")
 								}))
                         .setBinding((config, value) -> config.fogShape = value, config -> config.fogShape)
-                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())
                 .add(option(int.class, CONFIG_STORAGE, StandardOptions.Option.BIOME_BLEND)
                         .setControl(option -> new SliderControl(option, 0, 14, 1, ControlValueFormatter.biomeBlend()))
@@ -361,7 +360,6 @@ public final class ArgentumOptionPages {
                                 }))
                                 .setBinding((config, value) -> config.decoupledPresentation = value, config -> config.decoupledPresentation)
                                 .setImpact(OptionImpact.MEDIUM)
-                                .setFlags(OptionFlag.REQUIRES_GAME_RESTART)
                                 .build())
                 .build();
 
