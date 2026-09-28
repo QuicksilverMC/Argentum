@@ -1,5 +1,6 @@
 package dev.rdh.cera.mixin;
 
+import dev.rdh.argentum.impl.render.entity.instancing.EntityCapture;
 import dev.rdh.cera.modules.cit.CustomItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.entity.layer.AbstractArmorLayer;
@@ -42,7 +43,7 @@ public class AbstractArmorLayerMixin<T extends Model> {
                                         Operation<Void> original, @Local(argsOnly = true) int equipmentSlot, @Local(argsOnly = true) LivingEntity glintEntity) {
         ItemStack stack = entity.getArmor(equipmentSlot - 1);
         var effects = Minecraft.getInstance().cera$getCustomItems().effects(stack);
-        if (effects.isEmpty()) {
+        if (effects.isEmpty() || EntityCapture.current() != null) {
             this.renderEnchantmentGlint(glintEntity, model, walkAnimationProgress, walkAnimationSpeed, tickDelta, bob, yaw, pitch, scale);
             return;
         }

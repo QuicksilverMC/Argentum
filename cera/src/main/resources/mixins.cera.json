@@ -41,6 +41,7 @@
     "TextRendererInvoker",
     "colors.PortalParticleMixin",
     "colors.LiquidDripParticleMixin",
+    "GuiItemIconsMixin",
     "ItemModelShaperMixin",
     "ItemRendererMixin", "ItemStackMixin",
     "MinecraftMixin",
