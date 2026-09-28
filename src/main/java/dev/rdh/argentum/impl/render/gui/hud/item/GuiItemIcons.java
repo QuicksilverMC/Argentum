@@ -120,15 +120,28 @@ public final class GuiItemIcons {
 
         // the glint pass pushes the texture matrix, which lands back here
         flushing = true;
+        boolean alphaTest = GlStateManager.ALPHA_TEST.state.enabled;
+        int alphaFunc = GlStateManager.ALPHA_TEST.func;
+        float alphaRef = GlStateManager.ALPHA_TEST.ref;
+        boolean blend = GlStateManager.BLEND.state.enabled;
+        int srcRgb = GlStateManager.BLEND.sfactorRGB;
+        int dstRgb = GlStateManager.BLEND.dfactorRGB;
+        int srcAlpha = GlStateManager.BLEND.sfactorAlpha;
+        int dstAlpha = GlStateManager.BLEND.dfactorAlpha;
+        boolean lighting = GlStateManager.LIGHTING.enabled;
         try {
             GlStateManager.disableLighting();
             GlStateManager.enableAlphaTest();
             GlStateManager.alphaFunc(516, 0.1F);
             RECORDER.flush();
             GLINTS.flush(ATLAS.getTexture());
-            GlStateManager.enableBlend();
-            GlStateManager.blendFuncSeparate(770, 771, 1, 0);
             Minecraft.getInstance().getTextureManager().bind(TextureAtlas.BLOCKS_LOCATION);
+            GlStateManager.alphaFunc(alphaFunc, alphaRef);
+            if (!alphaTest) GlStateManager.disableAlphaTest();
+            GlStateManager.blendFuncSeparate(srcRgb, dstRgb, srcAlpha, dstAlpha);
+            if (blend) GlStateManager.enableBlend();
+            else GlStateManager.disableBlend();
+            if (lighting) GlStateManager.enableLighting();
         } finally {
             flushing = false;
         }

@@ -11,6 +11,8 @@ import net.minecraft.client.render.item.ItemModelShaper;
 import net.minecraft.client.resource.model.BakedModel;
 import net.minecraft.client.render.TextRenderer;
 import net.minecraft.client.render.platform.GlStateManager;
+import net.minecraft.client.render.texture.TextureAtlas;
+import net.minecraft.client.render.texture.TextureManager;
 import net.minecraft.item.ItemStack;
 import net.minecraft.client.resource.manager.ResourceManager;
 
@@ -30,6 +32,10 @@ public abstract class GuiItemRendererMixin {
     @Shadow
     @Final
     private ItemModelShaper modelShaper;
+
+    @Shadow
+    @Final
+    private TextureManager textureManager;
 
     @WrapOperation(
             method = "renderGuiItemModel",
@@ -72,6 +78,13 @@ public abstract class GuiItemRendererMixin {
 
         GuiItemIcons.draw(slot, x, y, this.zOffset);
         if (item.hasEnchantmentGlint()) GuiItemIcons.drawGlint(slot, x, y, this.zOffset, model);
+        this.textureManager.bind(TextureAtlas.BLOCKS_LOCATION);
+        GlStateManager.alphaFunc(516, 0.1F);
+        GlStateManager.disableAlphaTest();
+        GlStateManager.enableBlend();
+        GlStateManager.blendFunc(770, 771);
+        GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+        GlStateManager.disableLighting();
     }
 
     @WrapMethod(method = "renderEnchantmentGlint")
