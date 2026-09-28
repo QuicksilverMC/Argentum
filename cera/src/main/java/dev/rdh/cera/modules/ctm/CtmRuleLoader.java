@@ -411,7 +411,8 @@ final class CtmRuleLoader {
     }
 
     static String normalizeBiome(String biome) {
-        return biome.toLowerCase(Locale.ROOT).replace(" ", "").replace("_", "");
+        String name = biome.toLowerCase(Locale.ROOT).replace(" ", "").replace("_", "");
+        return name.equals("nether") ? "hell" : name;
     }
 
     private static int parseInt(String value, int fallback) {
