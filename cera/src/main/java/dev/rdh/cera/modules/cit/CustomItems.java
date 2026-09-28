@@ -179,7 +179,9 @@ public final class CustomItems {
     }
 
     private static Identifier file(Identifier texture) {
-        return new Identifier(texture.getNamespace(), texture.getPath() + ".png");
+        String path = texture.getPath();
+        if (!path.startsWith("optifine/") && !path.startsWith("mcpatcher/")) path = "textures/" + path;
+        return new Identifier(texture.getNamespace(), path + ".png");
     }
 
     public record Effect(Identifier texture, BlendMethod blend, float speed, float rotation) {
