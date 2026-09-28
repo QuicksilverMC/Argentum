@@ -94,7 +94,7 @@ public final class LightMaps implements ResourceReloadListener {
         if (nightvision && height < 64) return false;
 
         int start = nightvision ? width * 16 * 2 : 0;
-        float sun = (5f / 3) * (world.calculateAmbientLight(1.0F) - 0.2F);
+        float sun = 1.1666666F * (world.calculateAmbientLight(1.0F) - 0.2F);
         if (world.getLightningCooldown() > 0) sun = 1.0F;
         sun = Math.clamp(sun, 0.0F, 1.0F);
         float sunX = sun * (width - 1);
