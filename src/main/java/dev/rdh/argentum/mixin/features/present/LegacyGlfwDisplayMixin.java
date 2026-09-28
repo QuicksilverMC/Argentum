@@ -25,8 +25,13 @@ public abstract class LegacyGlfwDisplayMixin {
     private void argentum$decouplePresentation(long window, Operation<Void> original) {
         long monitor = this.getPrimaryMonitor();
         GLFWVidMode mode = monitor != 0 ? glfwGetVideoMode(monitor) : null;
-        if (mode == null || this.argentum$pacer.shouldPresent(mode.refreshRate())) {
+        if (mode == null) {
             original.call(window);
+            return;
         }
+        this.argentum$pacer.present(monitor, mode.refreshRate(), () -> {
+            original.call(window);
+            return true;
+        });
     }
 }

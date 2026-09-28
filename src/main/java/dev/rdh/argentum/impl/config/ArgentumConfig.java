@@ -2,6 +2,7 @@ package dev.rdh.argentum.impl.config;
 
 import org.embeddedt.embeddium.impl.render.chunk.occlusion.AsyncOcclusionMode;
 
+import dev.rdh.argentum.impl.render.PresentationPacer;
 import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService.FogShape;
 
 public class ArgentumConfig {
@@ -33,7 +34,7 @@ public class ArgentumConfig {
     public boolean guiItemAtlas = true;
     public boolean greedyRenderThread = false;
     public boolean explicitVsyncOption = true; // file only
-    public boolean decoupledPresentation = true;
+    public PresentationPacer.Mode decoupledPresentation = PresentationPacer.Mode.AUTO;
 
 	public void validate() {
         this.chunkBuilderThreads = Math.max(0, this.chunkBuilderThreads);

@@ -23,6 +23,7 @@ import org.taumc.celeritas.api.options.structure.StandardOptions;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.config.ArgentumConfig;
 import dev.rdh.argentum.impl.config.JsonOptionStorage;
+import dev.rdh.argentum.impl.render.PresentationPacer;
 import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService.FogShape;
 
 import java.util.List;
@@ -354,9 +355,14 @@ public final class ArgentumOptionPages {
                         OptionImpact.LOW,
                         (config, value) -> config.greedyRenderThread = value, config -> config.greedyRenderThread))
                 .addConditionally(FabricLoader.getInstance().isModLoaded("pylon") || FabricLoader.getInstance().isModLoaded("legacy-lwjgl3"),
-                        () -> toggle(Option.DECOUPLED_PRESENTATION,
-                                OptionImpact.MEDIUM,
-                                (config, value) -> config.decoupledPresentation = value, config -> config.decoupledPresentation, OptionFlag.REQUIRES_GAME_RESTART))
+                        () -> option(PresentationPacer.Mode.class, CONFIG_STORAGE, Option.DECOUPLED_PRESENTATION)
+                                .setControl(option -> new CyclingControl<>(option, PresentationPacer.Mode.class, new TextComponent[] {
+                                        vanilla("options.off"), vanilla("options.on"), text("value.auto")
+                                }))
+                                .setBinding((config, value) -> config.decoupledPresentation = value, config -> config.decoupledPresentation)
+                                .setImpact(OptionImpact.MEDIUM)
+                                .setFlags(OptionFlag.REQUIRES_GAME_RESTART)
+                                .build())
                 .build();
 
         return page(Page.PERFORMANCE, chunkUpdates, culling, rendering);

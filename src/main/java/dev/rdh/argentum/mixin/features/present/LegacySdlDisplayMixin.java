@@ -22,10 +22,11 @@ public abstract class LegacySdlDisplayMixin {
 
     @WrapOperation(method = {"update", "swapBuffers"}, at = @At(value = "INVOKE", target = "Lorg/lwjgl/sdl/SDLVideo;SDL_GL_SwapWindow(J)Z"))
     private boolean argentum$decouplePresentation(long window, Operation<Boolean> original) {
-        SDL_DisplayMode mode = SDL_GetCurrentDisplayMode(SDL_GetDisplayForWindow(this.getHandle()));
-        if (mode != null && !this.argentum$pacer.shouldPresent(mode.refresh_rate())) {
-            return true;
+        int display = SDL_GetDisplayForWindow(this.getHandle());
+        SDL_DisplayMode mode = SDL_GetCurrentDisplayMode(display);
+        if (mode == null) {
+            return original.call(window);
         }
-        return original.call(window);
+        return this.argentum$pacer.present(display, mode.refresh_rate(), () -> original.call(window));
     }
 }
