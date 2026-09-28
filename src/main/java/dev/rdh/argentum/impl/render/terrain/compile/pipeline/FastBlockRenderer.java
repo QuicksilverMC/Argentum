@@ -195,9 +195,9 @@ public final class FastBlockRenderer {
             int c01 = world.getBiomeColor(this.colorPos.set(worldX, worldY, worldZ + 1), colorType);
             int c10 = world.getBiomeColor(this.colorPos.set(worldX + 1, worldY, worldZ), colorType);
             int c11 = world.getBiomeColor(this.colorPos.set(worldX + 1, worldY, worldZ + 1), colorType);
-            int z0 = c00 == c01 ? c00 : ColorMixer.mix(c00, c01, z - minZ);
-            int z1 = c10 == c11 ? c10 : ColorMixer.mix(c10, c11, z - minZ);
-            int color = z0 == z1 ? z0 : ColorMixer.mix(z0, z1, x - minX);
+            int z0 = c00 == c01 ? c00 : ColorMixer.mix(c01, c00, z - minZ);
+            int z1 = c10 == c11 ? c10 : ColorMixer.mix(c11, c10, z - minZ);
+            int color = z0 == z1 ? z0 : ColorMixer.mix(z1, z0, x - minX);
 
             if (GameRenderer.anaglyphEnabled) color = TextureUtil.getAnaglyphColor(color);
             this.colors[vertex] = 0xFF000000 | ColorARGB.toABGR(color);
