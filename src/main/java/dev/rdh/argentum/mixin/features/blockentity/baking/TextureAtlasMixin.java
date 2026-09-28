@@ -64,14 +64,14 @@ public abstract class TextureAtlasMixin implements TextureAtlasExtension {
 
     @Inject(method = "loadAndStitch", at = @At("HEAD"))
     private void argentum$registerBlockEntitySprites(ResourceManager resourceManager, CallbackInfo ci) {
-        if ("textures".equals(this.path)) {
+        if ("textures".equals(this.path) && BakedBlockEntities.enabled()) {
             BakedBlockEntities.registerSprites(this.sourcedSprites);
         }
     }
 
     @Inject(method = "loadAndStitch", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/texture/Stitcher;stitch()V"))
     private void argentum$addPlayerHeadSheet(ResourceManager resourceManager, CallbackInfo ci, @Local Stitcher stitcher) {
-        if ("textures".equals(this.path)) {
+        if ("textures".equals(this.path) && BakedBlockEntities.enabled()) {
             BakedBlockEntities.slotSheets(this.maxMipLevel).forEach(stitcher::registerSprite);
         }
     }

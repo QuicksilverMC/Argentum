@@ -319,7 +319,7 @@ public final class ArgentumOptionPages {
                 .add(toggle(Option.ENTITY_INSTANCING, OptionImpact.HIGH, (config5, value3) -> config5.entityInstancing = value3, config6 -> config6.entityInstancing))
                 .add(toggle(Option.BAKE_BLOCK_ENTITIES, OptionImpact.HIGH,
                         (config, value) -> config.bakeBlockEntities = value, config -> config.bakeBlockEntities,
-                        OptionFlag.REQUIRES_RENDERER_RELOAD))
+                        OptionFlag.REQUIRES_ASSET_RELOAD, OptionFlag.REQUIRES_RENDERER_RELOAD))
                 .add(option(boolean.class, CONFIG_STORAGE, Option.NAME_TAG_BATCHING)
                         .setControl(TickBoxControl::new)
                         .setBinding((config, value) -> config.nameTagBatching = value, config -> config.nameTagBatching)
