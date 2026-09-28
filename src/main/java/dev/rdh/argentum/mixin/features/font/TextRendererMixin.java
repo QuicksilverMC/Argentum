@@ -90,7 +90,7 @@ public abstract class TextRendererMixin implements TextRendererExtension {
 
     @Inject(method = "getWidth(C)I", at = @At("HEAD"), cancellable = true)
     private void argentum$charWidth(char chr, CallbackInfoReturnable<Integer> cir) {
-        cir.setReturnValue(Math.round(this.argentum$batcher.charWidth(chr, this.unicode, this.glyphSizes)));
+        cir.setReturnValue(Math.round(this.argentum$batcher.charWidth(TextBatcher.normalizeSpace(chr), this.unicode, this.glyphSizes)));
     }
 
     @Inject(method = {"reload", "setUnicode"}, at = @At("RETURN"))
