@@ -77,14 +77,13 @@ public class FastBlockRendererMixin {
             BlockState colorState, ChunkRenderContext world, LightPipeline lighter, Direction cullFace,
             int flags, BiomeColorCache.BiomeColorSource colorType, Material material,
             ChunkBuildBuffers buffers, PrimitiveBuiltRenderSectionData renderData, Operation<Void> original) {
-        var state = world.getBlockState(pos);
         this.cera$overlays.clear();
-        List<BakedQuad> transformed = this.cera$connectedTextures.transform(world, state, pos,
-                this.cera$betterGrass.getFaceQuads(world, state, pos, cullFace, quads),
+        List<BakedQuad> transformed = this.cera$connectedTextures.transform(world, colorState, pos,
+                this.cera$betterGrass.getFaceQuads(world, colorState, pos, cullFace, quads),
                 this.cera$overlays, this.cera$ctmContext
         );
         this.cera$colorState = colorState;
-        BiomeColorCache.BiomeColorSource resolver = this.cera$customColormaps.resolverFor(state);
+        BiomeColorCache.BiomeColorSource resolver = this.cera$customColormaps.resolverFor(colorState);
         if (resolver != null) colorType = resolver;
         original.call(renderer, transformed, pos, colorState, world, lighter, cullFace, flags, colorType, material, buffers, renderData);
         for (ConnectedTextures.Overlay overlay : this.cera$overlays) {
