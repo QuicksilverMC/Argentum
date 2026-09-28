@@ -6,4 +6,8 @@ public interface WorldExtension {
     default BlockEntityLight argentum$getBlockEntityLight() {
         throw new UnsupportedOperationException();
     }
+
+    default int argentum$getEntityListVersion() {
+        throw new UnsupportedOperationException();
+    }
 }

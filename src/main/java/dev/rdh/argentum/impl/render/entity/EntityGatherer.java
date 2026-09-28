@@ -3,6 +3,7 @@ package dev.rdh.argentum.impl.render.entity;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
+import dev.rdh.argentum.impl.ext.WorldExtension;
 import dev.rdh.argentum.mixin.core.world.ClientChunkCacheAccessor;
 
 import net.minecraft.client.world.ClientWorld;
@@ -23,6 +24,7 @@ public class EntityGatherer {
     private int gatheredChunkZ;
     private int gatheredRadius = -1;
     private int gatheredCount = -1;
+    private int gatheredVersion;
 
     public EntityGatherer() {
         this.entityList = new ObjectArrayList<>();
@@ -34,7 +36,8 @@ public class EntityGatherer {
         // by reference, so they still move at frame rate.
         if (world == this.gatheredWorld && world.getTime() == this.gatheredTick && radius == this.gatheredRadius
                 && centerChunkX == this.gatheredChunkX && centerChunkZ == this.gatheredChunkZ
-                && world.entities.size() == this.gatheredCount) {
+                && world.entities.size() == this.gatheredCount
+                && ((WorldExtension) world).argentum$getEntityListVersion() == this.gatheredVersion) {
             return this.entityList;
         }
 
@@ -45,6 +48,7 @@ public class EntityGatherer {
         this.gatheredChunkZ = centerChunkZ;
         this.gatheredRadius = radius;
         this.gatheredCount = world.entities.size();
+        this.gatheredVersion = ((WorldExtension) world).argentum$getEntityListVersion();
 
         Consumer<Entity> addEntity = this.entityList::add;
         // Iterate directly over chunk entity lists where possible - mods may create multipart entities that are not
