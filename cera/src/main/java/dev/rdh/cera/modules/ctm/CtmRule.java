@@ -51,7 +51,7 @@ record CtmRule(
         Object2IntMap<Block> connectBlocks,
         Set<String> connectTiles
 ) {
-    private static final String[] BIOME_NAMES = new String[256];
+    private static final String[] BIOME_NAMES = biomeNames();
 
     boolean matches(WorldView world, BlockState state, BlockPos pos, Direction face, TextureAtlasSprite sprite) {
         int checkedMetadata = checkedMetadata(state);
@@ -73,8 +73,15 @@ record CtmRule(
 
     private static String biomeName(Biome biome) {
         String name = BIOME_NAMES[biome.id];
-        if (name == null) BIOME_NAMES[biome.id] = name = CtmRuleLoader.normalizeBiome(biome.name);
-        return name;
+        return name != null ? name : CtmRuleLoader.normalizeBiome(biome.name);
+    }
+
+    private static String[] biomeNames() {
+        String[] names = new String[256];
+        for (Biome biome : Biome.getAll()) {
+            if (biome != null) names[biome.id] = CtmRuleLoader.normalizeBiome(biome.name);
+        }
+        return names;
     }
 
     List<BakedQuad> compact(WorldView world, BlockState state, BlockPos pos, BakedQuad quad,
