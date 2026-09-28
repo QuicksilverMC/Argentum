@@ -109,6 +109,7 @@ public class FastBlockRendererMixin {
                 Material emissiveMaterial = buffers.getRenderPassConfiguration()
                         .getMaterialForRenderType(BlockLayer.CUTOUT_MIPPED);
                 this.cera$emissive = true;
+                this.cera$colorState = colorState;
                 original.call(renderer, this.cera$emissiveQuads, pos, colorState, world, lighter,
                         cullFace, flags, colorType, emissiveMaterial, buffers, renderData);
                 this.cera$emissive = false;
