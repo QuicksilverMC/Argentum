@@ -59,6 +59,9 @@ public final class CloudRenderer {
     private int vertexCount;
 
     public boolean render(double cloudX, double cloudZ, float cloudY, float red, float green, float blue, int firstCell, int lastCell, int pass) {
+        if (this.initialized && !this.supported) {
+            return false;
+        }
         RenderDevice.enterManagedCode();
         try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
             if (!this.initialize()) {
