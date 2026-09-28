@@ -54,7 +54,7 @@ public record BoxTemplate(float minX, float minY, float minZ, float maxX, float 
         int sizeX = Math.round(box.maxX - box.minX);
         int sizeY = Math.round(box.maxY - box.minY);
         int sizeZ = Math.round(box.maxZ - box.minZ);
-        if (sizeX < 0 || sizeY < 0 || sizeZ < 0) {
+        if (sizeX < 0 || sizeY < 0 || sizeZ < 0 || sizeX > 255 || sizeY > 255 || sizeZ > 255) {
             return null;
         }
 
