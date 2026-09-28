@@ -15,7 +15,7 @@ public class ArgentumConfigMixin {
 
 	@Inject(method = "validate", at = @At("TAIL"))
 	private void cera$forceTextBatcherOn(CallbackInfo ci) {
-		if (Cera.CONFIG != null && Cera.CONFIG.hdFonts) {
+		if (Cera.CONFIG_STORAGE != null && Cera.CONFIG.hdFonts) {
 			this.fontBatching = true;
 		}
 	}

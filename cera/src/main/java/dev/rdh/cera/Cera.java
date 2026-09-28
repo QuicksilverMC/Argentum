@@ -14,7 +14,7 @@ import net.minecraft.util.math.BlockPos;
 
 public class Cera implements ClientModInitializer {
     public static CeraConfig CONFIG = new CeraConfig();
-    static JsonOptionStorage<CeraConfig> CONFIG_STORAGE;
+    public static JsonOptionStorage<CeraConfig> CONFIG_STORAGE;
 
 	public static final Logger LOGGER = LogManager.getLogger("Cera");
 
