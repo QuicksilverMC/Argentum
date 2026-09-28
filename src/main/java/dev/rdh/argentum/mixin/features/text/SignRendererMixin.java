@@ -70,11 +70,11 @@ public class SignRendererMixin {
             boolean stripLeadingSpaces, boolean allowFormatting, Operation<List<Text>> original,
             @Local(argsOnly = true) SignBlockEntity sign) {
         SignTextCache cache = (SignTextCache)sign;
-        boolean unicode = textRenderer.getUnicode();
-        List<Text> wrapped = cache.argentum$getWrappedLine(line, unicode);
+        int fontGeneration = textRenderer.argentum$getBatcher().generation();
+        List<Text> wrapped = cache.argentum$getWrappedLine(line, fontGeneration);
         if (wrapped == null) {
             wrapped = original.call(line, width, textRenderer, stripLeadingSpaces, allowFormatting);
-            cache.argentum$putWrappedLine(line, unicode, wrapped);
+            cache.argentum$putWrappedLine(line, fontGeneration, wrapped);
         }
         return wrapped;
     }

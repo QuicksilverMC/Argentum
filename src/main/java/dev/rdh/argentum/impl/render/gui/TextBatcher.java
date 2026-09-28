@@ -81,6 +81,7 @@ public final class TextBatcher {
     private Runnable beforeImmediateText;
 
     private int endStyle;
+    private int generation;
     private int endColor;
     private ByteBuffer uploadBuffer;
 
@@ -141,7 +142,12 @@ public final class TextBatcher {
         this.widths[index] = width;
     }
 
+    public int generation() {
+        return this.generation;
+    }
+
     public void clearCaches() {
+        this.generation++;
         this.widthCache.clear();
         this.invalidateGeometry();
     }

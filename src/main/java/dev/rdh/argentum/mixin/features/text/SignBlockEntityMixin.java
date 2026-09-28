@@ -18,13 +18,13 @@ public class SignBlockEntityMixin implements SignTextCache {
     @SuppressWarnings("unchecked")
     private final List<Text>[] argentum$wrapped = new List[4];
     @Unique
-    private boolean argentum$unicode;
+    private int argentum$fontGeneration;
     @Unique
     private int argentum$cursor;
 
     @Override
-    public List<Text> argentum$getWrappedLine(Text line, boolean unicode) {
-        if (unicode != this.argentum$unicode) {
+    public List<Text> argentum$getWrappedLine(Text line, int fontGeneration) {
+        if (fontGeneration != this.argentum$fontGeneration) {
             return null;
         }
         for (int i = 0; i < this.argentum$keys.length; i++) {
@@ -36,10 +36,10 @@ public class SignBlockEntityMixin implements SignTextCache {
     }
 
     @Override
-    public void argentum$putWrappedLine(Text line, boolean unicode, List<Text> wrapped) {
+    public void argentum$putWrappedLine(Text line, int fontGeneration, List<Text> wrapped) {
         // wrapping measures glyphs, so a font switch invalidates everything
-        if (unicode != this.argentum$unicode) {
-            this.argentum$unicode = unicode;
+        if (fontGeneration != this.argentum$fontGeneration) {
+            this.argentum$fontGeneration = fontGeneration;
             Arrays.fill(this.argentum$keys, null);
             Arrays.fill(this.argentum$wrapped, null);
             this.argentum$cursor = 0;
