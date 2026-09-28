@@ -2,6 +2,7 @@ package dev.rdh.argentum.impl.render.entity;
 
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.terrain.ArgentumWorldRenderer;
+import dev.rdh.argentum.mixin.features.model.BufferBuilderAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.platform.GLX;
 import net.minecraft.client.render.platform.GlStateManager;
@@ -288,7 +289,7 @@ public final class NameTagBatch {
 
     private void quads(Pass pass, BufferBuilder buffer, boolean textured) {
         int count = buffer.getVertexCount() / 4 * 4;
-        IntBuffer source = buffer.getBuffer().asIntBuffer();
+        IntBuffer source = ((BufferBuilderAccessor) buffer).argentum$getIntBuffer();
         int stride = buffer.getFormat().getIntSize();
         int color = textured ? 5 : 3;
         int light = this.packedLight();
