@@ -89,6 +89,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
             this.modelInstancer.close(commandList);
             this.weatherRenderer.close(commandList);
         }
+        BakedBlockEntities.clearSlotSheets();
         super.unloadWorld();
     }
 
