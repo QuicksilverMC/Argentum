@@ -59,16 +59,16 @@ public final class RandomRules<T> {
 
     public static final class Rule<T> {
         private final int index;
-        private final NumberList variants;
+        private final int[] variants;
         private final int variantCount;
         private final int[] cumulativeWeights;
         private final int totalWeight;
         private final Predicate<T> condition;
 
-        private Rule(int index, NumberList variants, int[] cumulativeWeights, Predicate<T> condition) {
+        private Rule(int index, int[] variants, int[] cumulativeWeights, Predicate<T> condition) {
             this.index = index;
             this.variants = variants;
-            this.variantCount = variants.size();
+            this.variantCount = variants.length;
             this.cumulativeWeights = cumulativeWeights;
             this.totalWeight = cumulativeWeights == null ? 0 : cumulativeWeights[cumulativeWeights.length - 1];
             this.condition = condition == null ? _ -> true : condition;
@@ -82,15 +82,8 @@ public final class RandomRules<T> {
             return this.variantCount;
         }
 
-        /** Returns the ordinal-th smallest variant number of this rule. */
         public int variant(int ordinal) {
-            for (int i = 0; i < this.variants.rangeCount(); i++) {
-                long range = this.variants.range(i);
-                int length = NumberList.length(range);
-                if (ordinal < length) return NumberList.start(range) + ordinal;
-                ordinal -= length;
-            }
-            throw new IndexOutOfBoundsException("Variant ordinal " + ordinal + " in rule " + this.index);
+            return this.variants[ordinal];
         }
 
         private static <T> Result<Rule<T>> parse(Props props, String key, int index, Predicate<T> condition) {
@@ -99,10 +92,18 @@ public final class RandomRules<T> {
             if (!variants.isSuccess()) {
                 return Result.failure("Invalid " + key + "." + index + ": " + variants.error());
             }
-            NumberList list = variants.value();
-            int count = list.size();
-            if (count > MAX_VARIANTS) {
-                return Result.failure("Invalid " + key + "." + index + ": selects " + count + " variants");
+            if (variants.value().size() > MAX_VARIANTS) {
+                return Result.failure("Invalid " + key + "." + index + ": selects " + variants.value().size() + " variants");
+            }
+            int[] list;
+            try {
+                list = expand(spec);
+            } catch (IllegalArgumentException e) {
+                return Result.failure("Invalid " + key + "." + index + ": " + e.getMessage());
+            }
+            int count = list.length;
+            if (count == 0) {
+                return Result.failure("Invalid " + key + "." + index + ": selects no variants");
             }
 
             int[] weights;
@@ -132,6 +133,23 @@ public final class RandomRules<T> {
                 return Result.failure("Invalid weights." + index + ": sum of weights is " + total);
             }
             return Result.success(new Rule<>(index, list, cumulative, condition));
+        }
+
+        private static int[] expand(String spec) {
+            IntArrayList variants = new IntArrayList();
+            for (String token : spec.trim().split("[\\s,]+")) {
+                if (token.isEmpty()) continue;
+                int dash = token.indexOf('-');
+                if (dash > 0) {
+                    int start = Integer.parseInt(token.substring(0, dash));
+                    int end = Integer.parseInt(token.substring(dash + 1));
+                    if (start > end) throw new IllegalArgumentException("empty range " + token);
+                    for (int variant = start; variant <= end; variant++) variants.add(variant);
+                } else {
+                    variants.add(Integer.parseInt(token));
+                }
+            }
+            return variants.toIntArray();
         }
 
         /** Returns the parsed weights, or null if the property is absent. */
