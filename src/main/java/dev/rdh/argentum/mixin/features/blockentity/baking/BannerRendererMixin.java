@@ -16,7 +16,7 @@ public abstract class BannerRendererMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/model/block/entity/BannerModel;render()V")
     )
     private void argentum$skipBakedPole(BannerModel model, Operation<Void> original) {
-        if (!BakedBlockEntities.bakesBanners()) {
+        if (((Object) this).getClass() != BannerRenderer.class || !BakedBlockEntities.bakesBanners()) {
             original.call(model);
             return;
         }

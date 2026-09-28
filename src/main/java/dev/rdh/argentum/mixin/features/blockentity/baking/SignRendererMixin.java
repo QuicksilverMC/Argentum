@@ -15,6 +15,6 @@ public abstract class SignRendererMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/model/block/entity/SignModel;render()V")
     )
     private boolean argentum$skipBakedBoard(SignModel model) {
-        return !BakedBlockEntities.bakesSigns();
+        return ((Object) this).getClass() != SignRenderer.class || !BakedBlockEntities.bakesSigns();
     }
 }

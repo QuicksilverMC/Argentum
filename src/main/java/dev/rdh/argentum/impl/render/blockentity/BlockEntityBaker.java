@@ -48,6 +48,12 @@ import net.minecraft.client.render.texture.TextureAtlasSprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.render.block.entity.BannerRenderer;
+import net.minecraft.client.render.block.entity.BlockEntityRenderer;
+import net.minecraft.client.render.block.entity.ChestRenderer;
+import net.minecraft.client.render.block.entity.EnderChestRenderer;
+import net.minecraft.client.render.block.entity.SignRenderer;
+import net.minecraft.client.render.block.entity.SkullRenderer;
 
 import java.util.Calendar;
 import java.util.List;
@@ -96,7 +102,7 @@ public final class BlockEntityBaker {
         this.atlas = atlas;
     }
 
-    public boolean bake(BlockEntity blockEntity, BlockState state, BlockPos pos, ChunkRenderContext world, ChunkBuildBuffers buffers) {
+    public boolean bake(BlockEntity blockEntity, BlockEntityRenderer<?> renderer, BlockState state, BlockPos pos, ChunkRenderContext world, ChunkBuildBuffers buffers) {
         if (!enabled()) return false;
         this.buffers = buffers;
         this.material = buffers.getRenderPassConfiguration().getMaterialForRenderType(BlockLayer.CUTOUT);
@@ -108,11 +114,11 @@ public final class BlockEntityBaker {
         this.doubleSided = false;
         this.transform.identity();
         return switch (blockEntity) {
-            case ChestBlockEntity chest -> this.chest(chest, state, pos, world);
-            case EnderChestBlockEntity chest -> this.enderChest(chest, state);
-            case SkullBlockEntity skull -> this.skull(skull, state);
-            case SignBlockEntity sign -> this.sign(sign, state);
-            case BannerBlockEntity _ -> this.banner(state);
+            case ChestBlockEntity chest when renderer.getClass() == ChestRenderer.class -> this.chest(chest, state, pos, world);
+            case EnderChestBlockEntity chest when renderer.getClass() == EnderChestRenderer.class -> this.enderChest(chest, state);
+            case SkullBlockEntity skull when renderer.getClass() == SkullRenderer.class -> this.skull(skull, state);
+            case SignBlockEntity sign when renderer.getClass() == SignRenderer.class -> this.sign(sign, state);
+            case BannerBlockEntity _ when renderer.getClass() == BannerRenderer.class -> this.banner(state);
             default -> false;
         };
     }

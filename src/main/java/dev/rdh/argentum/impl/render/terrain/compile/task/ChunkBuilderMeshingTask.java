@@ -84,7 +84,7 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
                             BlockEntity blockEntity = this.renderContext.getBlockEntity(blockPos);
                             if (blockEntity != null) {
                                 var renderer = BlockEntityRenderDispatcher.INSTANCE.getRenderer(blockEntity);
-                                if (renderer != null && !buildContext.getBlockEntityBaker().bake(blockEntity, blockState, blockPos, this.renderContext, buffers)) {
+                                if (renderer != null && !buildContext.getBlockEntityBaker().bake(blockEntity, renderer, blockState, blockPos, this.renderContext, buffers)) {
                                     (renderer.shouldRenderOffScreen() ? renderData.globalBlockEntities : renderData.culledBlockEntities).add(blockEntity);
                                 }
                             }
