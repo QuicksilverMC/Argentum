@@ -190,7 +190,11 @@ public final class BakedBlockEntities {
 
     private static int[] headPixels(Identifier skin) throws IOException {
         Texture texture = Minecraft.getInstance().getTextureManager().get(skin);
-        if (texture instanceof HttpTexture http) return ((HttpTextureExtension)http).argentum$getHeadPixels();
+        if (texture instanceof HttpTexture http) {
+            int[] pixels = ((HttpTextureExtension)http).argentum$getHeadPixels();
+            if (pixels != null && pixels.length == 0) throw new IOException("Unsupported skin size for " + skin);
+            return pixels;
+        }
         if (!(texture instanceof SimpleTexture)) return null;
         int[] pixels = headPixels(TextureUtil.readImage(Minecraft.getInstance().getResourceManager().getResource(skin).asStream()));
         if (pixels == null) throw new IOException("Unsupported skin size for " + skin);

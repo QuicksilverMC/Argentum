@@ -19,7 +19,8 @@ public abstract class HttpTextureMixin implements HttpTextureExtension {
 
     @Inject(method = "setImage", at = @At("HEAD"))
     private void argentum$keepHeadPixels(BufferedImage image, CallbackInfo ci) {
-        this.argentum$headPixels = BakedBlockEntities.headPixels(image);
+        int[] pixels = BakedBlockEntities.headPixels(image);
+        this.argentum$headPixels = pixels != null ? pixels : new int[0];
     }
 
     @Override
