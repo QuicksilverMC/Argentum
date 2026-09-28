@@ -1,6 +1,5 @@
 package dev.rdh.argentum.impl.gui;
 
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.Window;
 import org.embeddedt.embeddium.impl.gui.framework.TextComponent;
@@ -23,7 +22,6 @@ import org.taumc.celeritas.api.options.structure.StandardOptions;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.config.ArgentumConfig;
 import dev.rdh.argentum.impl.config.JsonOptionStorage;
-import dev.rdh.argentum.impl.render.PresentationPacer;
 import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService.FogShape;
 
 import java.util.List;
@@ -76,7 +74,6 @@ public final class ArgentumOptionPages {
         private static final OptionIdentifier<Void> CHECK_GL_ERRORS = OptionIdentifier.create(Argentum.ID, "check_gl_errors");
         private static final OptionIdentifier<Void> FASTER_WEATHER = OptionIdentifier.create(Argentum.ID, "faster_weather");
         private static final OptionIdentifier<Void> GREEDY_RENDER_THREAD = OptionIdentifier.create(Argentum.ID, "greedy_render_thread");
-        private static final OptionIdentifier<Void> DECOUPLED_PRESENTATION = OptionIdentifier.create(Argentum.ID, "decoupled_presentation");
         private static final OptionIdentifier<Void> FOG_SHAPE = OptionIdentifier.create(Argentum.ID, "fog_shape");
     }
 
@@ -353,14 +350,6 @@ public final class ArgentumOptionPages {
                 .add(toggle(Option.GREEDY_RENDER_THREAD,
                         OptionImpact.LOW,
                         (config, value) -> config.greedyRenderThread = value, config -> config.greedyRenderThread))
-                .addConditionally(FabricLoader.getInstance().isModLoaded("pylon") || FabricLoader.getInstance().isModLoaded("legacy-lwjgl3"),
-                        () -> option(PresentationPacer.Mode.class, CONFIG_STORAGE, Option.DECOUPLED_PRESENTATION)
-                                .setControl(option -> new CyclingControl<>(option, PresentationPacer.Mode.class, new TextComponent[] {
-                                        vanilla("options.off"), vanilla("options.on"), text("value.auto")
-                                }))
-                                .setBinding((config, value) -> config.decoupledPresentation = value, config -> config.decoupledPresentation)
-                                .setImpact(OptionImpact.MEDIUM)
-                                .build())
                 .build();
 
         return page(Page.PERFORMANCE, chunkUpdates, culling, rendering);

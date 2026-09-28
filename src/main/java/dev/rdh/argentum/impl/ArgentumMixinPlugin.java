@@ -12,13 +12,10 @@ public final class ArgentumMixinPlugin implements IMixinConfigPlugin {
     @Override
     public List<String> getMixins() {
         FabricLoader l = FabricLoader.getInstance();
-        if (l.isModLoaded("pylon")) {
-            return List.of("features.present.DisplaySdlMixin");
-        } else if (l.isModLoaded("legacy-lwjgl3")) {
-            return List.of("features.present.LegacyGlfwDisplayMixin", "features.present.LegacySdlDisplayMixin");
-        } else {
+        if (!l.isModLoaded("pylon") && !l.isModLoaded("legacy-lwjgl3")) {
             throw new IllegalStateException("Argentum requires Pylon or legacy-lwjgl3");
         }
+        return null;
     }
 
     @Override
