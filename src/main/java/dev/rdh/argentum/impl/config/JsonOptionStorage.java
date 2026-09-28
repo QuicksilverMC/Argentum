@@ -44,6 +44,11 @@ public final class JsonOptionStorage<T> implements OptionStorage<T> {
                 }
             } catch (Exception e) {
                 LOGGER.error("Could not load configuration from {}", path, e);
+                try {
+                    Files.move(path, path.resolveSibling(path.getFileName() + ".broken"), StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException moveException) {
+                    LOGGER.error("Could not move the broken configuration aside", moveException);
+                }
             }
         }
 
