@@ -116,7 +116,7 @@ public class GameRendererMixin {
         return this.thiccFog ? density : density * strength(ArgentumExtras.CONFIG.fluidFogDensity);
     }
 
-    @Inject(method = "render",
+    @Inject(method = "render(FJ)V",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/render/pipeline/RenderTarget;bindWrite(Z)V",
                     shift = At.Shift.AFTER))
