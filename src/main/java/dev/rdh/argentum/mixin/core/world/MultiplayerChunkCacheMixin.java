@@ -1,5 +1,6 @@
 package dev.rdh.argentum.mixin.core.world;
 
+import dev.rdh.argentum.impl.ext.WorldExtension;
 import org.embeddedt.embeddium.impl.render.chunk.map.ChunkStatus;
 import org.embeddedt.embeddium.impl.render.chunk.map.ChunkTrackerHolder;
 import org.spongepowered.asm.mixin.Mixin;
@@ -26,5 +27,6 @@ public class MultiplayerChunkCacheMixin {
     @Inject(method = "unloadChunk", at = @At("RETURN"))
     private void afterUnloadChunk(int x, int z, CallbackInfo ci) {
         ChunkTrackerHolder.get(this.world).onChunkStatusRemoved(x, z, ChunkStatus.FLAG_ALL);
+        ((WorldExtension) this.world).argentum$getBlockEntityLight().forgetChunk(x, z);
     }
 }

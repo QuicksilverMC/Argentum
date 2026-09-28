@@ -29,6 +29,12 @@ public final class BlockEntityLight {
         }
     }
 
+    public void forgetChunk(int chunkX, int chunkZ) {
+        for (int y = 0; y < 16; y++) {
+            this.generations.remove(key(chunkX, y, chunkZ));
+        }
+    }
+
     private static long key(int sectionX, int sectionY, int sectionZ) {
         return (long)(sectionX & 0x3FFFFF) << 42 | (long)(sectionY & 0xFF) << 34 | (long)(sectionZ & 0x3FFFFF) << 12;
     }
