@@ -8,6 +8,8 @@ import net.minecraft.client.render.vertex.BufferUploader;
 import net.minecraft.client.render.vertex.DefaultVertexFormat;
 import org.lwjgl.opengl.GL11;
 
+import java.util.function.Supplier;
+
 public final class HudBatch {
     private static final BufferUploader UPLOADER = new BufferUploader();
     private static final HudRecorder RECORDER = new HudRecorder();
@@ -24,19 +26,24 @@ public final class HudBatch {
     }
 
     public static Text text(TextRenderer renderer) {
-        return new Text(renderer, null);
+        return new Text(() -> renderer, null);
     }
 
     public static Text text(TextRenderer renderer, Runnable beforeText) {
+        return new Text(() -> renderer, beforeText);
+    }
+
+    public static Text text(Supplier<TextRenderer> renderer, Runnable beforeText) {
         return new Text(renderer, beforeText);
     }
 
     public static final class Text {
-        private final TextRenderer renderer;
+        private final Supplier<TextRenderer> renderer;
         private final Runnable beforeText;
+        private TextRenderer active;
         private boolean drawing;
 
-        private Text(TextRenderer renderer, Runnable beforeText) {
+        private Text(Supplier<TextRenderer> renderer, Runnable beforeText) {
             this.renderer = renderer;
             this.beforeText = beforeText;
         }
@@ -46,7 +53,8 @@ public final class HudBatch {
                 warnUnbalanced();
                 this.draw();
             }
-            this.renderer.argentum$beginBatch(this.beforeText);
+            this.active = this.renderer.get();
+            this.active.argentum$beginBatch(this.beforeText);
             this.drawing = true;
         }
 
@@ -64,7 +72,7 @@ public final class HudBatch {
                 if (beforeText != null) beforeText.run();
             } finally {
                 this.drawing = false;
-                this.renderer.argentum$endBatch();
+                this.active.argentum$endBatch();
             }
         }
     }

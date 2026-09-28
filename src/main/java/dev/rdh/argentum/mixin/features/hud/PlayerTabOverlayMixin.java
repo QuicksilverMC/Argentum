@@ -59,7 +59,7 @@ public abstract class PlayerTabOverlayMixin extends GuiElement {
         this.argentum$backgroundBatch = HudBatch.colored();
         this.argentum$textureBatch = HudBatch.textured(16 * 1024);
         this.argentum$iconBatch = HudBatch.textured(256 * 1024);
-        this.argentum$textBatch = HudBatch.text(this.minecraft.textRenderer, this.argentum$backgroundBatch);
+        this.argentum$textBatch = HudBatch.text(() -> this.minecraft.textRenderer, this.argentum$backgroundBatch);
     }
 
     @WrapMethod(method = "render")
