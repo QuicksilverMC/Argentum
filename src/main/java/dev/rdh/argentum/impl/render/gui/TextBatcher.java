@@ -72,6 +72,7 @@ public final class TextBatcher {
     private GeometryKey pendingKey;
     private final List<Segment> pendingSegments = new ObjectArrayList<>(4);
     private boolean appendable;
+    private boolean appendingDecorations;
     private float originX;
     private float originY;
 
@@ -561,6 +562,13 @@ public final class TextBatcher {
             this.nameTags.text(texture, vertices, vertices.length, x, y, this.alphaByte());
             return;
         }
+        if ((texture == null) != this.appendingDecorations) {
+            this.appendingDecorations = texture == null;
+            if (this.hasElementVertices()) {
+                if (this.beforeImmediateText != null) this.beforeImmediateText.run();
+                this.flushElementBatch(Minecraft.getInstance().getTextureManager());
+            }
+        }
         BufferBuilder buffer = this.elementBuffers.get(texture);
         if (buffer == null) {
             buffer = new BufferBuilder(32 * 1024 / Integer.BYTES);
@@ -570,6 +578,13 @@ public final class TextBatcher {
             buffer.begin(GL11.GL_QUADS, texture == null ? DECORATION_FORMAT : FORMAT);
         }
         buffer.argentum$appendTranslated(vertices, x, y);
+    }
+
+    private boolean hasElementVertices() {
+        for (BufferBuilder buffer : this.elementBuffers.values()) {
+            if (buffer.getVertexCount() != 0) return true;
+        }
+        return false;
     }
 
     private void flushElementBatch(TextureManager textureManager) {
