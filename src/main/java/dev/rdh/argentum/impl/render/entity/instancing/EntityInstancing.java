@@ -41,27 +41,27 @@ public final class EntityInstancing {
         this.backend = backend;
     }
 
-    private static boolean overlayPassDetected;
-    private static int layerDepth;
-    private static int displayEntityDepth;
+    private boolean overlayPassDetected;
+    private int layerDepth;
+    private int displayEntityDepth;
 
-    public static boolean overlayPassDetected() {
-        return overlayPassDetected;
+    public boolean overlayPassDetected() {
+        return this.overlayPassDetected;
     }
 
-    public static void noteOverlayPass() {
-        overlayPassDetected = true;
+    public void noteOverlayPass() {
+        this.overlayPassDetected = true;
     }
 
-    private static boolean itemLayerPassDetected;
+    private boolean itemLayerPassDetected;
 
     /** Whether some mod splits an item's layers across separate draws, learned the first time we see it happen. */
-    public static boolean itemLayerPassDetected() {
-        return itemLayerPassDetected;
+    boolean itemLayerPassDetected() {
+        return this.itemLayerPassDetected;
     }
 
-    public static void noteItemLayerPass() {
-        itemLayerPassDetected = true;
+    void noteItemLayerPass() {
+        this.itemLayerPassDetected = true;
     }
 
     public static EntityInstancing current() {
@@ -96,7 +96,7 @@ public final class EntityInstancing {
     }
 
     public boolean isBatchActive() {
-        return displayEntityDepth == 0 && this.backend.isBatchActive();
+        return this.displayEntityDepth == 0 && this.backend.isBatchActive();
     }
 
     public EntityCapture beginEntity(Model model, Identifier texture, boolean player, boolean preserveFixedFunction,
@@ -135,20 +135,20 @@ public final class EntityInstancing {
         return capture;
     }
 
-    public static void beginDisplayEntity() {
-        displayEntityDepth++;
+    public void beginDisplayEntity() {
+        this.displayEntityDepth++;
     }
 
-    public static void endDisplayEntity() {
-        displayEntityDepth--;
+    public void endDisplayEntity() {
+        this.displayEntityDepth--;
     }
 
-    public static void beginLayerRender() {
-        layerDepth++;
+    public void beginLayerRender() {
+        this.layerDepth++;
     }
 
-    public static void endLayerRender() {
-        layerDepth--;
+    public void endLayerRender() {
+        this.layerDepth--;
     }
 
     public boolean recordArrow(ArrowEntity arrow, double x, double y, double z, float tickDelta,
@@ -159,7 +159,7 @@ public final class EntityInstancing {
         // A layer renders its arrows at the origin and puts the placement in the matrix stack instead. Without a
         // capture tracking that stack there is nothing here to place them by, and the identity matrix below would
         // drop them at the camera entity's feet, so leave those to the fixed function pipeline.
-        if (layerDepth > 0) {
+        if (this.layerDepth > 0) {
             return false;
         }
         if (!this.isBatchActive()) {

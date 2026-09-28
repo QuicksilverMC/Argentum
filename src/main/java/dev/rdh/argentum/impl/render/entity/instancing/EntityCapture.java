@@ -215,10 +215,10 @@ public final class EntityCapture implements AutoCloseable {
             if (this.itemPassSeen) {
                 // a mod is drawing the item again with a different subset of its layers (old animations keeps the
                 // glint on the base layer that way). our geometry is the whole model, so both passes draw everything
-                EntityInstancing.noteItemLayerPass();
+                this.owner.noteItemLayerPass();
             }
             this.itemPassSeen = true;
-            if (EntityInstancing.itemLayerPassDetected() && this.owner.backend().isLayeredItem(model)) {
+            if (this.owner.itemLayerPassDetected() && this.owner.backend().isLayeredItem(model)) {
                 this.itemInstanced = false;
                 return false;
             }

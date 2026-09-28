@@ -47,7 +47,7 @@ public abstract class LivingEntityRendererMixin {
                 && !this.solidRender
                 && !entity.isInvisible()
                 && !entity.shouldRenderOnFire()
-                && !(EntityInstancing.overlayPassDetected() && celeritas$isTinted(entity));
+                && !(instancing.overlayPassDetected() && celeritas$isTinted(entity));
         Identifier texture = eligible ? ((EntityRendererAccessor)this).celeritas$getTextureLocation(entity) : null;
         try (EntityCapture _ = eligible ? instancing.beginEntity(
                 this.model, texture, player, player || !this.layers.isEmpty(),
@@ -91,7 +91,7 @@ public abstract class LivingEntityRendererMixin {
             if (!capture.firstModelPass()) {
                 // something is drawing the model again to tint it over the top (old animations' damage tint).
                 // one instance cannot express two passes, so stop instancing tinted entities from here on
-                EntityInstancing.noteOverlayPass();
+                EntityInstancing.current().noteOverlayPass();
             }
             capture.beginModel();
         }
@@ -113,11 +113,12 @@ public abstract class LivingEntityRendererMixin {
             float yaw, float pitch, float scale, Operation<Void> original) {
         EntityCapture active = EntityCapture.current();
         boolean capture = active != null && active.beginLayer(layer, entity);
-        EntityInstancing.beginLayerRender();
+        EntityInstancing instancing = EntityInstancing.current();
+        if (instancing != null) instancing.beginLayerRender();
         try {
             original.call(layer, entity, walkAnimationProgress, walkAnimationSpeed, tickDelta, bob, yaw, pitch, scale);
         } finally {
-            EntityInstancing.endLayerRender();
+            if (instancing != null) instancing.endLayerRender();
             if (capture) {
                 active.endLayer();
             }

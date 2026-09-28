@@ -12,11 +12,12 @@ public abstract class MobSpawnerRendererMixin {
     // also reached from SpawnerMinecartRenderer
     @WrapMethod(method = "renderDisplayEntity")
     private static void argentum$drawDisplayEntityDirectly(MobSpawner spawner, double dx, double dy, double dz, float tickDelta, Operation<Void> original) {
-        EntityInstancing.beginDisplayEntity();
+        EntityInstancing instancing = EntityInstancing.current();
+        if (instancing != null) instancing.beginDisplayEntity();
         try {
             original.call(spawner, dx, dy, dz, tickDelta);
         } finally {
-            EntityInstancing.endDisplayEntity();
+            if (instancing != null) instancing.endDisplayEntity();
         }
     }
 }
