@@ -248,7 +248,7 @@ public final class CustomColormaps implements ResourceReloadListener {
                 Object2IntMap<Block> blocks = BlockMatcher.parseBlocks(props.get(key));
                 if (blocks.isEmpty()) continue;
                 String path = stripPng(key.substring("palette.block.".length()));
-                path = path.startsWith("~/") || path.startsWith("/") ? path.replaceFirst("^~?/", "") : base + path;
+                path = path.startsWith("/") ? path.substring(1) : base + (path.startsWith("~/") ? path.substring(2) : path);
                 Image image = readImage(resources, withPng(new Identifier(path)));
                 if (image == null) {
                     Cera.LOGGER.warn("[CustomColors] Palette not found: {}", key);
