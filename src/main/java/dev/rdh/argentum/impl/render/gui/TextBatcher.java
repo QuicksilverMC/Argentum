@@ -169,7 +169,8 @@ public final class TextBatcher {
     public int stringWidth(String text, boolean unicode, byte[] glyphSizes) {
         if (text == null) return 0;
 
-        int cached = this.widthCache.getInt(text);
+        boolean cache = Minecraft.getInstance().isOnSameThread();
+        int cached = cache ? this.widthCache.getInt(text) : -1;
         if (cached != -1) return cached;
 
         float total = 0.0F;
@@ -188,8 +189,10 @@ public final class TextBatcher {
         }
 
         int rounded = Math.round(total);
-        this.widthCache.put(text, rounded);
-        if (this.widthCache.size() > WIDTH_CACHE_SIZE) this.widthCache.clear();
+        if (cache) {
+            this.widthCache.put(text, rounded);
+            if (this.widthCache.size() > WIDTH_CACHE_SIZE) this.widthCache.clear();
+        }
         return rounded;
     }
 
