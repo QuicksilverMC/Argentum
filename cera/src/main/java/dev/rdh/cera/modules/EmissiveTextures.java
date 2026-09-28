@@ -33,10 +33,8 @@ public final class EmissiveTextures {
     private boolean renderingEmissive;
     private boolean hasEmissive;
 
-    private static float lastBrightnessX;
-    private static float lastBrightnessY;
-    private float savedBrightnessX;
-    private float savedBrightnessY;
+    private float lastBrightnessX;
+    private float lastBrightnessY;
 
     public boolean active() {
         return suffix != null && Cera.CONFIG.emissiveTextures;
@@ -88,42 +86,47 @@ public final class EmissiveTextures {
         return b0 + (x - a0) / (a1 - a0) * (b1 - b0);
     }
 
-    public void beginRender() {
+    public int beginRender() {
+        int previous = (this.rendering ? 1 : 0) | (this.renderingEmissive ? 2 : 0) | (this.hasEmissive ? 4 : 0);
         this.rendering = true;
+        this.renderingEmissive = false;
         this.hasEmissive = false;
+        return previous;
     }
 
     public boolean hasEmissive() {
         return this.hasEmissive;
     }
 
-    public void beginRenderEmissive() {
+    public long beginRenderEmissive() {
         this.renderingEmissive = true;
-        forceFullbright();
+        return forceFullbright();
     }
 
-    public void endRenderEmissive() {
+    public void endRenderEmissive(long brightness) {
         this.renderingEmissive = false;
-        restoreBrightness();
+        restoreBrightness(brightness);
     }
 
-    public void forceFullbright() {
-        this.savedBrightnessX = lastBrightnessX;
-        this.savedBrightnessY = lastBrightnessY;
-        GLX.multiTexCoord2f(GLX.GL_TEXTURE1, 240.0F, this.savedBrightnessY);
+    public long forceFullbright() {
+        long saved = (long) Float.floatToRawIntBits(this.lastBrightnessX) << 32 | Float.floatToRawIntBits(this.lastBrightnessY) & 0xFFFFFFFFL;
+        GLX.multiTexCoord2f(GLX.GL_TEXTURE1, 240.0F, this.lastBrightnessY);
+        return saved;
     }
 
-    public void restoreBrightness() {
-        GLX.multiTexCoord2f(GLX.GL_TEXTURE1, this.savedBrightnessX, this.savedBrightnessY);
+    public void restoreBrightness(long saved) {
+        GLX.multiTexCoord2f(GLX.GL_TEXTURE1, Float.intBitsToFloat((int) (saved >>> 32)), Float.intBitsToFloat((int) saved));
     }
 
-    public static void captureBrightness(float x, float y) {
-        lastBrightnessX = x;
-        lastBrightnessY = y;
+    public void captureBrightness(float x, float y) {
+        this.lastBrightnessX = x;
+        this.lastBrightnessY = y;
     }
 
-    public void endRender() {
-        this.rendering = false;
+    public void endRender(int previous) {
+        this.rendering = (previous & 1) != 0;
+        this.renderingEmissive = (previous & 2) != 0;
+        this.hasEmissive = (previous & 4) != 0;
     }
 
     public Identifier resolveBound(Identifier loc) {

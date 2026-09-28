@@ -30,23 +30,23 @@ public class LivingEntityRendererMixin<T extends LivingEntity> {
             original.call(self, entity, limbAngle, limbDistance, tickDelta, headYaw, headPitch, scale);
             return;
         }
-        emissive.beginRender();
+        int previous = emissive.beginRender();
         try {
             GlStateManager.pushMatrix();
             original.call(self, entity, limbAngle, limbDistance, tickDelta, headYaw, headPitch, scale);
             GlStateManager.popMatrix();
             if (emissive.hasEmissive()) {
-                emissive.beginRenderEmissive();
+                long brightness = emissive.beginRenderEmissive();
                 GlStateManager.pushMatrix();
                 try {
                     original.call(self, entity, limbAngle, limbDistance, tickDelta, headYaw, headPitch, scale);
                 } finally {
                     GlStateManager.popMatrix();
-                    emissive.endRenderEmissive();
+                    emissive.endRenderEmissive(brightness);
                 }
             }
         } finally {
-            emissive.endRender();
+            emissive.endRender(previous);
         }
     }
 }

@@ -86,13 +86,13 @@ public abstract class ItemRendererMixin {
         this.cera$hasEmissive = false;
         original.call(self, model, stack);
         if (this.cera$hasEmissive) {
-            emissive.forceFullbright();
+            long brightness = emissive.forceFullbright();
             this.cera$emissive = true;
             try {
                 original.call(self, model, stack);
             } finally {
                 this.cera$emissive = false;
-                emissive.restoreBrightness();
+                emissive.restoreBrightness(brightness);
             }
         }
     }

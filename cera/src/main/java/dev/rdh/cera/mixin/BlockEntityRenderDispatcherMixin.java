@@ -53,23 +53,23 @@ public class BlockEntityRenderDispatcherMixin implements CeraBlockEntityRenderDi
             original.call(renderer, blockEntity, x, y, z, tickDelta, breakStage);
             return;
         }
-        emissive.beginRender();
+        int previous = emissive.beginRender();
         try {
             GlStateManager.pushMatrix();
             original.call(renderer, blockEntity, x, y, z, tickDelta, breakStage);
             GlStateManager.popMatrix();
             if (emissive.hasEmissive()) {
-                emissive.beginRenderEmissive();
+                long brightness = emissive.beginRenderEmissive();
                 GlStateManager.pushMatrix();
                 try {
                     original.call(renderer, blockEntity, x, y, z, tickDelta, breakStage);
                 } finally {
                     GlStateManager.popMatrix();
-                    emissive.endRenderEmissive();
+                    emissive.endRenderEmissive(brightness);
                 }
             }
         } finally {
-            emissive.endRender();
+            emissive.endRender(previous);
         }
     }
 }
