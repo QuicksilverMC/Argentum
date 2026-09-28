@@ -84,6 +84,7 @@ public class TextureAtlasMixin implements CeraTextureAtlasExtension {
         if ("textures".equals(this.path)) {
             this.cera$betterGrass.bake();
             this.cera$connectedTextures.bake();
+            this.cera$naturalTextures.bake((TextureAtlas) (Object) this);
         }
     }
 

@@ -1,5 +1,7 @@
 package dev.rdh.cera.modules;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.texture.TextureAtlas;
 import net.minecraft.client.render.texture.TextureAtlasSprite;
 import net.minecraft.resource.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -12,6 +14,7 @@ import org.embeddedt.embeddium.impl.model.quad.properties.ModelQuadFacing;
 
 import dev.rdh.cera.Cera;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 
 import java.io.IOException;
 import java.util.Map;
@@ -20,6 +23,7 @@ public final class NaturalTextures implements ResourceReloadListener {
     private static final Identifier CONFIG = new Identifier("optifine/natural.properties");
     private static final Identifier LEGACY_CONFIG = new Identifier("mcpatcher/natural.properties");
     private volatile Map<String, Rule> rules = Map.of();
+    private volatile Map<TextureAtlasSprite, Rule> spriteRules = Map.of();
 
     @Override
     public void resourcesReloaded(ResourceManager resources) {
@@ -35,6 +39,7 @@ public final class NaturalTextures implements ResourceReloadListener {
             }
             if (config == null) {
                 rules = Map.of();
+                spriteRules = Map.of();
                 return;
             }
 
@@ -50,18 +55,29 @@ public final class NaturalTextures implements ResourceReloadListener {
                 }
             }
             rules = Map.copyOf(loaded);
+            bake(Minecraft.getInstance().getBlocksAtlas());
             Cera.LOGGER.info("[NaturalTextures] Loaded {} rules", rules.size());
         } catch (IOException e) {
             rules = Map.of();
+            spriteRules = Map.of();
             Cera.LOGGER.warn("[NaturalTextures] Failed to load properties", e);
         }
+    }
+
+    public void bake(TextureAtlas atlas) {
+        Map<TextureAtlasSprite, Rule> resolved = new Reference2ObjectOpenHashMap<>();
+        for (Map.Entry<String, Rule> entry : this.rules.entrySet()) {
+            TextureAtlasSprite sprite = atlas.getSprite(entry.getKey());
+            if (sprite != atlas.getMissingSprite()) resolved.put(sprite, entry.getValue());
+        }
+        this.spriteRules = resolved;
     }
 
     public int getTransform(BakedQuadView quad, BlockPos pos) {
         if (!Cera.CONFIG.naturalTextures) return 0;
 
         TextureAtlasSprite sprite = (TextureAtlasSprite)quad.celeritas$getSprite();
-        Rule rule = sprite == null ? null : rules.get(sprite.getName());
+        Rule rule = sprite == null ? null : spriteRules.get(sprite);
         if (rule == null) return 0;
 
         int random = Cera.random(pos, side(quad.getLightFace()));
