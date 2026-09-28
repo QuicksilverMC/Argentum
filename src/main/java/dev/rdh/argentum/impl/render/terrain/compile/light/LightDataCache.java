@@ -16,7 +16,7 @@ public final class LightDataCache extends LightDataAccess {
         var block = this.world.getBlockState(x, y, z).getBlock();
         int luminance = block.getLight();
         boolean opaque = block.isViewBlocking() && block.getOpacity() != 0;
-        boolean fullOpaque = block.isOpaque();
+        boolean fullOpaque = block.isSolidRender();
         boolean fullCube = block.isCube();
 
         int packedLight = fullOpaque && luminance == 0 ? 0 : this.world.getLightColor(x, y, z, luminance);
