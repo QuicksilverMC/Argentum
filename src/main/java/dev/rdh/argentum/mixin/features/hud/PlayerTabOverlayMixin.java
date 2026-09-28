@@ -21,6 +21,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Arrays;
+
 @Mixin(PlayerTabOverlay.class)
 public abstract class PlayerTabOverlayMixin extends GuiElement {
     @Unique
@@ -43,10 +45,10 @@ public abstract class PlayerTabOverlayMixin extends GuiElement {
     private HudBatch.Text argentum$textBatch;
 
     @Unique
-    private final Identifier[] argentum$skinTextures = new Identifier[MAX_SKIN_QUADS];
+    private Identifier[] argentum$skinTextures = new Identifier[MAX_SKIN_QUADS];
 
     @Unique
-    private final float[] argentum$skinQuads = new float[MAX_SKIN_QUADS * 10];
+    private float[] argentum$skinQuads = new float[MAX_SKIN_QUADS * 10];
 
     @Unique
     private Identifier argentum$skinTexture;
@@ -101,6 +103,10 @@ public abstract class PlayerTabOverlayMixin extends GuiElement {
     )
     private void argentum$captureSkin(int x, int y, float u, float v, int sourceWidth, int sourceHeight, int width, int height, float textureWidth, float textureHeight) {
         int index = this.argentum$skinQuadCount++;
+        if (index == this.argentum$skinTextures.length) {
+            this.argentum$skinTextures = Arrays.copyOf(this.argentum$skinTextures, index * 2);
+            this.argentum$skinQuads = Arrays.copyOf(this.argentum$skinQuads, index * 20);
+        }
         this.argentum$skinTextures[index] = this.argentum$skinTexture;
         int offset = index * 10;
         float[] quads = this.argentum$skinQuads;
