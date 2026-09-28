@@ -65,7 +65,13 @@ public final class CloudRenderer {
                 return false;
             }
             if (this.vertexBuffer == null || firstCell != this.meshFirstCell || lastCell != this.meshLastCell) {
-                this.createMesh(commandList, firstCell, lastCell);
+                try {
+                    this.createMesh(commandList, firstCell, lastCell);
+                } catch (RuntimeException exception) {
+                    this.supported = false;
+                    Argentum.LOGGER.error("Faster clouds failed to build their mesh", exception);
+                    return false;
+                }
             }
 
             GlProgram<CloudShader> program;
