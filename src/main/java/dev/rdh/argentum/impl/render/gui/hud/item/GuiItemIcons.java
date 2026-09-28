@@ -1,7 +1,7 @@
 package dev.rdh.argentum.impl.render.gui.hud.item;
 
 import dev.rdh.argentum.impl.Argentum;
-import dev.rdh.argentum.impl.render.AnimatedModelSprites;
+import dev.rdh.argentum.impl.ext.ItemRendererExtension;
 import dev.rdh.argentum.impl.render.gui.hud.HudRecorder;
 
 import net.minecraft.client.Minecraft;
@@ -87,7 +87,7 @@ public final class GuiItemIcons {
     }
 
     private static int sourceVersion(BakedModel model) {
-        return AnimatedModelSprites.of(model).length > 0 ? currentTick() : 0;
+        return ((ItemRendererExtension) Minecraft.getInstance().getItemRenderer()).argentum$getAnimatedSprites().of(model).length > 0 ? currentTick() : 0;
     }
 
     public static void draw(int slot, int x, int y, float zOffset) {

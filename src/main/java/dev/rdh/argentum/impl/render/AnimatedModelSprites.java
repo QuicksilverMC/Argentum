@@ -16,19 +16,16 @@ import java.util.Map;
 
 public final class AnimatedModelSprites {
     private static final TextureAtlasSprite[] NONE = new TextureAtlasSprite[0];
-    private static final Map<BakedModel, TextureAtlasSprite[]> SPRITES = new Reference2ObjectOpenHashMap<>();
+    private final Map<BakedModel, TextureAtlasSprite[]> sprites = new Reference2ObjectOpenHashMap<>();
 
-    private AnimatedModelSprites() {
-    }
-
-    public static TextureAtlasSprite[] of(BakedModel model) {
-        TextureAtlasSprite[] sprites = SPRITES.get(model);
-        if (sprites == null) SPRITES.put(model, sprites = scan(model));
+    public TextureAtlasSprite[] of(BakedModel model) {
+        TextureAtlasSprite[] sprites = this.sprites.get(model);
+        if (sprites == null) this.sprites.put(model, sprites = scan(model));
         return sprites;
     }
 
-    public static void clear() {
-        SPRITES.clear();
+    public void clear() {
+        this.sprites.clear();
     }
 
     private static TextureAtlasSprite[] scan(BakedModel model) {
