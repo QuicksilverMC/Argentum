@@ -68,9 +68,14 @@ public class DebugOverlayMixin {
         this.argentum$backgroundBatch.fill(left, top, right, bottom, color);
     }
 
+    @Unique
+    private List<String> argentum$systemInfo;
+
     @Inject(method = "getSystemInfo", at = @At("RETURN"))
     private void appendArgentumSystemInfo(CallbackInfoReturnable<List<String>> cir) {
         var strings = cir.getReturnValue();
+        if (strings == this.argentum$systemInfo) return;
+        this.argentum$systemInfo = strings;
         strings.add("");
         strings.addAll(
                 DebugStrings.getStringsToRender().stream()
