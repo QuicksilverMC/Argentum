@@ -119,7 +119,7 @@ public final class TextBatcher {
                 if (!empty) break;
             }
 
-            this.widths[character] = (lastUsed + 1) * scale + 1.0F;
+            this.widths[character] = (int) (0.5 + (lastUsed + 1) * scale) + 1.0F;
         }
 
         // vanilla leaves widths[32]=1 and hardcodes 4 in getWidth(), but we want people to be able to override this
