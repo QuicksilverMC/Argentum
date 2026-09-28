@@ -10,6 +10,7 @@ import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resource.Identifier;
 import net.minecraft.world.World;
@@ -30,7 +31,7 @@ public final class RandomEntities implements ResourceReloadListener {
     private static final int CACHE_LIMIT = 4096;
 
     private volatile Map<String, Base> bases = Map.of();
-    private final Object2ObjectOpenHashMap<Object, Entry> cache = new Object2ObjectOpenHashMap<>();
+    private final Object2ObjectOpenHashMap<Object, Reference2ObjectArrayMap<Base, Entry>> cache = new Object2ObjectOpenHashMap<>();
     private final Set<String> unevaluated = new ObjectOpenHashSet<>();
 
     @Override
@@ -66,7 +67,8 @@ public final class RandomEntities implements ResourceReloadListener {
     }
 
     private int select(Subject subject, Base base) {
-        Entry entry = this.cache.get(subject.key());
+        Reference2ObjectArrayMap<Base, Entry> entries = this.cache.get(subject.key());
+        Entry entry = entries == null ? null : entries.get(base);
         World world = subject.world();
         long now = world == null ? 0L : world.getTime();
         if (entry != null && (base.rules() == null || now < entry.expiresAt())) return entry.variant();
@@ -75,7 +77,8 @@ public final class RandomEntities implements ResourceReloadListener {
         int variant = base.rules() == null
                 ? Math.floorMod(seed, base.count()) + 1
                 : base.rules().select(subject, seed);
-        this.cache.put(subject.key(), new Entry(variant, base.rules() == null ? Long.MAX_VALUE : now + 20));
+        if (entries == null) this.cache.put(subject.key(), entries = new Reference2ObjectArrayMap<>(2));
+        entries.put(base, new Entry(variant, base.rules() == null ? Long.MAX_VALUE : now + 20));
         if (this.cache.size() > CACHE_LIMIT) this.cache.clear();
         return variant;
     }
