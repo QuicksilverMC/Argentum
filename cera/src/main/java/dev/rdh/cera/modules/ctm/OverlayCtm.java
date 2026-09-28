@@ -42,7 +42,7 @@ final class OverlayCtm {
                     face, sprite, context);
         }
 
-        if (sides[0] && sides[1] && sides[2] && sides[3]) return List.of();
+        if (sides[0] && sides[1] && sides[2] && sides[3]) return tile(rule, 8);
         if (sides[0] && sides[1] && sides[2]) return tile(rule, 5);
         if (sides[0] && sides[2] && sides[3]) return tile(rule, 6);
         if (sides[1] && sides[2] && sides[3]) return tile(rule, 12);
