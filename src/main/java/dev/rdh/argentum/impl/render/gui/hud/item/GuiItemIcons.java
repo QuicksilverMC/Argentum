@@ -22,6 +22,7 @@ public final class GuiItemIcons {
 
     private static boolean initialized;
     private static boolean ready;
+    private static int iconPixels;
     private static boolean baking;
     private static boolean flushing;
     private static boolean warned;
@@ -36,7 +37,7 @@ public final class GuiItemIcons {
             ATLAS.initialize();
         }
         // the atlas is created mid-frame, so leave that frame on the vanilla path
-        return ATLAS.isSupported() && ready;
+        return ATLAS.isSupported() && ready && iconPixels <= GuiItemAtlas.maxPixels();
     }
 
     public static boolean canBake(ItemStack item) {
@@ -77,8 +78,7 @@ public final class GuiItemIcons {
     }
 
     private static int iconPixels() {
-        int scale = new Window(Minecraft.getInstance()).getScale();
-        return Math.min((ICON_SIZE + 2 * PADDING) * Math.max(scale, 1), GuiItemAtlas.maxPixels());
+        return iconPixels;
     }
 
     private static int currentTick() {
@@ -108,6 +108,7 @@ public final class GuiItemIcons {
 
     public static void endFrame() {
         ready = initialized;
+        if (initialized) iconPixels = (ICON_SIZE + 2 * PADDING) * Math.max(new Window(Minecraft.getInstance()).getScale(), 1);
         if (RECORDER.isEmpty() && GLINTS.isEmpty() || warned) return;
         warned = true;
         Argentum.LOGGER.warn("GUI item icons were recorded but never flushed; they will draw late and misplaced. "
