@@ -50,7 +50,7 @@ public abstract class LivingEntityRendererMixin {
                 && !(instancing.overlayPassDetected() && celeritas$isTinted(entity));
         Identifier texture = eligible ? ((EntityRendererAccessor)this).celeritas$getTextureLocation(entity) : null;
         try (EntityCapture _ = eligible ? instancing.beginEntity(
-                this.model, texture, player, player || !this.layers.isEmpty(),
+                this.model, texture, player, true,
                 EntityInstancing.packedLight(entity, tickDelta), entity.ticks + tickDelta,
                 0.0F, 0.0F, 0.0F, 0.0F) : null) {
             original.call(entity, x, y, z, yaw, tickDelta);
