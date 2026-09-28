@@ -127,7 +127,8 @@ public final class EntityInstancing {
 
     public EntityCapture beginItemEntity(ItemEntity entity, BakedModel model, int packedLight) {
         if (!this.isBatchActive() || entity.getItem() == null
-                || !this.backend.supportsItem(model, entity.getItem())) {
+                || !this.backend.supportsItem(model, entity.getItem())
+                || this.itemLayerPassDetected && this.backend.isLayeredItem(model)) {
             return null;
         }
         EntityCapture capture = this.acquire();
