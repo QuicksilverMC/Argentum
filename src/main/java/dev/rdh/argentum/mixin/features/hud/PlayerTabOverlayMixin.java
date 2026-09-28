@@ -73,6 +73,7 @@ public abstract class PlayerTabOverlayMixin extends GuiElement {
 
             if (!this.argentum$iconBatch.isEmpty()) {
                 this.minecraft.getTextureManager().bind(ICONS_LOCATION);
+                GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
                 this.argentum$iconBatch.draw();
             }
         }
