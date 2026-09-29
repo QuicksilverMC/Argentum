@@ -1,6 +1,7 @@
 package dev.rdh.argentum.mixin.core;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.platform.GLX;
 
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import org.embeddedt.embeddium.impl.render.frame.RenderAheadManager;
@@ -71,6 +72,11 @@ public abstract class MinecraftMixin {
     @Inject(method = "runGame", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/pipeline/RenderTarget;unbindWrite()V"))
     private void argentum$flushGuiItems(CallbackInfo ci) {
         GuiItemIcons.flush();
+    }
+
+    @WrapWithCondition(method = "runGame", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;clear(I)V"))
+    private boolean argentum$needsBackbufferClear(int mask) {
+        return !GLX.useFbo();
     }
 
     @WrapWithCondition(method = "runGame", at = @At(value = "INVOKE", target = "Ljava/lang/Thread;yield()V"))
