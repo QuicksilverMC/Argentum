@@ -32,6 +32,7 @@ import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
 import dev.rdh.argentum.impl.world.cloned.ChunkRenderContext;
 import dev.rdh.argentum.impl.world.cloned.ClonedChunkSectionCache;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.client.render.texture.TextureAtlasSprite;
@@ -147,6 +148,11 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
     @Override
     protected boolean allowImportantRebuilds() {
         return !Argentum.CONFIG.deferChunkUpdates;
+    }
+
+    @Override
+    protected boolean isDebugInfoShown() {
+        return Minecraft.getInstance().options.debugEnabled;
     }
 
     private static class ChunkRenderer extends DefaultChunkRenderer {
