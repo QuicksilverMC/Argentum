@@ -7,6 +7,8 @@ import net.minecraft.client.render.texture.TextureAtlas;
 import net.minecraft.client.render.texture.TextureAtlasSprite;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import it.unimi.dsi.fastutil.HashCommon;
 import org.embeddedt.embeddium.impl.util.collections.quadtree.QuadTree;
 import org.embeddedt.embeddium.impl.util.collections.quadtree.Rect2i;
@@ -22,6 +24,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import dev.rdh.argentum.impl.Argentum;
+import dev.rdh.argentum.impl.render.texture.AtlasUploads;
 import dev.rdh.argentum.impl.ext.TextureAtlasExtension;
 
 import java.util.Iterator;
@@ -63,6 +66,16 @@ public abstract class TextureAtlasMixin extends AbstractTexture implements Textu
         if (capabilities.GL_EXT_texture_filter_anisotropic || capabilities.GL_ARB_texture_filter_anisotropic) {
             GlStateManager.bindTexture(this.getGlId());
             GL11.glTexParameterf(GL11.GL_TEXTURE_2D, EXTTextureFilterAnisotropic.GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
+        }
+    }
+
+    @WrapMethod(method = "bindAndTick")
+    private void argentum$bindAndTick(Operation<Void> original) {
+        AtlasUploads.begin();
+        try {
+            original.call();
+        } finally {
+            AtlasUploads.flush();
         }
     }
 
