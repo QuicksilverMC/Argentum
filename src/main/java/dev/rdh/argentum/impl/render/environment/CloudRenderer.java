@@ -186,8 +186,8 @@ public final class CloudRenderer {
 
     private void createMesh(CommandList commandList, int firstCell, int lastCell) {
         int cells = lastCell - firstCell + 1;
-        // 32 edge strips + 2 caps per cell
-        ByteBuffer bytes = BufferUtils.createByteBuffer(cells * cells * 34 * 4 * VERTEX_FLOATS * Float.BYTES);
+        // 4 edge walls + 2 caps per cell
+        ByteBuffer bytes = BufferUtils.createByteBuffer(cells * cells * 6 * 4 * VERTEX_FLOATS * Float.BYTES);
         FloatBuffer vertices = bytes.asFloatBuffer();
         for (int cellX = firstCell; cellX <= lastCell; cellX++) {
             for (int cellZ = firstCell; cellZ <= lastCell; cellZ++) {
@@ -200,43 +200,39 @@ public final class CloudRenderer {
             for (int cellZ = firstCell; cellZ <= lastCell; cellZ++) {
                 float x = cellX * 8;
                 float z = cellZ * 8;
-                for (int strip = 0; strip < 8; strip++) {
-                    float u = x + strip + 0.5F;
-                    float v = z + strip + 0.5F;
-                    if (cellX > -1) {
-                        quad(vertices, 0.9F,
-                                x + strip, 0.0F, z + 8.0F, u, z + 8.0F,
-                                x + strip, 4.0F, z + 8.0F, u, z + 8.0F,
-                                x + strip, 4.0F, z, u, z,
-                                x + strip, 0.0F, z, u, z
-                        );
-                    }
-                    if (cellX <= 1) {
-                        float edgeX = x + strip + 1.0F - INSET;
-                        quad(vertices, 0.9F,
-                                edgeX, 0.0F, z + 8.0F, u, z + 8.0F,
-                                edgeX, 4.0F, z + 8.0F, u, z + 8.0F,
-                                edgeX, 4.0F, z, u, z,
-                                edgeX, 0.0F, z, u, z
-                        );
-                    }
-                    if (cellZ > -1) {
-                        quad(vertices, 0.8F,
-                                x, 4.0F, z + strip, x, v,
-                                x + 8.0F, 4.0F, z + strip, x + 8.0F, v,
-                                x + 8.0F, 0.0F, z + strip, x + 8.0F, v,
-                                x, 0.0F, z + strip, x, v
-                        );
-                    }
-                    if (cellZ <= 1) {
-                        float edgeZ = z + strip + 1.0F - INSET;
-                        quad(vertices, 0.8F,
-                                x, 4.0F, edgeZ, x, v,
-                                x + 8.0F, 4.0F, edgeZ, x + 8.0F, v,
-                                x + 8.0F, 0.0F, edgeZ, x + 8.0F, v,
-                                x, 0.0F, edgeZ, x, v
-                        );
-                    }
+                if (cellX > -1) {
+                    quad(vertices, 0.9F,
+                            x, 0.0F, z + 8.0F, x, z + 8.0F,
+                            x + 8.0F, 4.0F, z + 8.0F, x + 8.0F, z + 8.0F,
+                            x + 8.0F, 4.0F, z, x + 8.0F, z,
+                            x, 0.0F, z, x, z
+                    );
+                }
+                if (cellX <= 1) {
+                    float leading = x + 1.0F - INSET, trailing = x + 8.0F - INSET;
+                    quad(vertices, 0.9F,
+                            leading, 0.0F, z + 8.0F, x + 0.5F, z + 8.0F,
+                            trailing, 4.0F, z + 8.0F, x + 7.5F, z + 8.0F,
+                            trailing, 4.0F, z, x + 7.5F, z,
+                            leading, 0.0F, z, x + 0.5F, z
+                    );
+                }
+                if (cellZ > -1) {
+                    quad(vertices, 0.8F,
+                            x, 4.0F, z, x, z + 0.5F,
+                            x + 8.0F, 4.0F, z + 8.0F, x + 8.0F, z + 8.5F,
+                            x + 8.0F, 0.0F, z + 8.0F, x + 8.0F, z + 8.5F,
+                            x, 0.0F, z, x, z + 0.5F
+                    );
+                }
+                if (cellZ <= 1) {
+                    float leading = z + 1.0F - INSET, trailing = z + 8.0F - INSET;
+                    quad(vertices, 0.8F,
+                            x, 4.0F, leading, x, z + 0.5F,
+                            x + 8.0F, 4.0F, trailing, x + 8.0F, z + 7.5F,
+                            x + 8.0F, 0.0F, trailing, x + 8.0F, z + 7.5F,
+                            x, 0.0F, leading, x, z + 0.5F
+                    );
                 }
             }
         }
