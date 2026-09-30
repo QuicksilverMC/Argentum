@@ -3,6 +3,7 @@ package dev.rdh.argentum.impl.render.environment;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.util.math.MathHelper;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import org.embeddedt.embeddium.impl.gl.array.GlVertexArray;
 import org.embeddedt.embeddium.impl.gl.attribute.GlVertexAttributeFormat;
@@ -32,6 +33,7 @@ import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -43,6 +45,9 @@ public final class CloudRenderer {
             .addElement("aShade", 5 * Float.BYTES, GlVertexAttributeFormat.FLOAT, 1, false, false)
             .build();
     private static final float INSET = 1.0F / 1024.0F;
+    private static final int TEXTURE_SIZE = 256;
+    // the least alpha that survives vanilla's 0.1 alpha test at the 0.8 cloud alpha
+    private static final int MIN_ALPHA = 32;
 
     private final Map<ChunkShaderComponent.Factory<?>, GlProgram<CloudShader>> programs = new Object2ObjectOpenHashMap<>();
     private final float[] frame0 = new float[4];
@@ -57,6 +62,11 @@ public final class CloudRenderer {
     private int sidesStart;
     private int topStart;
     private int vertexCount;
+    private int meshTexelX;
+    private int meshTexelZ;
+    private boolean[] cloudTexels;
+    private ByteBuffer meshBytes;
+    private FloatBuffer meshVertices;
 
     public boolean render(double cloudX, double cloudZ, float cloudY, float red, float green, float blue, int firstCell, int lastCell, int pass) {
         if (this.initialized && !this.supported) {
@@ -67,9 +77,21 @@ public final class CloudRenderer {
             if (!this.initialize()) {
                 return false;
             }
-            if (this.vertexBuffer == null || firstCell != this.meshFirstCell || lastCell != this.meshLastCell) {
+            if (this.cloudTexels == null) {
+                // vanilla has just bound the cloud texture
+                this.cloudTexels = readCloudTexels();
+                if (this.cloudTexels == null) {
+                    this.supported = false;
+                    Argentum.LOGGER.warn("Faster clouds disabled: the cloud texture is not {}x{}", TEXTURE_SIZE, TEXTURE_SIZE);
+                    return false;
+                }
+            }
+            int texelX = MathHelper.floor(cloudX);
+            int texelZ = MathHelper.floor(cloudZ);
+            if (this.vertexBuffer == null || firstCell != this.meshFirstCell || lastCell != this.meshLastCell
+                    || texelX != this.meshTexelX || texelZ != this.meshTexelZ) {
                 try {
-                    this.createMesh(commandList, firstCell, lastCell);
+                    this.createMesh(commandList, texelX, texelZ, firstCell, lastCell);
                 } catch (RuntimeException exception) {
                     this.supported = false;
                     Argentum.LOGGER.error("Faster clouds failed to build their mesh", exception);
@@ -86,8 +108,6 @@ public final class CloudRenderer {
                 return false;
             }
 
-            int texelX = MathHelper.floor(cloudX);
-            int texelZ = MathHelper.floor(cloudZ);
             this.frame0[0] = texelX;
             this.frame0[1] = texelZ;
             this.frame0[2] = (float)(cloudX - texelX);
@@ -153,6 +173,9 @@ public final class CloudRenderer {
         }
         this.programs.values().forEach(GlProgram::delete);
         this.programs.clear();
+        this.cloudTexels = null;
+        this.meshBytes = null;
+        this.meshVertices = null;
         this.initialized = false;
         this.supported = false;
     }
@@ -184,68 +207,58 @@ public final class CloudRenderer {
         return this.programs.get(ArgentumFogService.INSTANCE.getFogMode());
     }
 
-    private void createMesh(CommandList commandList, int firstCell, int lastCell) {
-        int cells = lastCell - firstCell + 1;
-        // 4 edge walls + 2 caps per cell
-        ByteBuffer bytes = BufferUtils.createByteBuffer(cells * cells * 6 * 4 * VERTEX_FLOATS * Float.BYTES);
-        FloatBuffer vertices = bytes.asFloatBuffer();
-        for (int cellX = firstCell; cellX <= lastCell; cellX++) {
-            for (int cellZ = firstCell; cellZ <= lastCell; cellZ++) {
-                horizontal(vertices, cellX * 8, cellZ * 8, 0.0F, 0.7F);
+    private static boolean[] readCloudTexels() {
+        int width = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
+        int height = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
+        // vanilla scales cloud uvs for 256 texels
+        if (width != TEXTURE_SIZE || height != TEXTURE_SIZE) {
+            return null;
+        }
+        ByteBuffer pixels = BufferUtils.createByteBuffer(TEXTURE_SIZE * TEXTURE_SIZE * 4);
+        GL11.glGetTexImage(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels);
+        boolean[] texels = new boolean[TEXTURE_SIZE * TEXTURE_SIZE];
+        for (int i = 0; i < texels.length; i++) {
+            texels[i] = (pixels.get(i * 4 + 3) & 0xFF) >= MIN_ALPHA;
+        }
+        return texels;
+    }
+
+    private void createMesh(CommandList commandList, int texelX, int texelZ, int firstCell, int lastCell) {
+        int origin = firstCell * 8;
+        int size = (lastCell - firstCell + 1) * 8;
+        boolean[] solid = new boolean[size * size];
+        for (int z = 0; z < size; z++) {
+            int row = Math.floorMod(texelZ + origin + z, TEXTURE_SIZE) * TEXTURE_SIZE;
+            for (int x = 0; x < size; x++) {
+                solid[z * size + x] = this.cloudTexels[row + Math.floorMod(texelX + origin + x, TEXTURE_SIZE)];
             }
+        }
+        IntArrayList plates = plates(solid, size);
+
+        if (this.meshBytes == null) {
+            this.meshBytes = BufferUtils.createByteBuffer(4096 * 4 * VERTEX_FLOATS * Float.BYTES);
+            this.meshVertices = this.meshBytes.asFloatBuffer();
+        }
+        this.meshVertices.clear();
+        for (int i = 0; i < plates.size(); i += 4) {
+            this.horizontal(origin + plates.getInt(i), origin + plates.getInt(i + 1), plates.getInt(i + 2), plates.getInt(i + 3), 0.0F, 0.7F);
         }
 
-        this.sidesStart = vertices.position() / VERTEX_FLOATS;
-        for (int cellX = firstCell; cellX <= lastCell; cellX++) {
-            for (int cellZ = firstCell; cellZ <= lastCell; cellZ++) {
-                float x = cellX * 8;
-                float z = cellZ * 8;
-                if (cellX > -1) {
-                    quad(vertices, 0.9F,
-                            x, 0.0F, z + 8.0F, x, z + 8.0F,
-                            x + 8.0F, 4.0F, z + 8.0F, x + 8.0F, z + 8.0F,
-                            x + 8.0F, 4.0F, z, x + 8.0F, z,
-                            x, 0.0F, z, x, z
-                    );
-                }
-                if (cellX <= 1) {
-                    float leading = x + 1.0F - INSET, trailing = x + 8.0F - INSET;
-                    quad(vertices, 0.9F,
-                            leading, 0.0F, z + 8.0F, x + 0.5F, z + 8.0F,
-                            trailing, 4.0F, z + 8.0F, x + 7.5F, z + 8.0F,
-                            trailing, 4.0F, z, x + 7.5F, z,
-                            leading, 0.0F, z, x + 0.5F, z
-                    );
-                }
-                if (cellZ > -1) {
-                    quad(vertices, 0.8F,
-                            x, 4.0F, z, x, z + 0.5F,
-                            x + 8.0F, 4.0F, z + 8.0F, x + 8.0F, z + 8.5F,
-                            x + 8.0F, 0.0F, z + 8.0F, x + 8.0F, z + 8.5F,
-                            x, 0.0F, z, x, z + 0.5F
-                    );
-                }
-                if (cellZ <= 1) {
-                    float leading = z + 1.0F - INSET, trailing = z + 8.0F - INSET;
-                    quad(vertices, 0.8F,
-                            x, 4.0F, leading, x, z + 0.5F,
-                            x + 8.0F, 4.0F, trailing, x + 8.0F, z + 7.5F,
-                            x + 8.0F, 0.0F, trailing, x + 8.0F, z + 7.5F,
-                            x, 0.0F, leading, x, z + 0.5F
-                    );
-                }
-            }
-        }
+        this.sidesStart = this.meshVertices.position() / VERTEX_FLOATS;
+        this.walls(solid, size, origin, true, -1);
+        this.walls(solid, size, origin, true, 1);
+        this.walls(solid, size, origin, false, -1);
+        this.walls(solid, size, origin, false, 1);
 
-        this.topStart = vertices.position() / VERTEX_FLOATS;
-        for (int cellX = firstCell; cellX <= lastCell; cellX++) {
-            for (int cellZ = firstCell; cellZ <= lastCell; cellZ++) {
-                horizontal(vertices, cellX * 8, cellZ * 8, 4.0F - INSET, 1.0F);
-            }
+        this.topStart = this.meshVertices.position() / VERTEX_FLOATS;
+        for (int i = 0; i < plates.size(); i += 4) {
+            this.horizontal(origin + plates.getInt(i), origin + plates.getInt(i + 1), plates.getInt(i + 2), plates.getInt(i + 3), 4.0F - INSET, 1.0F);
         }
-        this.vertexCount = vertices.position() / VERTEX_FLOATS;
+        this.vertexCount = this.meshVertices.position() / VERTEX_FLOATS;
         this.meshFirstCell = firstCell;
         this.meshLastCell = lastCell;
+        this.meshTexelX = texelX;
+        this.meshTexelZ = texelZ;
 
         if (this.vertexBuffer == null) {
             this.vertexBuffer = commandList.createMutableBuffer();
@@ -254,24 +267,115 @@ public final class CloudRenderer {
             });
             this.tessellation.init(commandList);
         }
-        bytes.limit(vertices.position() * Float.BYTES);
-        commandList.uploadData(this.vertexBuffer, bytes, GlBufferUsage.STATIC_DRAW);
+        this.meshBytes.clear().limit(this.meshVertices.position() * Float.BYTES);
+        commandList.uploadData(this.vertexBuffer, this.meshBytes, GlBufferUsage.STATIC_DRAW);
     }
 
-    private static void horizontal(FloatBuffer vertices, float x, float z, float y, float shade) {
-        quad(vertices, shade,
-                x, y, z + 8.0F, x, z + 8.0F,
-                x + 8.0F, y, z + 8.0F, x + 8.0F, z + 8.0F,
-                x + 8.0F, y, z, x + 8.0F, z,
+    private static IntArrayList plates(boolean[] solid, int size) {
+        boolean[] open = solid.clone();
+        IntArrayList rects = new IntArrayList();
+        for (int z = 0; z < size; z++) {
+            for (int x = 0; x < size; x++) {
+                if (!open[z * size + x]) {
+                    continue;
+                }
+                int width = 1;
+                while (x + width < size && open[z * size + x + width]) {
+                    width++;
+                }
+                int depth = 1;
+                grow:
+                while (z + depth < size) {
+                    for (int dx = 0; dx < width; dx++) {
+                        if (!open[(z + depth) * size + x + dx]) {
+                            break grow;
+                        }
+                    }
+                    depth++;
+                }
+                for (int dz = 0; dz < depth; dz++) {
+                    Arrays.fill(open, (z + dz) * size + x, (z + dz) * size + x + width, false);
+                }
+                rects.add(x);
+                rects.add(z);
+                rects.add(width);
+                rects.add(depth);
+            }
+        }
+        return rects;
+    }
+
+    private void walls(boolean[] solid, int size, int origin, boolean facingX, int step) {
+        for (int a = 0; a < size; a++) {
+            int edge = origin + a;
+            if (step < 0 ? edge < 0 : edge >= 16) {
+                continue;
+            }
+            float plane = edge + (step < 0 ? 0.0F : 1.0F - INSET);
+            float texel = edge + 0.5F;
+            int b = 0;
+            while (b < size) {
+                int start = b;
+                while (b < size && exposed(solid, size, origin, facingX ? a : b, facingX ? b : a, facingX ? step : 0, facingX ? 0 : step)) {
+                    b++;
+                }
+                if (b == start) {
+                    b++;
+                    continue;
+                }
+                float from = origin + start;
+                float to = origin + b;
+                if (facingX) {
+                    this.quad(0.9F,
+                            plane, 0.0F, to, texel, to,
+                            plane, 4.0F, to, texel, to,
+                            plane, 4.0F, from, texel, from,
+                            plane, 0.0F, from, texel, from
+                    );
+                } else {
+                    this.quad(0.8F,
+                            from, 4.0F, plane, from, texel,
+                            to, 4.0F, plane, to, texel,
+                            to, 0.0F, plane, to, texel,
+                            from, 0.0F, plane, from, texel
+                    );
+                }
+            }
+        }
+    }
+
+    private static boolean exposed(boolean[] solid, int size, int origin, int x, int z, int dx, int dz) {
+        if (!solid[z * size + x]) {
+            return false;
+        }
+        if (Math.abs(x + origin) <= 1 && Math.abs(z + origin) <= 1) {
+            return true;
+        }
+        int neighborX = x + dx;
+        int neighborZ = z + dz;
+        return neighborX < 0 || neighborZ < 0 || neighborX >= size || neighborZ >= size || !solid[neighborZ * size + neighborX];
+    }
+
+    private void horizontal(float x, float z, float width, float depth, float y, float shade) {
+        this.quad(shade,
+                x, y, z + depth, x, z + depth,
+                x + width, y, z + depth, x + width, z + depth,
+                x + width, y, z, x + width, z,
                 x, y, z, x, z);
     }
 
-    private static void quad(FloatBuffer vertices, float shade,
+    private void quad(float shade,
             float x0, float y0, float z0, float u0, float v0,
             float x1, float y1, float z1, float u1, float v1,
             float x2, float y2, float z2, float u2, float v2,
             float x3, float y3, float z3, float u3, float v3
     ) {
+        FloatBuffer vertices = this.meshVertices;
+        if (vertices.remaining() < 4 * VERTEX_FLOATS) {
+            this.meshBytes = BufferUtils.createByteBuffer(this.meshBytes.capacity() * 2);
+            this.meshVertices = this.meshBytes.asFloatBuffer().put(vertices.flip());
+            vertices = this.meshVertices;
+        }
         vertices.put(x0).put(y0).put(z0).put(u0).put(v0).put(shade);
         vertices.put(x1).put(y1).put(z1).put(u1).put(v1).put(shade);
         vertices.put(x2).put(y2).put(z2).put(u2).put(v2).put(shade);

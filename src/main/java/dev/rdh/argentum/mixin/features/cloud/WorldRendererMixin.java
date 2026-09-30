@@ -53,7 +53,7 @@ public abstract class WorldRendererMixin {
         ci.cancel();
     }
 
-    @Inject(method = {"reload()V", "releaseGlLists"}, at = @At("HEAD"))
+    @Inject(method = {"reload()V", "reload(Lnet/minecraft/client/resource/manager/ResourceManager;)V", "releaseGlLists"}, at = @At("HEAD"))
     private void celeritas$deleteCloudBuffers(CallbackInfo ci) {
         this.celeritas$cloudRenderer.delete();
     }
