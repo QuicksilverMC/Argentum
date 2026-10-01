@@ -46,6 +46,10 @@ public final class RandomEntities implements ResourceReloadListener {
         Cera.LOGGER.info("[RandomEntities] Loaded {} texture groups", loaded.size());
     }
 
+    public boolean hasVariants(Identifier id) {
+        return Cera.CONFIG.randomEntities && this.bases.containsKey(id.getPath());
+    }
+
     /**
      * Returns the texture to bind instead of {@code id}, or {@code id} when it has no random variants.
      */

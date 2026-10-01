@@ -139,6 +139,10 @@ public final class EmissiveTextures {
         return emissive != null ? emissive : EMPTY;
     }
 
+    public boolean hasEmissiveTexture(Identifier loc) {
+        return active() && compute(loc) != null;
+    }
+
     public Identifier emissiveTexture(Identifier loc) {
         return active() ? emissiveLocation(loc) : null;
     }

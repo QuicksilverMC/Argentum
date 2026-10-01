@@ -6,6 +6,7 @@
   "client": [
     "ArgentumConfigMixin",
     "ArgentumOptionPagesMixin",
+    "BlockEntityBakerMixin",
     "BlockMixin",
     "TextRendererMixin",
     "ProgressRendererMixin",
