@@ -80,29 +80,33 @@ public class ChunkBuilderMeshingTask extends ChunkBuilderTask<ChunkBuildOutput> 
                             continue;
                         }
 
-						if (block.hasBlockEntity()) {
-                            BlockEntity blockEntity = this.renderContext.getBlockEntity(blockPos);
-                            if (blockEntity != null) {
-                                var renderer = BlockEntityRenderDispatcher.INSTANCE.getRenderer(blockEntity);
-                                if (renderer != null && !buildContext.getBlockEntityBaker().bake(blockEntity, renderer, blockState, blockPos, this.renderContext, buffers)) {
-                                    (renderer.shouldRenderOffScreen() ? renderData.globalBlockEntities : renderData.culledBlockEntities).add(blockEntity);
+                        try {
+                            if (block.hasBlockEntity()) {
+                                BlockEntity blockEntity = this.renderContext.getBlockEntity(blockPos);
+                                if (blockEntity != null) {
+                                    var renderer = BlockEntityRenderDispatcher.INSTANCE.getRenderer(blockEntity);
+                                    if (renderer != null && !buildContext.getBlockEntityBaker().bake(blockEntity, renderer, blockState, blockPos, this.renderContext, buffers)) {
+                                        (renderer.shouldRenderOffScreen() ? renderData.globalBlockEntities : renderData.culledBlockEntities).add(blockEntity);
+                                    }
                                 }
                             }
-                        }
 
-                        if (this.rasterOcclusion) {
-                            occluder.markRenderable(blockPos.getX(), blockPos.getY(), blockPos.getZ());
-                        }
+                            if (this.rasterOcclusion) {
+                                occluder.markRenderable(blockPos.getX(), blockPos.getY(), blockPos.getZ());
+                            }
 
-                        var pass = block.getRenderLayer();
+                            var pass = block.getRenderLayer();
 
-                        int renderType = block.getRenderType();
-                        if (renderType == 3) {
-                            buildContext.getBlockRenderer().render(blockState, blockPos, this.renderContext, pass, buffers, renderData);
-                        } else if (renderType == 1) {
-                            buildContext.renderFluid(blockState, blockPos, this.renderContext, pass);
-                        } else if (renderType != 2 && renderType != -1) {
-                            renderBlocks.render(blockState, blockPos, this.renderContext, buildContext.getBuffer(pass));
+                            int renderType = block.getRenderType();
+                            if (renderType == 3) {
+                                buildContext.getBlockRenderer().render(blockState, blockPos, this.renderContext, pass, buffers, renderData);
+                            } else if (renderType == 1) {
+                                buildContext.renderFluid(blockState, blockPos, this.renderContext, pass);
+                            } else if (renderType != 2 && renderType != -1) {
+                                renderBlocks.render(blockState, blockPos, this.renderContext, buildContext.getBuffer(pass));
+                            }
+                        } catch (RuntimeException exception) {
+                            buildContext.warnBlockFailure(blockState, blockPos, exception);
                         }
 
 						if (block.isSolidRender()) {

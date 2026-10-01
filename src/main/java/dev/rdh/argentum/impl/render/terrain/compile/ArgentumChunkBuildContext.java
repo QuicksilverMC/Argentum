@@ -12,6 +12,9 @@ import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkVertexEncode
 import org.embeddedt.embeddium.impl.util.QuadUtil;
 import org.lwjgl.opengl.GL11C;
 
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
+
+import net.minecraft.block.Block;
 import net.minecraft.block.state.BlockState;
 import net.minecraft.client.render.block.BlockLayer;
 import net.minecraft.util.math.BlockPos;
@@ -22,6 +25,7 @@ import net.minecraft.client.render.vertex.BufferBuilder;
 import net.minecraft.client.render.vertex.DefaultVertexFormat;
 
 import java.nio.IntBuffer;
+import java.util.Set;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.blockentity.BlockEntityBaker;
 import dev.rdh.argentum.impl.render.terrain.compile.light.LightDataCache;
@@ -45,6 +49,7 @@ public class ArgentumChunkBuildContext extends ChunkBuildContext {
     private final FastBlockRenderer blockRenderer = new FastBlockRenderer(this, this.lighters);
     private final SmoothFluidLighter fluidLighter = new SmoothFluidLighter(this.lighters);
     private final BlockEntityBaker blockEntityBaker;
+    private final Set<Block> failedBlocks = new ReferenceOpenHashSet<>();
     private int originX;
     private int originY;
     private int originZ;
@@ -74,6 +79,12 @@ public class ArgentumChunkBuildContext extends ChunkBuildContext {
 
     public BlockEntityBaker getBlockEntityBaker() {
         return this.blockEntityBaker;
+    }
+
+    public void warnBlockFailure(BlockState state, BlockPos pos, RuntimeException exception) {
+        if (this.failedBlocks.add(state.getBlock())) {
+            Argentum.LOGGER.warn("Skipping {} at {} while building chunk meshes", state, pos, exception);
+        }
     }
 
     public void renderFluid(BlockState state, BlockPos pos, ChunkRenderContext world, BlockLayer layer) {
