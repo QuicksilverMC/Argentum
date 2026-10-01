@@ -85,7 +85,9 @@ public abstract class TextRendererMixin implements TextRendererExtension {
 
     @Inject(method = "getWidth(Ljava/lang/String;)I", at = @At("HEAD"), cancellable = true)
     private void argentum$stringWidth(String text, CallbackInfoReturnable<Integer> cir) {
-        cir.setReturnValue(this.argentum$batcher.stringWidth(text, this.unicode, this.glyphSizes));
+        if (text == null || !TextBatcher.hasCustomFormatting(text)) {
+            cir.setReturnValue(this.argentum$batcher.stringWidth(text, this.unicode, this.glyphSizes));
+        }
     }
 
     @Inject(method = "getWidth(C)I", at = @At("HEAD"), cancellable = true)

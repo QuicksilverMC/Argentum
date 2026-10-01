@@ -33,6 +33,7 @@ public final class TextBatcher {
     private static final int GEOMETRY_CACHE_SIZE = 1024;
 
     private static final char SECTION = '§';
+    private static final String FORMATTING = "0123456789abcdefklmnor";
 
     public static final int OBFUSCATED =    0b00001;
     public static final int BOLD =          0b00010;
@@ -514,10 +515,17 @@ public final class TextBatcher {
             if (text.charAt(i) == SECTION && i + 1 < text.length()) {
                 char formatting = Character.toLowerCase(text.charAt(++i));
                 // obfuscated text changes every frame
-                if (formatting == 'k') return false;
+                if (formatting == 'k' || FORMATTING.indexOf(formatting) == -1) return false;
             }
         }
         return true;
+    }
+
+    public static boolean hasCustomFormatting(String text) {
+        for (int i = text.indexOf(SECTION); i != -1 && i + 1 < text.length(); i = text.indexOf(SECTION, i + 2)) {
+            if (FORMATTING.indexOf(Character.toLowerCase(text.charAt(i + 1))) == -1) return true;
+        }
+        return false;
     }
 
     private int alphaByte() {
