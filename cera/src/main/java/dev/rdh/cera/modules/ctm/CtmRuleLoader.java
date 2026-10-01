@@ -18,8 +18,11 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMaps;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.Reference2IntMap;
+import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import net.ornithemc.osl.resource.loader.api.resource.Resource;
 import net.ornithemc.osl.resource.loader.api.resource.manager.ResourceManager;
+import net.ornithemc.osl.resource.loader.api.resource.pack.ResourcePack;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -49,25 +52,31 @@ final class CtmRuleLoader {
     static List<CtmRule> load(ResourceManager resources, TextureAtlas atlas,
             Map<String, TextureAtlasSprite> sourcedSprites) {
         List<CtmRule> rules = new ObjectArrayList<>();
-        load(resources, OPTIFINE_PREFIX, atlas, sourcedSprites, rules);
-        load(resources, MCPATCHER_PREFIX, atlas, sourcedSprites, rules);
-        rules.sort(Comparator.comparingInt(CtmRule::weight).reversed().thenComparing(CtmRule::path));
+        Reference2IntMap<CtmRule> packs = new Reference2IntOpenHashMap<>();
+        load(resources, OPTIFINE_PREFIX, atlas, sourcedSprites, rules, packs);
+        load(resources, MCPATCHER_PREFIX, atlas, sourcedSprites, rules, packs);
+        rules.sort(Comparator.comparingInt(CtmRule::weight).reversed()
+                .thenComparing(Comparator.<CtmRule>comparingInt(packs::getInt).reversed())
+                .thenComparing(CtmRule::path));
         return List.copyOf(rules);
     }
 
     private static void load(ResourceManager resources, String directory, TextureAtlas atlas,
-            Map<String, TextureAtlasSprite> sourcedSprites, List<CtmRule> rules) {
+            Map<String, TextureAtlasSprite> sourcedSprites, List<CtmRule> rules, Reference2IntMap<CtmRule> packs) {
+        List<String> order = resources.getResourcePacks().stream().map(ResourcePack::getName).toList();
         for (var location : resources.findResources("minecraft", directory,
                 id -> id.identifier().endsWith(".properties")).keySet()) {
             if (!defaultEnabled(resources, location.identifier())) continue;
-            List<Resource> stack = resources.getResourceStack(location);
-            if (stack.isEmpty()) continue;
-            Resource resource = stack.getLast();
-            try {
-                CtmRule rule = parse(new Props(resource), atlas, sourcedSprites);
-                if (rule != null) rules.add(rule);
-            } catch (Exception e) {
-                Cera.LOGGER.warn("[CTM] Failed to load rule {} from {}", location, resource.sourceName(), e);
+            for (Resource resource : resources.getResourceStack(location)) {
+                try {
+                    CtmRule rule = parse(new Props(resource), atlas, sourcedSprites);
+                    if (rule != null) {
+                        rules.add(rule);
+                        packs.put(rule, order.indexOf(resource.sourceName()));
+                    }
+                } catch (Exception e) {
+                    Cera.LOGGER.warn("[CTM] Failed to load rule {} from {}", location, resource.sourceName(), e);
+                }
             }
         }
     }
