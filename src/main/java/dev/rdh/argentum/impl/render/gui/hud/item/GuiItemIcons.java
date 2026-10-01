@@ -7,7 +7,6 @@ import dev.rdh.argentum.impl.render.gui.hud.HudRecorder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.Window;
 import net.minecraft.client.render.platform.GlStateManager;
-import net.minecraft.client.render.texture.TextureAtlas;
 import net.minecraft.client.resource.model.BakedModel;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
@@ -129,13 +128,17 @@ public final class GuiItemIcons {
         int srcAlpha = GlStateManager.BLEND.sfactorAlpha;
         int dstAlpha = GlStateManager.BLEND.dfactorAlpha;
         boolean lighting = GlStateManager.LIGHTING.enabled;
+        int texture = GlStateManager.TEXTURES[GlStateManager.texture].texture;
+        GlStateManager.Color color = GlStateManager.COLOR;
+        float red = color.r, green = color.g, blue = color.b, alpha = color.a;
         try {
             GlStateManager.disableLighting();
             GlStateManager.enableAlphaTest();
             GlStateManager.alphaFunc(516, 0.1F);
             RECORDER.flush();
             GLINTS.flush(ATLAS.getTexture());
-            Minecraft.getInstance().getTextureManager().bind(TextureAtlas.BLOCKS_LOCATION);
+            GlStateManager.bindTexture(texture);
+            if (red >= 0.0F) GlStateManager.color4f(red, green, blue, alpha);
             GlStateManager.alphaFunc(alphaFunc, alphaRef);
             if (!alphaTest) GlStateManager.disableAlphaTest();
             GlStateManager.blendFuncSeparate(srcRgb, dstRgb, srcAlpha, dstAlpha);
