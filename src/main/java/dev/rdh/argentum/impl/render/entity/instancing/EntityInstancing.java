@@ -271,14 +271,15 @@ public final class EntityInstancing {
 
     // a renderer that draws anything other than model parts has its ffp calls swallowed
     static InstanceRenderPass bePass(BlockEntityRenderer<?> renderer) {
-        if (renderer instanceof SkullRenderer) {
+        Class<?> type = renderer.getClass();
+        if (type == SkullRenderer.class) {
             // skull outer layers are drawn double sided
             return InstanceRenderPass.NO_CULL;
         }
-        return renderer instanceof ChestRenderer
-                || renderer instanceof EnderChestRenderer
-                || renderer instanceof BannerRenderer
-                || renderer instanceof EnchantingTableRenderer
+        return type == ChestRenderer.class
+                || type == EnderChestRenderer.class
+                || type == BannerRenderer.class
+                || type == EnchantingTableRenderer.class
                 ? InstanceRenderPass.CULL_BACK : null;
     }
 }
