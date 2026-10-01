@@ -25,6 +25,11 @@ public class Argentum implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        try {
+            Class.forName("org.lwjgl.system.Configuration");
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("Argentum requires LWJGL 3; install Pylon to continue");
+        }
         FabricLoader loader = FabricLoader.getInstance();
         VERSION = loader.getModContainer(ID).orElseThrow().getMetadata().getVersion().toString();
         CONFIG_STORAGE = JsonOptionStorage.load(getConfigPath(loader.getConfigDir()), ArgentumConfig.class, ArgentumConfig::new, ArgentumConfig::validate);

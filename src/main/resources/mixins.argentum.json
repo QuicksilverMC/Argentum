@@ -2,7 +2,6 @@
   "required": true,
   "minVersion": "0.8",
   "package": "dev.rdh.argentum.mixin",
-  "plugin": "dev.rdh.argentum.impl.ArgentumMixinPlugin",
   "compatibilityLevel": "JAVA_25",
   "client": [
     "core.GameOptionsMixin", "core.MinecraftMixin", "core.render.BufferBuilderMixin", "core.render.DebugOverlayMixin",
