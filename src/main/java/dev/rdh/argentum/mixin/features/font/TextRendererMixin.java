@@ -95,6 +95,14 @@ public abstract class TextRendererMixin implements TextRendererExtension {
         cir.setReturnValue(Math.round(this.argentum$batcher.charWidth(TextBatcher.normalizeSpace(chr), this.unicode, this.glyphSizes)));
     }
 
+    @Shadow
+    protected abstract void initGlyphSizes();
+
+    @Inject(method = "reload", at = @At("HEAD"))
+    private void argentum$reloadGlyphSizes(CallbackInfo ci) {
+        this.initGlyphSizes();
+    }
+
     @Inject(method = {"reload", "setUnicode"}, at = @At("RETURN"))
     private void argentum$clearCaches(CallbackInfo ci) {
         this.argentum$batcher.clearCaches();
