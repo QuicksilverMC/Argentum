@@ -83,6 +83,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
 
     @Override
     protected void unloadWorld() {
+        this.entityGatherer.clear();
         this.entityOcclusionCuller.clear();
         this.entityInstancing.discardBatch();
         try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {

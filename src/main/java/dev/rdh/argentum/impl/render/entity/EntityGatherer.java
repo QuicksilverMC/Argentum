@@ -30,6 +30,11 @@ public class EntityGatherer {
         this.entityList = new ObjectArrayList<>();
     }
 
+    public void clear() {
+        this.entityList.clear();
+        this.gatheredWorld = null;
+    }
+
     public List<Entity> getLoadedEntityList(ClientWorld world, int centerChunkX, int centerChunkZ, int radius) {
         // The world's entity set only changes while it ticks - packets are handled on the main thread inside the
         // tick - so between two frames of the same tick this sweep would produce the same list. Entities are held
