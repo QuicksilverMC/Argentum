@@ -30,11 +30,11 @@ final class GuiItemGlints {
     private final BufferBuilder buffer = new BufferBuilder(64 * 1024 / Integer.BYTES);
     private final BufferUploader uploader = new BufferUploader();
 
-    private float[] data = new float[1024 * 10];
+    private float[] data = new float[1024 * 9];
     private int size;
 
-    void quad(int slot, int x, int y, float z, float extent, TextureAtlasSprite sprite) {
-        int offset = this.size++ * 10;
+    void quad(int slot, int x, int y, float z, TextureAtlasSprite sprite) {
+        int offset = this.size++ * 9;
         if (offset == this.data.length) this.data = Arrays.copyOf(this.data, this.data.length * 2);
 
         this.data[offset] = x;
@@ -42,11 +42,10 @@ final class GuiItemGlints {
         this.data[offset + 2] = z;
         this.data[offset + 3] = GuiItemAtlas.u0(slot);
         this.data[offset + 4] = GuiItemAtlas.v0(slot);
-        this.data[offset + 5] = extent;
-        this.data[offset + 6] = sprite.getUMin();
-        this.data[offset + 7] = sprite.getVMin();
-        this.data[offset + 8] = sprite.getUMax();
-        this.data[offset + 9] = sprite.getVMax();
+        this.data[offset + 5] = sprite.getUMin();
+        this.data[offset + 6] = sprite.getVMin();
+        this.data[offset + 7] = sprite.getUMax();
+        this.data[offset + 8] = sprite.getVMax();
     }
 
     boolean isEmpty() {
@@ -102,19 +101,19 @@ final class GuiItemGlints {
 
         this.buffer.begin(GL11.GL_QUADS, FORMAT);
         for (int i = 0; i < this.size; i++) {
-            int offsetIndex = i * 10;
+            int offsetIndex = i * 9;
             float x = this.data[offsetIndex];
             float y = this.data[offsetIndex + 1];
             float z = this.data[offsetIndex + 2];
             float u = this.data[offsetIndex + 3];
             float v = this.data[offsetIndex + 4];
-            float extent = this.data[offsetIndex + 5];
-            float padU = (this.data[offsetIndex + 8] - this.data[offsetIndex + 6]) * GuiItemIcons.PADDING / 16.0F;
-            float padV = (this.data[offsetIndex + 9] - this.data[offsetIndex + 7]) * GuiItemIcons.PADDING / 16.0F;
-            float glintU0 = this.data[offsetIndex + 6] - padU;
-            float glintV0 = this.data[offsetIndex + 7] - padV;
-            float glintU1 = this.data[offsetIndex + 8] + padU;
-            float glintV1 = this.data[offsetIndex + 9] + padV;
+            float extent = GuiItemAtlas.UV_EXTENT;
+            float padU = (this.data[offsetIndex + 7] - this.data[offsetIndex + 5]) * GuiItemIcons.PADDING / 16.0F;
+            float padV = (this.data[offsetIndex + 8] - this.data[offsetIndex + 6]) * GuiItemIcons.PADDING / 16.0F;
+            float glintU0 = this.data[offsetIndex + 5] - padU;
+            float glintV0 = this.data[offsetIndex + 6] - padV;
+            float glintU1 = this.data[offsetIndex + 7] + padU;
+            float glintV1 = this.data[offsetIndex + 8] + padV;
             float x0 = x - GuiItemIcons.PADDING;
             float y0 = y - GuiItemIcons.PADDING;
             float x1 = x + 16 + GuiItemIcons.PADDING;

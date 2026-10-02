@@ -17,10 +17,10 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 public final class GuiItemAtlas {
-    private static final int SLOT_SIZE = 96;
+    private static final int MAX_SLOT_SIZE = 96;
     private static final int SLOTS_PER_AXIS = 16;
-    private static final int ATLAS_SIZE = SLOT_SIZE * SLOTS_PER_AXIS;
     private static final int CAPACITY = SLOTS_PER_AXIS * SLOTS_PER_AXIS;
+    public static final float UV_EXTENT = 1.0F / SLOTS_PER_AXIS;
 
     private static final int NO_SLOT = -1;
 
@@ -37,10 +37,22 @@ public final class GuiItemAtlas {
     private final IntBuffer scissor = BufferUtils.createIntBuffer(16);
     private final FloatBuffer clearColor = BufferUtils.createFloatBuffer(16);
 
-    private int bakedPixels = -1;
+    private final int slotSize;
+    private final int atlasSize;
+    long lastUsed;
+    boolean usedThisFrame;
 
     private final int[] bakedAtVersion = new int[CAPACITY];
     private int used;
+
+    public GuiItemAtlas(int slotSize) {
+        this.slotSize = slotSize;
+        this.atlasSize = slotSize * SLOTS_PER_AXIS;
+    }
+
+    long estimatedBytes() {
+        return (long) this.atlasSize * this.atlasSize * (8 + 4);
+    }
 
     public boolean initialize() {
         var capabilities = GL.getCapabilities();
@@ -55,7 +67,7 @@ public final class GuiItemAtlas {
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
         // 16 bit, not 8: the bake stores premultiplied color
-        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA16, ATLAS_SIZE, ATLAS_SIZE, 0,
+        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA16, this.atlasSize, this.atlasSize, 0,
                 GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, (java.nio.ByteBuffer) null);
         GlStateManager.bindTexture(previousTexture);
 
@@ -64,10 +76,10 @@ public final class GuiItemAtlas {
 
         this.bindRenderbuffer(this.depthBuffer);
         if (this.core) {
-            GL30C.glRenderbufferStorage(GL30C.GL_RENDERBUFFER, GL30C.GL_DEPTH_COMPONENT24, ATLAS_SIZE, ATLAS_SIZE);
+            GL30C.glRenderbufferStorage(GL30C.GL_RENDERBUFFER, GL30C.GL_DEPTH_COMPONENT24, this.atlasSize, this.atlasSize);
         } else {
             EXTFramebufferObject.glRenderbufferStorageEXT(EXTFramebufferObject.GL_RENDERBUFFER_EXT,
-                    GL30C.GL_DEPTH_COMPONENT24, ATLAS_SIZE, ATLAS_SIZE);
+                    GL30C.GL_DEPTH_COMPONENT24, this.atlasSize, this.atlasSize);
         }
         this.bindRenderbuffer(0);
 
@@ -84,27 +96,19 @@ public final class GuiItemAtlas {
     }
 
     public static float u0(int slot) {
-        return (slot % SLOTS_PER_AXIS) * (float) SLOT_SIZE / ATLAS_SIZE;
+        return (slot % SLOTS_PER_AXIS) / (float) SLOTS_PER_AXIS;
     }
 
     public static float v0(int slot) {
-        return (slot / SLOTS_PER_AXIS) * (float) SLOT_SIZE / ATLAS_SIZE;
-    }
-
-    public float uvExtent() {
-        return (float) this.bakedPixels / ATLAS_SIZE;
+        return (slot / SLOTS_PER_AXIS) / (float) SLOTS_PER_AXIS;
     }
 
     public static int maxPixels() {
-        return SLOT_SIZE;
+        return MAX_SLOT_SIZE;
     }
 
-    public int acquire(Key key, int version, int pixels, Runnable render) {
+    public int acquire(Key key, int version, Runnable render) {
         if (!this.supported) return NO_SLOT;
-        if (pixels != this.bakedPixels) {
-            this.invalidate();
-            this.bakedPixels = pixels;
-        }
 
         int slot = this.slots.getAndMoveToLast(key);
 
@@ -119,14 +123,14 @@ public final class GuiItemAtlas {
         }
 
         if (this.bakedAtVersion[slot] != version) {
-            if (!this.bake(slot, pixels, render)) return NO_SLOT;
+            if (!this.bake(slot, render)) return NO_SLOT;
             this.bakedAtVersion[slot] = version;
         }
 
         return slot;
     }
 
-    private boolean bake(int slot, int pixels, Runnable render) {
+    private boolean bake(int slot, Runnable render) {
         int previousFramebuffer = this.core
                 ? GL11.glGetInteger(GL30C.GL_FRAMEBUFFER_BINDING)
                 : GL11.glGetInteger(EXTFramebufferObject.GL_FRAMEBUFFER_BINDING_EXT);
@@ -143,8 +147,8 @@ public final class GuiItemAtlas {
             return false;
         }
 
-        int x = (slot % SLOTS_PER_AXIS) * SLOT_SIZE;
-        int y = (slot / SLOTS_PER_AXIS) * SLOT_SIZE;
+        int x = (slot % SLOTS_PER_AXIS) * this.slotSize;
+        int y = (slot / SLOTS_PER_AXIS) * this.slotSize;
 
         boolean scissored = GL11.glIsEnabled(GL11.GL_SCISSOR_TEST);
         this.scissor.clear();
@@ -152,9 +156,9 @@ public final class GuiItemAtlas {
         this.clearColor.clear();
         GL11.glGetFloatv(GL11.GL_COLOR_CLEAR_VALUE, this.clearColor);
 
-        GL11.glViewport(x, y, pixels, pixels);
+        GL11.glViewport(x, y, this.slotSize, this.slotSize);
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(x, y, pixels, pixels);
+        GL11.glScissor(x, y, this.slotSize, this.slotSize);
         GlStateManager.clearColor(0.0F, 0.0F, 0.0F, 0.0F);
         GlStateManager.clear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
 
@@ -177,7 +181,7 @@ public final class GuiItemAtlas {
 
     public void delete() {
         if (this.texture != 0) {
-            GL11.glDeleteTextures(this.texture);
+            GlStateManager.deleteTextures(this.texture);
             this.texture = 0;
         }
         if (this.depthBuffer != 0) {
