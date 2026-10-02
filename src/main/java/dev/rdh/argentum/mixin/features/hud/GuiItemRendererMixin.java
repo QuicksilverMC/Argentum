@@ -53,6 +53,7 @@ public abstract class GuiItemRendererMixin {
     @WrapMethod(method = "renderGuiItemModel")
     private void argentum$bakeGuiItem(ItemStack item, int x, int y, Operation<Void> original) {
         if (!GuiItemIcons.enabled()) {
+            GuiItemIcons.flush();
             original.call(item, x, y);
             return;
         }
