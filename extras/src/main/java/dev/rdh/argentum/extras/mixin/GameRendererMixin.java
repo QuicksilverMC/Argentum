@@ -100,7 +100,7 @@ public class GameRendererMixin {
         original.call(instance, mode, tickDelta);
         int density = ArgentumExtras.CONFIG.terrainFogDensity;
         if (density < 100 && mode != -1 && !this.argentumExtras$isBlind()) {
-            GlStateManager.fogEnd(density == 0 ? Float.MAX_VALUE : this.renderDistance / strength(density));
+            GlStateManager.fogEnd(density == 0 ? 1.0E10F : this.renderDistance / strength(density));
         }
     }
 
