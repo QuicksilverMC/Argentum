@@ -7,3 +7,5 @@ inject-interface net/minecraft/client/render/texture/TextureManager dev/rdh/cera
 inject-interface net/minecraft/client/render/entity/EntityRenderDispatcher dev/rdh/cera/ext/CeraEntityRenderDispatcherExtension
 inject-interface net/minecraft/client/render/block/entity/BlockEntityRenderDispatcher dev/rdh/cera/ext/CeraBlockEntityRenderDispatcherExtension
 inject-interface net/minecraft/item/ItemStack dev/rdh/cera/ext/CeraItemStackExtension
+accessible class net/minecraft/client/render/platform/GlStateManager$Color
+accessible field net/minecraft/client/render/platform/GlStateManager COLOR Lnet/minecraft/client/render/platform/GlStateManager$Color;

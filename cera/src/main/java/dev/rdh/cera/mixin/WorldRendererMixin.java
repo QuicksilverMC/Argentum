@@ -29,6 +29,9 @@ public abstract class WorldRendererMixin implements CeraWorldRendererExtension {
     @Unique
     private float cera$tickDelta;
 
+    @Unique
+    private float cera$celestialAlpha;
+
     @Override
     public CustomSky cera$getCustomSky() {
         return this.cera$customSky;
@@ -45,7 +48,7 @@ public abstract class WorldRendererMixin implements CeraWorldRendererExtension {
     @Inject(method = "renderSky(FI)V", at = @At("HEAD"))
     private void cera$prepareCelestial(float tickDelta, int anaglyphRenderPass, CallbackInfo ci) {
         this.cera$tickDelta = tickDelta;
-        this.cera$customSky.prepareCelestial(this.world, tickDelta);
+        this.cera$customSky.prepareCelestial(this.world);
     }
 
     // Same spot as OptiFine: after the sunrise/sunset disk, before the sun and moon.
@@ -78,13 +81,14 @@ public abstract class WorldRendererMixin implements CeraWorldRendererExtension {
 
     @ModifyArg(method = "renderSky(FI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/texture/TextureManager;bind(Lnet/minecraft/resource/Identifier;)V", ordinal = 0))
     private Identifier cera$renderCustomSun(Identifier source) {
-        return this.cera$customSky.resolveSun(source);
+        this.cera$celestialAlpha = GlStateManager.COLOR.a;
+        return this.cera$customSky.resolveSun(source, this.cera$celestialAlpha);
     }
 
     @ModifyArg(method = "renderSky(FI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/texture/TextureManager;bind(Lnet/minecraft/resource/Identifier;)V", ordinal = 1))
     private Identifier cera$renderCustomMoon(Identifier source) {
         this.cera$restoreCelestialState();
-        return this.cera$customSky.resolveMoon(source);
+        return this.cera$customSky.resolveMoon(source, this.cera$celestialAlpha);
     }
 
     @Inject(method = "renderSky(FI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientWorld;getStarBrightness(F)F"))
@@ -95,6 +99,6 @@ public abstract class WorldRendererMixin implements CeraWorldRendererExtension {
     @Unique
     private void cera$restoreCelestialState() {
         GlStateManager.blendFuncSeparate(770, 1, 1, 0);
-        GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F - this.world.getRain(this.cera$tickDelta));
+        GlStateManager.color4f(1.0F, 1.0F, 1.0F, this.cera$celestialAlpha);
     }
 }

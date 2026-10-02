@@ -42,7 +42,6 @@ public final class CustomSky implements ResourceReloadListener {
     private volatile Int2ObjectMap<Celestial> celestials = Int2ObjectMaps.emptyMap();
     private Asset activeSun;
     private Asset activeMoon;
-    private float celestialBrightness;
     private int lastDimension = Integer.MIN_VALUE;
     private long lastWorldTime = Long.MIN_VALUE;
 
@@ -62,24 +61,23 @@ public final class CustomSky implements ResourceReloadListener {
                 loadedCelestials.values().stream().mapToInt(Celestial::size).sum());
     }
 
-    public void prepareCelestial(ClientWorld world, float tickDelta) {
+    public void prepareCelestial(ClientWorld world) {
         Celestial celestial = Cera.CONFIG.customSky ? celestials.get(world.dimension.getId()) : null;
         activeSun = celestial == null ? null : celestial.sun;
         activeMoon = celestial == null ? null : celestial.moon;
-        celestialBrightness = 1.0F - Math.clamp(world.getRain(tickDelta), 0.0F, 1.0F);
     }
 
-    public Identifier resolveSun(Identifier source) {
-        return resolve(source, activeSun);
+    public Identifier resolveSun(Identifier source, float brightness) {
+        return resolve(source, activeSun, brightness);
     }
 
-    public Identifier resolveMoon(Identifier source) {
-        return resolve(source, activeMoon);
+    public Identifier resolveMoon(Identifier source, float brightness) {
+        return resolve(source, activeMoon, brightness);
     }
 
-    private Identifier resolve(Identifier source, Asset override) {
+    private Identifier resolve(Identifier source, Asset override, float brightness) {
         if (override == null) return source;
-        override.blend.apply(celestialBrightness);
+        override.blend.apply(brightness);
         return override.source;
     }
 
