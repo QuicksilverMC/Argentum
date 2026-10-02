@@ -11,6 +11,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.platform.GLX;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.resource.model.BakedModel;
 import net.minecraft.item.ItemStack;
@@ -260,6 +261,8 @@ public final class GuiItemIcons {
 
         // the glint pass pushes the texture matrix, which lands back here
         flushing = true;
+        int unit = GlStateManager.texture;
+        GlStateManager.activeTexture(GLX.GL_TEXTURE0);
         boolean alphaTest = GlStateManager.ALPHA_TEST.state.enabled;
         int alphaFunc = GlStateManager.ALPHA_TEST.func;
         float alphaRef = GlStateManager.ALPHA_TEST.ref;
@@ -269,9 +272,12 @@ public final class GuiItemIcons {
         int srcAlpha = GlStateManager.BLEND.sfactorAlpha;
         int dstAlpha = GlStateManager.BLEND.dfactorAlpha;
         boolean lighting = GlStateManager.LIGHTING.enabled;
-        int texture = GlStateManager.TEXTURES[GlStateManager.texture].texture;
+        boolean textureEnabled = GlStateManager.TEXTURES[0].state.enabled;
+        boolean lightmapEnabled = GlStateManager.TEXTURES[1].state.enabled;
+        int texture = GlStateManager.TEXTURES[0].texture;
         GlStateManager.Color color = GlStateManager.COLOR;
         float red = color.r, green = color.g, blue = color.b, alpha = color.a;
+        int mode = matrixMode;
         boolean glints = !GLINTS.isEmpty();
         try {
             GlStateManager.disableLighting();
@@ -290,6 +296,14 @@ public final class GuiItemIcons {
             if (blend) GlStateManager.enableBlend();
             else GlStateManager.disableBlend();
             if (lighting) GlStateManager.enableLighting();
+            if (textureEnabled) GlStateManager.enableTexture();
+            else GlStateManager.disableTexture();
+            if (lightmapEnabled) {
+                GlStateManager.activeTexture(GLX.GL_TEXTURE1);
+                GlStateManager.enableTexture();
+            }
+            if (glints) GlStateManager.matrixMode(mode);
+            GlStateManager.activeTexture(GLX.GL_TEXTURE0 + unit);
         } finally {
             flushing = false;
         }
