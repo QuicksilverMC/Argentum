@@ -18,6 +18,7 @@
     "ArrowRendererMixin",
     "BlockEntityRenderDispatcherMixin",
     "GLXMixin",
+    "GameRendererMixin",
     "ModelInstancerMixin",
     "LivingEntityRendererMixin",
     "AbstractArmorLayerMixin",
