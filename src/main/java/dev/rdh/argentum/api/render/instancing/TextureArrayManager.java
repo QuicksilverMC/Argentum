@@ -24,7 +24,7 @@ public final class TextureArrayManager {
 
     private final Map<PoolKey, Pool> pools = new Object2ObjectLinkedOpenHashMap<>();
     private final Map<Texture, CachedTexture> textures = new Reference2ObjectOpenHashMap<>();
-    private boolean core;
+    private FboBackend fbos;
     private int framebuffer;
     private int fallbackTexture;
     private int maxLayers;
@@ -32,12 +32,19 @@ public final class TextureArrayManager {
 
     public boolean initialize() {
         var capabilities = GL.getCapabilities();
-        this.core = capabilities.OpenGL30 || capabilities.GL_ARB_framebuffer_object;
-        if (!capabilities.OpenGL30 && !(capabilities.GL_EXT_texture_array
-                && (capabilities.GL_ARB_framebuffer_object || capabilities.GL_EXT_framebuffer_object)
-                && capabilities.GL_EXT_gpu_shader4)) {
+
+        if (!capabilities.OpenGL30 && !(capabilities.GL_EXT_texture_array && capabilities.GL_EXT_gpu_shader4)) {
             return false;
         }
+
+        if (capabilities.OpenGL30 || capabilities.GL_ARB_framebuffer_object) {
+            this.fbos = FboBackend.CORE;
+        } else if (capabilities.GL_EXT_framebuffer_object) {
+            this.fbos = FboBackend.EXT;
+        } else {
+            return false;
+        }
+
         this.maxLayers = Math.min(GL11.glGetInteger(GL30C.GL_MAX_ARRAY_TEXTURE_LAYERS), MAX_LAYERS);
         if (this.maxLayers < 2) {
             return false;
@@ -56,7 +63,7 @@ public final class TextureArrayManager {
             this.bindArray(previous);
             GlStateManager.activeTexture(activeTexture);
         }
-        this.framebuffer = this.core ? GL30C.glGenFramebuffers() : EXTFramebufferObject.glGenFramebuffersEXT();
+        this.framebuffer = fbos.genFramebuffers();
         return true;
     }
 
@@ -133,11 +140,7 @@ public final class TextureArrayManager {
             this.fallbackTexture = 0;
         }
         if (this.framebuffer != 0) {
-            if (this.core) {
-                GL30C.glDeleteFramebuffers(this.framebuffer);
-            } else {
-                EXTFramebufferObject.glDeleteFramebuffersEXT(this.framebuffer);
-            }
+            fbos.deleteFramebuffers(this.framebuffer);
             this.framebuffer = 0;
         }
         this.maxLayers = 0;
@@ -248,27 +251,77 @@ public final class TextureArrayManager {
     }
 
     private void bindFramebuffer(int framebuffer) {
-        if (this.core) {
-            GL30C.glBindFramebuffer(GL30C.GL_FRAMEBUFFER, framebuffer);
-        } else {
-            EXTFramebufferObject.glBindFramebufferEXT(EXTFramebufferObject.GL_FRAMEBUFFER_EXT, framebuffer);
-        }
+        fbos.bindFramebuffer(GL30C.GL_FRAMEBUFFER, framebuffer);
     }
 
     private void attachTexture(int texture) {
-        if (this.core) {
-            GL30C.glFramebufferTexture2D(GL30C.GL_FRAMEBUFFER, GL30C.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, texture, 0);
-        } else {
-            EXTFramebufferObject.glFramebufferTexture2DEXT(EXTFramebufferObject.GL_FRAMEBUFFER_EXT,
-                    EXTFramebufferObject.GL_COLOR_ATTACHMENT0_EXT, GL11.GL_TEXTURE_2D, texture, 0);
-        }
+        fbos.framebufferTexture2D(GL30C.GL_FRAMEBUFFER, GL30C.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, texture, 0);
     }
 
     private boolean isFramebufferComplete() {
-        return this.core
-                ? GL30C.glCheckFramebufferStatus(GL30C.GL_FRAMEBUFFER) == GL30C.GL_FRAMEBUFFER_COMPLETE
-                : EXTFramebufferObject.glCheckFramebufferStatusEXT(EXTFramebufferObject.GL_FRAMEBUFFER_EXT)
-                == EXTFramebufferObject.GL_FRAMEBUFFER_COMPLETE_EXT;
+        return fbos.checkFramebufferStatus(GL30C.GL_FRAMEBUFFER) == GL30C.GL_FRAMEBUFFER_COMPLETE;
+    }
+
+    private interface FboBackend {
+        int genFramebuffers();
+        void deleteFramebuffers(int framebuffer);
+        void bindFramebuffer(int target, int framebuffer);
+        int checkFramebufferStatus(int target);
+        void framebufferTexture2D(int target, int attachment, int textarget, int texture, int level);
+
+        FboBackend CORE = new FboBackend() {
+            @Override
+            public int genFramebuffers() {
+                return GL30C.glGenFramebuffers();
+            }
+
+            @Override
+            public void deleteFramebuffers(int framebuffer) {
+                GL30C.glDeleteFramebuffers(framebuffer);
+            }
+
+            @Override
+            public int checkFramebufferStatus(int target) {
+                return GL30C.glCheckFramebufferStatus(target);
+            }
+
+            @Override
+            public void bindFramebuffer(int target, int framebuffer) {
+                GL30C.glBindFramebuffer(target, framebuffer);
+            }
+
+            @Override
+            public void framebufferTexture2D(int target, int attachment, int textarget, int texture, int level) {
+                GL30C.glFramebufferTexture2D(target, attachment, textarget, texture, level);
+            }
+        };
+
+        FboBackend EXT = new FboBackend() {
+            @Override
+            public int genFramebuffers() {
+                return EXTFramebufferObject.glGenFramebuffersEXT();
+            }
+
+            @Override
+            public void deleteFramebuffers(int framebuffer) {
+                EXTFramebufferObject.glDeleteFramebuffersEXT(framebuffer);
+            }
+
+            @Override
+            public int checkFramebufferStatus(int target) {
+                return EXTFramebufferObject.glCheckFramebufferStatusEXT(target);
+            }
+
+            @Override
+            public void bindFramebuffer(int target, int framebuffer) {
+                EXTFramebufferObject.glBindFramebufferEXT(target, framebuffer);
+            }
+
+            @Override
+            public void framebufferTexture2D(int target, int attachment, int textarget, int texture, int level) {
+                EXTFramebufferObject.glFramebufferTexture2DEXT(target, attachment, textarget, texture, level);
+            }
+        };
     }
 
     private record PoolKey(int width, int height, int minFilter, int magFilter, int wrapS, int wrapT) {
