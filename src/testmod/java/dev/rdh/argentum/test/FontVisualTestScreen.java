@@ -1,6 +1,6 @@
 package dev.rdh.argentum.test;
 
-import dev.rdh.argentum.impl.render.gui.hud.HudBatch;
+import dev.rdh.argentum.api.render.gui.hud.HudBatch;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.resource.Identifier;

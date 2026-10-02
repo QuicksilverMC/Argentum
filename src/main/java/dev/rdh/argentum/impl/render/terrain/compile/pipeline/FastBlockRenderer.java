@@ -33,9 +33,10 @@ import org.embeddedt.embeddium.impl.render.chunk.compile.pipeline.BakedQuadGroup
 import org.embeddedt.embeddium.impl.render.chunk.terrain.material.Material;
 import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkVertexEncoder;
 import org.embeddedt.embeddium.impl.util.ModelQuadUtil;
+import dev.rdh.argentum.api.world.biome.BiomeColorSource;
 import dev.rdh.argentum.impl.Argentum;
-import dev.rdh.argentum.impl.render.terrain.compile.PrimitiveBuiltRenderSectionData;
 import dev.rdh.argentum.impl.render.terrain.compile.ArgentumChunkBuildContext;
+import dev.rdh.argentum.impl.render.terrain.compile.PrimitiveBuiltRenderSectionData;
 import dev.rdh.argentum.impl.world.biome.BiomeColorCache;
 import dev.rdh.argentum.impl.world.cloned.ChunkRenderContext;
 
@@ -87,7 +88,7 @@ public final class FastBlockRenderer {
         Material material = buffers.getRenderPassConfiguration().getMaterialForRenderType(layer);
         boolean smooth = this.ambientOcclusion && block.getLight() == 0 && model.useAmbientOcclusion();
         LightPipeline lighter = this.lighters.getLighter(smooth ? LightMode.SMOOTH : LightMode.FLAT);
-        BiomeColorCache.BiomeColorSource colorType = getBiomeColorType(state, world, pos);
+        BiomeColorSource colorType = getBiomeColorType(state, world, pos);
         this.setOffset(state, pos, smooth);
 
         for (Direction direction : DIRECTIONS) {
@@ -109,7 +110,7 @@ public final class FastBlockRenderer {
     }
 
     private void renderQuads(List<BakedQuad> quads, BlockPos pos, BlockState colorState, ChunkRenderContext world,
-                             LightPipeline lighter, Direction cullFace, int flags, BiomeColorCache.BiomeColorSource colorType,
+                             LightPipeline lighter, Direction cullFace, int flags, BiomeColorSource colorType,
                              Material material,
                              ChunkBuildBuffers buffers, PrimitiveBuiltRenderSectionData renderData) {
         ModelQuadFacing cull = cullFace == null ? ModelQuadFacing.UNASSIGNED : cullFace.celeritas$toFacing();
@@ -180,7 +181,7 @@ public final class FastBlockRenderer {
         return null;
     }
 
-    private void getVertexColors(ChunkRenderContext world, BlockPos pos, BakedQuadView quad, BiomeColorCache.BiomeColorSource colorType) {
+    private void getVertexColors(ChunkRenderContext world, BlockPos pos, BakedQuadView quad, BiomeColorSource colorType) {
         for (int vertex = 0; vertex < 4; vertex++) {
             float x = quad.getX(vertex) - 0.5F;
             float z = quad.getZ(vertex) - 0.5F;

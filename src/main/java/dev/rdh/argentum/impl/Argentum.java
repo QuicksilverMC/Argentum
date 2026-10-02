@@ -7,8 +7,8 @@ import org.lwjgl.opengl.GLCapabilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import dev.rdh.argentum.api.config.JsonOptionStorage;
 import dev.rdh.argentum.impl.config.ArgentumConfig;
-import dev.rdh.argentum.impl.config.JsonOptionStorage;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

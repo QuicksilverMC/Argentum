@@ -1,12 +1,11 @@
 package dev.rdh.cera.modules.colors;
 
+import dev.rdh.argentum.api.world.biome.BiomeColorSource;
+import dev.rdh.argentum.impl.world.cloned.ChunkRenderContext;
 import dev.rdh.cera.Cera;
+import dev.rdh.cera.modules.colors.CustomColormaps.Colormap.Format;
 import dev.rdh.cera.props.BlockMatcher;
 import dev.rdh.cera.props.Props;
-import dev.rdh.cera.modules.colors.CustomColormaps.Colormap.Format;
-import dev.rdh.argentum.impl.world.biome.BiomeColorCache;
-import dev.rdh.argentum.impl.world.biome.BiomeColorCache.BiomeColorSource;
-import dev.rdh.argentum.impl.world.cloned.ChunkRenderContext;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.block.Block;
@@ -339,7 +338,7 @@ public final class CustomColormaps implements ResourceReloadListener {
             int yVariance, int yOffset,
             int fixedColor,
             Object2IntMap<Block> blocks
-    ) implements BiomeColorCache.BiomeColorSource {
+    ) implements BiomeColorSource {
         enum Format { VANILLA, GRID, FIXED }
 
         boolean matches(BlockState state) {

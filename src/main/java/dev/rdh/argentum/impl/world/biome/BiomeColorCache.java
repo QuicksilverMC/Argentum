@@ -2,9 +2,10 @@ package dev.rdh.argentum.impl.world.biome;
 
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
+import dev.rdh.argentum.api.world.biome.BiomeColorSource;
 import dev.rdh.argentum.impl.world.cloned.ChunkRenderContext;
 
-public final class BiomeColorCache extends org.embeddedt.embeddium.impl.biome.BiomeColorCache<Biome, BiomeColorCache.BiomeColorSource> {
+public final class BiomeColorCache extends org.embeddedt.embeddium.impl.biome.BiomeColorCache<Biome, BiomeColorSource> {
     private final Source source;
     private final BlockPos.Mutable cursor = new BlockPos.Mutable();
 
@@ -26,10 +27,6 @@ public final class BiomeColorCache extends org.embeddedt.embeddium.impl.biome.Bi
     protected int resolveColor(BiomeColorSource resolver, Biome biome, int x, int y, int z) {
         this.cursor.set(x, y, z);
         return resolver.resolve(biome, this.cursor);
-    }
-
-    public interface BiomeColorSource {
-        int resolve(Biome biome, BlockPos pos);
     }
 
     public enum ColorType implements BiomeColorSource {

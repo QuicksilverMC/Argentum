@@ -1,4 +1,4 @@
-package dev.rdh.argentum.impl.render.instancing;
+package dev.rdh.argentum.api.render.instancing;
 
 import dev.rdh.argentum.mixin.features.model.instancing.BoxAccessor;
 

@@ -16,6 +16,7 @@ import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.WorldChunkSection;
 import net.minecraft.world.gen.WorldGeneratorType;
+import dev.rdh.argentum.api.world.biome.BiomeColorSource;
 import dev.rdh.argentum.impl.render.blockentity.BakedItemFrames;
 import dev.rdh.argentum.impl.world.biome.BiomeColorCache;
 
@@ -178,7 +179,7 @@ public final class ChunkRenderContext implements WorldView {
         return section == null ? Biome.DEFAULT : section.getBiome(x & 15, z & 15);
     }
 
-    public int getBiomeColor(BlockPos pos, BiomeColorCache.BiomeColorSource type) {
+    public int getBiomeColor(BlockPos pos, BiomeColorSource type) {
         return this.biomeColorCache.getColor(type, pos.getX(), pos.getY(), pos.getZ());
     }
 

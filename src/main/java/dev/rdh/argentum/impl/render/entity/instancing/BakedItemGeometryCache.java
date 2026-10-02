@@ -1,6 +1,6 @@
 package dev.rdh.argentum.impl.render.entity.instancing;
 
-import dev.rdh.argentum.impl.render.instancing.InstancedGeometryBuffer;
+import dev.rdh.argentum.api.render.instancing.InstancedGeometryBuffer;
 
 import net.minecraft.client.resource.model.BakedModel;
 import net.minecraft.client.resource.model.BakedQuad;

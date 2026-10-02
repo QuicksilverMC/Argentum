@@ -1,4 +1,4 @@
-package dev.rdh.argentum.impl.config;
+package dev.rdh.argentum.api.config;
 
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;

@@ -5,12 +5,13 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Share;
 import com.llamalad7.mixinextras.sugar.ref.LocalIntRef;
+import dev.rdh.argentum.api.world.biome.BiomeColorSource;
 import dev.rdh.cera.modules.BetterGrass;
 import dev.rdh.cera.modules.EmissiveTextures;
+import dev.rdh.cera.modules.NaturalTextures;
 import dev.rdh.cera.modules.colors.CustomColormaps;
 import dev.rdh.cera.modules.ctm.ConnectedTextures;
 import dev.rdh.cera.modules.ctm.CtmRenderContext;
-import dev.rdh.cera.modules.NaturalTextures;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import dev.rdh.argentum.impl.render.terrain.compile.PrimitiveBuiltRenderSectionData;
 import dev.rdh.argentum.impl.render.terrain.compile.pipeline.FastBlockRenderer;
@@ -72,10 +73,10 @@ public class FastBlockRendererMixin {
     @Shadow @Final
     private QuadLightData quadLight;
 
-    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Ldev/rdh/argentum/impl/render/terrain/compile/pipeline/FastBlockRenderer;renderQuads(Ljava/util/List;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/BlockState;Ldev/rdh/argentum/impl/world/cloned/ChunkRenderContext;Lorg/embeddedt/embeddium/impl/model/light/LightPipeline;Lnet/minecraft/util/math/Direction;ILdev/rdh/argentum/impl/world/biome/BiomeColorCache$BiomeColorSource;Lorg/embeddedt/embeddium/impl/render/chunk/terrain/material/Material;Lorg/embeddedt/embeddium/impl/render/chunk/compile/ChunkBuildBuffers;Ldev/rdh/argentum/impl/render/terrain/compile/PrimitiveBuiltRenderSectionData;)V"))
+    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Ldev/rdh/argentum/impl/render/terrain/compile/pipeline/FastBlockRenderer;renderQuads(Ljava/util/List;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/state/BlockState;Ldev/rdh/argentum/impl/world/cloned/ChunkRenderContext;Lorg/embeddedt/embeddium/impl/model/light/LightPipeline;Lnet/minecraft/util/math/Direction;ILdev/rdh/argentum/api/world/biome/BiomeColorSource;Lorg/embeddedt/embeddium/impl/render/chunk/terrain/material/Material;Lorg/embeddedt/embeddium/impl/render/chunk/compile/ChunkBuildBuffers;Ldev/rdh/argentum/impl/render/terrain/compile/PrimitiveBuiltRenderSectionData;)V"))
     private void cera$renderQuads(FastBlockRenderer renderer, List<BakedQuad> quads, BlockPos pos,
             BlockState colorState, ChunkRenderContext world, LightPipeline lighter, Direction cullFace,
-            int flags, BiomeColorCache.BiomeColorSource colorType, Material material,
+            int flags, BiomeColorSource colorType, Material material,
             ChunkBuildBuffers buffers, PrimitiveBuiltRenderSectionData renderData, Operation<Void> original) {
         this.cera$overlays.clear();
         List<BakedQuad> transformed = this.cera$connectedTextures.transform(world, colorState, pos,
@@ -83,14 +84,14 @@ public class FastBlockRendererMixin {
                 this.cera$overlays, this.cera$ctmContext
         );
         this.cera$colorState = colorState;
-        BiomeColorCache.BiomeColorSource resolver = this.cera$customColormaps.resolverFor(colorState);
+        BiomeColorSource resolver = this.cera$customColormaps.resolverFor(colorState);
         if (resolver != null) colorType = resolver;
         original.call(renderer, transformed, pos, colorState, world, lighter, cullFace, flags, colorType, material, buffers, renderData);
         for (ConnectedTextures.Overlay overlay : this.cera$overlays) {
             Material overlayMaterial = buffers.getRenderPassConfiguration()
                     .getMaterialForRenderType(overlay.layer());
             this.cera$colorState = overlay.tintState();
-            BiomeColorCache.BiomeColorSource overlayType = this.cera$customColormaps.resolverFor(overlay.tintState());
+            BiomeColorSource overlayType = this.cera$customColormaps.resolverFor(overlay.tintState());
             if (overlayType == null) overlayType = cera$getBiomeColorType(overlay.tintState());
             original.call(renderer, List.of(overlay.quad()), pos, overlay.tintState(), world, lighter,
                     cullFace, flags, overlayType,

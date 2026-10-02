@@ -2,9 +2,9 @@ package dev.rdh.argentum.impl.render.entity.instancing;
 
 import net.minecraft.client.render.model.ModelPart;
 
+import dev.rdh.argentum.api.render.instancing.BoxTemplate;
+import dev.rdh.argentum.api.render.instancing.TextureArrayManager;
 import dev.rdh.argentum.impl.Argentum;
-import dev.rdh.argentum.impl.render.instancing.BoxTemplate;
-import dev.rdh.argentum.impl.render.instancing.TextureArrayManager;
 import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.minecraft.client.render.model.Model;

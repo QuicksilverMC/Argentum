@@ -1,4 +1,4 @@
-package dev.rdh.argentum.impl.render.instancing;
+package dev.rdh.argentum.api.render.instancing;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;

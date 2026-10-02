@@ -19,9 +19,9 @@ import org.taumc.celeritas.api.options.structure.OptionPage;
 import org.taumc.celeritas.api.options.structure.OptionStorage;
 import org.taumc.celeritas.api.options.structure.StandardOptions;
 
+import dev.rdh.argentum.api.config.JsonOptionStorage;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.config.ArgentumConfig;
-import dev.rdh.argentum.impl.config.JsonOptionStorage;
 import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService.FogShape;
 
 import java.util.List;

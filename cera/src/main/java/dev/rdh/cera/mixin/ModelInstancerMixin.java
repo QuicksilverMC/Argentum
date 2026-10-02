@@ -1,9 +1,9 @@
 package dev.rdh.cera.mixin;
 
+import dev.rdh.argentum.api.render.instancing.BoxTemplate;
 import dev.rdh.argentum.impl.render.entity.instancing.InstanceGeometry;
 import dev.rdh.argentum.impl.render.entity.instancing.InstanceRenderPass;
 import dev.rdh.argentum.impl.render.entity.instancing.ModelInstancer;
-import dev.rdh.argentum.impl.render.instancing.BoxTemplate;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resource.model.BakedModel;

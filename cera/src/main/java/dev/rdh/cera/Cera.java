@@ -5,7 +5,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.ornithemc.osl.resource.loader.api.client.ClientResourceLoaderEvents;
 import net.ornithemc.osl.resource.loader.api.resource.repository.ResourcePackRepository;
-import dev.rdh.argentum.impl.config.JsonOptionStorage;
+import dev.rdh.argentum.api.config.JsonOptionStorage;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

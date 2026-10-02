@@ -1,6 +1,7 @@
-package dev.rdh.argentum.impl.render.gui.hud;
+package dev.rdh.argentum.api.render.gui.hud;
 
 import dev.rdh.argentum.impl.Argentum;
+import dev.rdh.argentum.impl.render.gui.hud.HudRecorder;
 
 import net.minecraft.client.render.TextRenderer;
 import net.minecraft.client.render.vertex.BufferBuilder;

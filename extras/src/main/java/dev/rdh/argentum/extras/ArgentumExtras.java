@@ -2,7 +2,7 @@ package dev.rdh.argentum.extras;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
-import dev.rdh.argentum.impl.config.JsonOptionStorage;
+import dev.rdh.argentum.api.config.JsonOptionStorage;
 
 import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
 import org.lwjgl.sdl.SDLHints;

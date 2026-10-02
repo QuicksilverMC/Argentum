@@ -13,7 +13,7 @@ import net.minecraft.entity.living.LivingEntity;
 import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.resource.Identifier;
-import dev.rdh.argentum.impl.render.instancing.BoxTemplate;
+import dev.rdh.argentum.api.render.instancing.BoxTemplate;
 import dev.rdh.argentum.mixin.features.model.instancing.ModelPartAccessor;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;

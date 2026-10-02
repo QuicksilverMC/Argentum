@@ -1,9 +1,9 @@
 package dev.rdh.argentum.impl.render.entity.instancing;
 
 import java.util.Arrays;
-import dev.rdh.argentum.impl.render.instancing.BoxTemplate;
+import dev.rdh.argentum.api.render.instancing.BoxTemplate;
 import org.embeddedt.embeddium.impl.gl.shader.GlProgram;
-import dev.rdh.argentum.impl.render.instancing.TextureArrayManager;
+import dev.rdh.argentum.api.render.instancing.TextureArrayManager;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;

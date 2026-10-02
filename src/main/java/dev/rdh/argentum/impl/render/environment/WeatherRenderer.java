@@ -25,9 +25,9 @@ import org.embeddedt.embeddium.impl.render.shader.ShaderLoader;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL;
 
+import dev.rdh.argentum.api.render.instancing.InstanceDataBuffer;
+import dev.rdh.argentum.api.render.instancing.InstancedGeometryBuffer;
 import dev.rdh.argentum.impl.Argentum;
-import dev.rdh.argentum.impl.render.instancing.InstanceDataBuffer;
-import dev.rdh.argentum.impl.render.instancing.InstancedGeometryBuffer;
 import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
 
 import java.nio.FloatBuffer;

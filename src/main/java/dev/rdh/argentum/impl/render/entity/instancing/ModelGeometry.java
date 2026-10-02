@@ -1,10 +1,10 @@
 package dev.rdh.argentum.impl.render.entity.instancing;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import dev.rdh.argentum.impl.render.instancing.InstancedGeometryBuffer;
-import dev.rdh.argentum.impl.render.instancing.InstanceDataBuffer;
-import dev.rdh.argentum.impl.render.instancing.BoxTemplate;
-import dev.rdh.argentum.impl.render.instancing.ModelPartGeometry;
+import dev.rdh.argentum.api.render.instancing.BoxTemplate;
+import dev.rdh.argentum.api.render.instancing.InstanceDataBuffer;
+import dev.rdh.argentum.api.render.instancing.InstancedGeometryBuffer;
+import dev.rdh.argentum.api.render.instancing.ModelPartGeometry;
 
 import net.minecraft.client.render.model.ModelPart;
 import org.embeddedt.embeddium.impl.gl.device.CommandList;

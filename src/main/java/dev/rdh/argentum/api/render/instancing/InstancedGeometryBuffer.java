@@ -1,4 +1,4 @@
-package dev.rdh.argentum.impl.render.instancing;
+package dev.rdh.argentum.api.render.instancing;
 
 import org.embeddedt.embeddium.impl.gl.array.GlVertexArray;
 import org.embeddedt.embeddium.impl.gl.attribute.GlVertexFormat;
