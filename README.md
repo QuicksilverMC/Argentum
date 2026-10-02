@@ -5,10 +5,18 @@ Argentum is a client performance mod for Ornithe 1.8.9, based on the [Celeritas]
 A non-exhaustive list of features that currently exist:
 
 - Rewritten terrain meshing from Celeritas
-- Entity rendering improvements, including instancing for players, mobs, and animals (and attachments, like armor)
-- Instancing for block entities
-- An optimized font renderer
-- An optimized cloud renderer
+- Entity rendering:
+  - Instancing for players, mobs, animals (including attachments such as armor, arrows, etc)
+  - Optimized nametags
+- Block entity rendering:
+  - Instancing for most block entities
+  - Baking for more select others
+- Item rendering:
+  - Faster enchantment glinting
+  - Item baking in GUIs
+- Faster and less buggy font rendering
+- Optimized cloud, rain, and snow rendering
+- Optimizations to select HUD elements
 - Entity and particle occlusion culling
 - A Celeritas-based video settings menu
 
