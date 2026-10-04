@@ -38,6 +38,7 @@ final class InstanceShader {
     private final GlUniformInt boxInstancing;
     private final GlUniformInt alphaPass;
     private final GlUniformMatrix4f itemGlintMatrix;
+    private final GlUniformMatrix4f itemGlintMatrix1;
     private final GlUniformFloat3v lightDirection0;
     private final GlUniformFloat3v lightDirection1;
     private final ChunkShaderComponent fog;
@@ -61,6 +62,7 @@ final class InstanceShader {
         this.boxInstancing = context.bindUniform("uBoxInstancing", GlUniformInt::new);
         this.alphaPass = context.bindUniform("uAlphaPass", GlUniformInt::new);
         this.itemGlintMatrix = context.bindUniform("uItemGlintMatrix", GlUniformMatrix4f::new);
+        this.itemGlintMatrix1 = context.bindUniform("uItemGlintMatrix1", GlUniformMatrix4f::new);
         this.lightDirection0 = context.bindUniform("uLightDirection0", GlUniformFloat3v::new);
         this.lightDirection1 = context.bindUniform("uLightDirection1", GlUniformFloat3v::new);
         this.fog = fogFactory.create(context, ArgentumFogService.ENVIRONMENT);
@@ -123,8 +125,9 @@ final class InstanceShader {
         this.itemGlintPass.setInt(pass);
     }
 
-    void setItemGlintPass(int pass, Matrix4fc matrix) {
+    void setItemGlintPass(int pass, Matrix4fc[] matrices) {
         this.itemGlintPass.setInt(pass);
-        this.itemGlintMatrix.set(matrix);
+        this.itemGlintMatrix.set(matrices[0]);
+        this.itemGlintMatrix1.set(matrices[1]);
     }
 }

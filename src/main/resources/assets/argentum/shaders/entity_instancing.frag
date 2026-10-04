@@ -15,6 +15,8 @@ uniform bool uTextureArrayEnabled;
 uniform bool uLit;
 uniform bool uLightmapped;
 uniform int uAlphaPass;
+uniform int uGlintPass;
+uniform int uItemGlintPass;
 #define ALPHA_OPAQUE_CUTOFF (254.0 / 255.0)
 #ifdef USE_FOG
 uniform vec4 u_FogColor;
@@ -28,6 +30,7 @@ uniform float u_FogDensity;
 #endif
 
 in vec2 vTexCoord;
+in vec2 vGlintCoord;
 in vec2 vLightCoord;
 in float vTextureLayer;
 in float vLighting;
@@ -49,24 +52,17 @@ out vec4 fragColor;
 #define textureArray texture
 #endif
 
-void main() {
-    vec4 color = texture(uTexture, vTexCoord);
+vec4 tinted(vec2 texCoord) {
+    vec4 color = texture(uTexture, texCoord);
 #ifdef TEXTURE_ARRAY
     if (uTextureArrayEnabled) {
-        color = textureArray(uTextureArray, vec3(vTexCoord, vTextureLayer));
+        color = textureArray(uTextureArray, vec3(texCoord, vTextureLayer));
     }
 #endif
-    color *= uLit ? vec4(min(vColor.rgb * vLighting, 1.0), vColor.a) : vColor;
-    if (color.a <= 0.1) {
-        discard;
-    }
-    if (uAlphaPass == 1 && color.a >= ALPHA_OPAQUE_CUTOFF) {
-        discard;
-    }
-    if (uAlphaPass == 2 && color.a < ALPHA_OPAQUE_CUTOFF) {
-        discard;
-    }
+    return color * (uLit ? vec4(min(vColor.rgb * vLighting, 1.0), vColor.a) : vColor);
+}
 
+vec4 shaded(vec4 color) {
     color.rgb = mix(color.rgb, vOverlay.rgb, vOverlay.a);
     if (uLightmapped) {
         color.rgb *= texture(uLightmap, vLightCoord).rgb;
@@ -78,5 +74,28 @@ void main() {
 #elif defined(USE_FOG_SMOOTH)
     color = _linearFog(color, vFogDistance, u_FogColor, u_FogStart, u_FogEnd);
 #endif
-    fragColor = color;
+    return color;
+}
+
+void main() {
+    vec4 color = tinted(vTexCoord);
+    if (uGlintPass >= 0 || uItemGlintPass == 1) {
+        // both layers blend with (SRC_COLOR, ONE), each adding its square, so one pass adds the sum of squares
+        vec4 second = tinted(vGlintCoord);
+        color = color.a <= 0.1 ? vec4(0.0) : shaded(color);
+        second = second.a <= 0.1 ? vec4(0.0) : shaded(second);
+        fragColor = sqrt(color * color + second * second);
+        return;
+    }
+    if (color.a <= 0.1) {
+        discard;
+    }
+    if (uAlphaPass == 1 && color.a >= ALPHA_OPAQUE_CUTOFF) {
+        discard;
+    }
+    if (uAlphaPass == 2 && color.a < ALPHA_OPAQUE_CUTOFF) {
+        discard;
+    }
+
+    fragColor = shaded(color);
 }

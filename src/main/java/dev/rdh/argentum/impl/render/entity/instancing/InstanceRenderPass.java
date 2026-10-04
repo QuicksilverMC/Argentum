@@ -12,8 +12,7 @@ public enum InstanceRenderPass {
     EMISSIVE(0),
     EMISSIVE_REPLACE(0),
     GLINT(0),
-    ITEM_GLINT_0(0),
-    ITEM_GLINT_1(0),
+    ITEM_GLINT(0),
     CREEPER_CHARGE(1),
     WITHER_CHARGE(2);
 

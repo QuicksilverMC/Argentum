@@ -229,9 +229,10 @@ public final class EntityCapture implements AutoCloseable {
             this.itemInstanced = geometry != null;
         } else if (item == null && this.glintActive && this.itemInstanced && this.itemGlintPass < 2) {
             int glintPass = this.itemGlintPass++;
-            this.pass = glintPass == 0 ? InstanceRenderPass.ITEM_GLINT_0 : InstanceRenderPass.ITEM_GLINT_1;
             this.owner.backend().captureItemGlintMatrix(glintPass, this.textureMatrices);
             geometry = this.owner.backend().fixedItem(model, color);
+            if (glintPass == 1) return geometry != null;
+            this.pass = InstanceRenderPass.ITEM_GLINT;
         } else {
             return false;
         }

@@ -160,9 +160,7 @@ final class InstanceBatcher {
         textureCount += charge.textures;
         GlStateManager.disableBlend();
         GlStateManager.blendFunc(770, 771);
-        if (this.has(InstanceRenderPass.GLINT)
-                || this.has(InstanceRenderPass.ITEM_GLINT_0)
-                || this.has(InstanceRenderPass.ITEM_GLINT_1)) {
+        if (this.has(InstanceRenderPass.GLINT) || this.has(InstanceRenderPass.ITEM_GLINT)) {
             GlStateManager.enableBlend();
             GlStateManager.depthFunc(GL11.GL_EQUAL);
             GlStateManager.depthMask(false);
@@ -171,17 +169,9 @@ final class InstanceBatcher {
             Stats glint = this.renderPass(commandList, program, InstanceRenderPass.GLINT);
             draws += glint.draws;
             textureCount += glint.textures;
-            program.getInterface().setGlintPass(1);
-            glint = this.renderPass(commandList, program, InstanceRenderPass.GLINT);
-            draws += glint.draws;
-            textureCount += glint.textures;
             program.getInterface().setGlintPass(-1);
-            program.getInterface().setItemGlintPass(0, this.itemGlintMatrices[0]);
-            glint = this.renderPass(commandList, program, InstanceRenderPass.ITEM_GLINT_0);
-            draws += glint.draws;
-            textureCount += glint.textures;
-            program.getInterface().setItemGlintPass(1, this.itemGlintMatrices[1]);
-            glint = this.renderPass(commandList, program, InstanceRenderPass.ITEM_GLINT_1);
+            program.getInterface().setItemGlintPass(this.itemGlintCaptured[1] ? 1 : 0, this.itemGlintMatrices);
+            glint = this.renderPass(commandList, program, InstanceRenderPass.ITEM_GLINT);
             draws += glint.draws;
             textureCount += glint.textures;
             program.getInterface().setItemGlintPass(-1);

@@ -21,11 +21,13 @@ uniform int uGlintPass;
 uniform int uChargePass;
 uniform int uItemGlintPass;
 uniform mat4 uItemGlintMatrix;
+uniform mat4 uItemGlintMatrix1;
 uniform vec3 uLightDirection0;
 uniform vec3 uLightDirection1;
 uniform bool uEyeLight;
 
 out vec2 vTexCoord;
+out vec2 vGlintCoord;
 out vec2 vLightCoord;
 out float vTextureLayer;
 out float vLighting;
@@ -35,6 +37,12 @@ uniform int u_FogShape;
 #endif
 out vec4 vColor;
 out vec4 vOverlay;
+
+vec2 glintCoord(vec2 texCoord, float layer) {
+    float angle = radians(30.0 - layer * 60.0);
+    vec2 uv = texCoord + vec2(0.0, aEffectTime * (0.001 + layer * 0.003) * 20.0);
+    return vec2(cos(angle) * uv.x - sin(angle) * uv.y, sin(angle) * uv.x + cos(angle) * uv.y) / 3.0;
+}
 
 void main() {
     mat4 model = mat4(vec4(aModel0, 0.0), vec4(aModel1, 0.0), vec4(aModel2, 0.0), vec4(aModel3, 1.0));
@@ -54,13 +62,13 @@ void main() {
             ? vec2((aBoxTexture.x + aVertexColor.x * aBoxSize.x + aVertexColor.y * aBoxSize.z) / textureSize.x,
                    (aBoxTexture.y + aVertexColor.z * aBoxSize.y + aVertexColor.w * aBoxSize.z) / textureSize.y)
             : aTexCoord;
+    vGlintCoord = vec2(0.0);
     if (uGlintPass >= 0) {
-        float angle = radians(30.0 - float(uGlintPass) * 60.0);
-        vec2 uv = baseTexCoord + vec2(0.0, aEffectTime * (0.001 + float(uGlintPass) * 0.003) * 20.0);
-        vTexCoord = vec2(cos(angle) * uv.x - sin(angle) * uv.y,
-                sin(angle) * uv.x + cos(angle) * uv.y) / 3.0;
+        vTexCoord = glintCoord(baseTexCoord, 0.0);
+        vGlintCoord = glintCoord(baseTexCoord, 1.0);
     } else if (uItemGlintPass >= 0) {
         vTexCoord = (uItemGlintMatrix * vec4(baseTexCoord, 0.0, 1.0)).xy;
+        vGlintCoord = (uItemGlintMatrix1 * vec4(baseTexCoord, 0.0, 1.0)).xy;
     } else if (uChargePass == 1) {
         vTexCoord = baseTexCoord + vec2(aEffectTime * 0.01);
     } else if (uChargePass == 2) {
