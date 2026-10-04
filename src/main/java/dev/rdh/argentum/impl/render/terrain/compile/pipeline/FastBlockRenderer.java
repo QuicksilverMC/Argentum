@@ -5,6 +5,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.DoublePlantBlock;
 import net.minecraft.block.LeavesBlock;
 import net.minecraft.block.PlanksBlock;
+import net.minecraft.block.StairsBlock;
 import net.minecraft.block.state.BlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.GameRenderer;
@@ -53,6 +54,7 @@ public final class FastBlockRenderer {
     private final ChunkVertexEncoder.Vertex[] vertices = ChunkVertexEncoder.Vertex.uninitializedQuad();
     private final ModelQuadOrientation[] orientations = new ModelQuadOrientation[DIRECTIONS.length];
     private final BakedQuadGroupAnalyzer analyzer = new BakedQuadGroupAnalyzer();
+    private final FaceCoverage faceCoverage = new FaceCoverage();
     private final int defaultRenderingFlags;
     private final BlockPos.Mutable neighborPos = new BlockPos.Mutable();
     private final BlockPos.Mutable colorPos = new BlockPos.Mutable();
@@ -97,6 +99,7 @@ public final class FastBlockRenderer {
 
             this.neighborPos.set(pos.getX() + direction.getOffsetX(), pos.getY() + direction.getOffsetY(), pos.getZ() + direction.getOffsetZ());
             if (!block.shouldRenderFace(world, this.neighborPos, direction)) continue;
+            if (this.isHiddenByNeighbor(model, pos, world, direction)) continue;
 
             int flags = this.analyzer.getFlagsForRendering(direction.celeritas$toFacing(), BakedQuadView.ofList(quads));
             this.renderQuads(quads, pos, state, world, lighter, direction, flags, colorType, material, buffers, renderData);
@@ -107,6 +110,21 @@ public final class FastBlockRenderer {
             int flags = this.analyzer.getFlagsForRendering(ModelQuadFacing.UNASSIGNED, BakedQuadView.ofList(quads));
             this.renderQuads(quads, pos, state, world, lighter, null, flags, colorType, material, buffers, renderData);
         }
+    }
+
+    private boolean isHiddenByNeighbor(BakedModel model, BlockPos pos, ChunkRenderContext world, Direction direction) {
+        BlockState neighbor = world.getBlockState(this.neighborPos);
+        Block block = neighbor.getBlock();
+        if (block == Blocks.AIR || block.getRenderType() != 3 || block.getRenderLayer() == BlockLayer.TRANSLUCENT
+                || block.getOffsetType() != Block.OffsetType.NONE) {
+            return false;
+        }
+        // a stair's shape follows blocks two away from us, which only rebuild its own section
+        if (block instanceof StairsBlock && ((pos.getX() ^ this.neighborPos.getX() | pos.getY() ^ this.neighborPos.getY()
+                | pos.getZ() ^ this.neighborPos.getZ()) >> 4) != 0) {
+            return false;
+        }
+        return this.faceCoverage.isHidden(model, this.blockRenderDispatcher.getModel(neighbor, world, this.neighborPos), direction);
     }
 
     private void renderQuads(List<BakedQuad> quads, BlockPos pos, BlockState colorState, ChunkRenderContext world,
