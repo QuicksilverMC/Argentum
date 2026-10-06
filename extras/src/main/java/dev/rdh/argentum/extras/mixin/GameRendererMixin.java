@@ -22,6 +22,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.ModifyArgs;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 import org.lwjgl.opengl.GL11;
@@ -134,10 +135,20 @@ public class GameRendererMixin {
         this.argentumExtras$fxaa.resize(width, height);
     }
 
-    @ModifyExpressionValue(method = {"tickRain", "renderSnowAndRain"},
+    @ModifyExpressionValue(method = "renderSnowAndRain",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientWorld;getRain(F)F"))
     private float argentumExtras$scaleWeatherDensity(float density) {
         return density * strength(ArgentumExtras.CONFIG.weatherDensity);
+    }
+
+    @ModifyArg(method = "renderSnowAndRain", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;alphaFunc(IF)V", ordinal = 0), index = 1)
+    private float argentumExtras$scaleWeatherAlphaTest(float ref) {
+        return ref * strength(ArgentumExtras.CONFIG.weatherDensity);
+    }
+
+    @ModifyVariable(method = "tickRain", at = @At(value = "STORE", ordinal = 0), ordinal = 2)
+    private int argentumExtras$scaleRainSplashes(int count) {
+        return (int) Math.ceil(count * strength(ArgentumExtras.CONFIG.weatherDensity));
     }
 
     @ModifyConstant(method = "renderSnowAndRain", constant = @Constant(intValue = 5))

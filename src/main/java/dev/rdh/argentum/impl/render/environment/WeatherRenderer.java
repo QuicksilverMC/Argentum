@@ -1,6 +1,7 @@
 package dev.rdh.argentum.impl.render.environment;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.resource.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -17,6 +18,7 @@ import org.embeddedt.embeddium.impl.gl.shader.GlShader;
 import org.embeddedt.embeddium.impl.gl.shader.ShaderBindingContext;
 import org.embeddedt.embeddium.impl.gl.shader.ShaderConstants;
 import org.embeddedt.embeddium.impl.gl.shader.ShaderType;
+import org.embeddedt.embeddium.impl.gl.shader.uniform.GlUniformFloat;
 import org.embeddedt.embeddium.impl.gl.shader.uniform.GlUniformFloat4v;
 import org.embeddedt.embeddium.impl.gl.shader.uniform.GlUniformInt;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkFogMode;
@@ -127,6 +129,7 @@ public final class WeatherRenderer {
         try {
             WeatherShader shader = program.getInterface();
             shader.fog().setup();
+            shader.alphaRef().setFloat(GlStateManager.ALPHA_TEST.ref);
             shader.frame0().set(this.frame0);
             shader.frame1().set(this.frame1);
             this.draw(commandList, shader, this.rainGeometry, this.rain, RAIN_TEXTURE, false);
@@ -288,11 +291,12 @@ public final class WeatherRenderer {
         }
     }
 
-    private record WeatherShader(GlUniformInt texture, GlUniformInt lightmap, GlUniformFloat4v frame0,
+    private record WeatherShader(GlUniformInt texture, GlUniformInt lightmap, GlUniformFloat alphaRef, GlUniformFloat4v frame0,
             GlUniformFloat4v frame1, GlUniformFloat4v frame2, ChunkShaderComponent fog) {
         WeatherShader(ShaderBindingContext ctx, ChunkShaderComponent.Factory<?> fogFactory) {
             this(ctx.bindUniform("uTexture", GlUniformInt::new),
                     ctx.bindUniform("uLightmap", GlUniformInt::new),
+                    ctx.bindUniform("uAlphaRef", GlUniformFloat::new),
                     ctx.bindUniform("uFrame0", GlUniformFloat4v::new),
                     ctx.bindUniform("uFrame1", GlUniformFloat4v::new),
                     ctx.bindUniform("uFrame2", GlUniformFloat4v::new),

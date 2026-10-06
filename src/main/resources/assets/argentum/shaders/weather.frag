@@ -4,6 +4,7 @@
 
 uniform sampler2D uTexture;
 uniform sampler2D uLightmap;
+uniform float uAlphaRef;
 
 varying vec2 vTexCoord;
 varying vec2 vLightCoord;
@@ -23,7 +24,7 @@ uniform float u_FogDensity;
 void main() {
     vec4 color = texture2D(uTexture, vTexCoord) * texture2D(uLightmap, vLightCoord);
     color.a *= vAlpha;
-    if (color.a <= 0.1) {
+    if (color.a <= uAlphaRef) {
         discard;
     }
 
