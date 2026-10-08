@@ -43,6 +43,7 @@ import java.util.List;
 public class ArgentumRenderSectionManager extends RenderSectionManager {
     private final World world;
     private final ClonedChunkSectionCache sectionCache;
+    private boolean deferringRebuild;
 
     public ArgentumRenderSectionManager(RenderPassConfiguration<?> configuration, World world, int renderDistance, CommandList commandList, int minSection, int maxSection, int requestedThreads) {
         super(configuration, () -> new ArgentumChunkBuildContext(configuration), ChunkRenderer::new, renderDistance, commandList, minSection, maxSection, requestedThreads, false);
@@ -145,9 +146,18 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
         this.sectionCache.invalidate(section.getChunkX(), section.getChunkY(), section.getChunkZ());
     }
 
+    public void scheduleDeferredRebuild(int x, int y, int z) {
+        this.deferringRebuild = true;
+        try {
+            this.scheduleRebuild(x, y, z, false);
+        } finally {
+            this.deferringRebuild = false;
+        }
+    }
+
     @Override
     protected boolean allowImportantRebuilds() {
-        return !Argentum.CONFIG.deferChunkUpdates;
+        return !Argentum.CONFIG.deferChunkUpdates && !this.deferringRebuild;
     }
 
     @Override

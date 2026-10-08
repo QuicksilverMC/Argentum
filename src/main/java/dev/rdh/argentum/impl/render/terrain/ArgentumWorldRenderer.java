@@ -81,6 +81,20 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
         return world == null ? null : world.argentum$getWorldRenderer();
     }
 
+    /**
+     * Schedules rebuilds that never block the frame, for changes that happen every tick.
+     */
+    public void scheduleDeferredRebuildForBlockArea(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        if (this.renderSectionManager == null) return;
+        for (int x = minX >> 4; x <= maxX >> 4; x++) {
+            for (int y = minY >> 4; y <= maxY >> 4; y++) {
+                for (int z = minZ >> 4; z <= maxZ >> 4; z++) {
+                    this.renderSectionManager.scheduleDeferredRebuild(x, y, z);
+                }
+            }
+        }
+    }
+
     @Override
     protected void unloadWorld() {
         this.entityGatherer.clear();

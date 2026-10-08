@@ -153,10 +153,9 @@ public final class DynamicLights {
     }
 
     private static void dirty(ArgentumWorldRenderer renderer, double x, double y, double z) {
-        renderer.scheduleRebuildForBlockArea(
+        renderer.scheduleDeferredRebuildForBlockArea(
                 (int)Math.floor(x - MAX_DISTANCE), (int)Math.floor(y - MAX_DISTANCE), (int)Math.floor(z - MAX_DISTANCE),
-                (int)Math.floor(x + MAX_DISTANCE), (int)Math.floor(y + MAX_DISTANCE), (int)Math.floor(z + MAX_DISTANCE),
-                false
+                (int)Math.floor(x + MAX_DISTANCE), (int)Math.floor(y + MAX_DISTANCE), (int)Math.floor(z + MAX_DISTANCE)
         );
     }
 
