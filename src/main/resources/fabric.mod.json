@@ -22,5 +22,8 @@
     "minecraft": "1.8.9"
   },
   "accessWidener": "argentum.classtweaker",
-  "mixins": ["mixins.argentum.json"]
+  "mixins": ["mixins.argentum.json"],
+  "custom": {
+    "sarcio:disable": ["bugfix.render.WorldRendererMixin"]
+  }
 }
