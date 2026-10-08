@@ -24,8 +24,10 @@ public final class HdFonts {
         return resources.getResource(hd).isPresent() ? hd : location;
     }
 
-    public static boolean apply(ResourceManager resources, Identifier fontLocation, TextBatcher batcher) {
+    public static boolean apply(ResourceManager resources, Identifier fontLocation, TextBatcher batcher, int[] characterWidths) {
         if (!Cera.CONFIG.hdFonts) return false;
+
+        batcher.readWidths(fontLocation, characterWidths, 16, false);
 
         String path = fontLocation.getPath();
         if (!path.endsWith(".png")) return false;

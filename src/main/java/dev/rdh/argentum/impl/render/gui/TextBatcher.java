@@ -87,6 +87,10 @@ public final class TextBatcher {
     private ByteBuffer uploadBuffer;
 
     public void readWidths(Identifier fontLocation, int[] characterWidths) {
+        this.readWidths(fontLocation, characterWidths, 0, true);
+    }
+
+    public void readWidths(Identifier fontLocation, int[] characterWidths, int alphaThreshold, boolean round) {
         BufferedImage image;
         try {
             image = TextureUtil.readImage(
@@ -115,15 +119,16 @@ public final class TextBatcher {
                 int x = column * glyphWidth + lastUsed;
                 boolean empty = true;
                 for (int y = 0; y < glyphHeight; y++) {
-					if((pixels[x + (row * glyphWidth + y) * imageWidth] >> 24 & 0xFF) != 0) {
-						empty = false;
-						break;
-					}
+                    if ((pixels[x + (row * glyphWidth + y) * imageWidth] >> 24 & 0xFF) > alphaThreshold) {
+                        empty = false;
+                        break;
+                    }
                 }
                 if (!empty) break;
             }
 
-            this.widths[character] = (int) (0.5 + (lastUsed + 1) * scale) + 1.0F;
+            float width = (lastUsed + 1) * scale;
+            this.widths[character] = (round ? (int) (0.5 + width) : width) + 1.0F;
         }
 
         // vanilla leaves widths[32]=1 and hardcodes 4 in getWidth(), but we want people to be able to override this

@@ -24,6 +24,9 @@ public abstract class TextRendererMixin implements TextRendererExtension {
     @Final
     private Identifier fontLocation;
 
+    @Shadow
+    private int[] characterWidths;
+
     @Unique
     private Identifier cera$vanillaFontLocation;
 
@@ -40,6 +43,6 @@ public abstract class TextRendererMixin implements TextRendererExtension {
     @Inject(method = "reload", at = @At("RETURN"))
     private void cera$applyWidths(@Coerce Object resources, CallbackInfo ci) {
         var batcher = this.argentum$getBatcher();
-        batcher.setBlend(HdFonts.apply(ResourceManager.client(), this.fontLocation, batcher));
+        batcher.setBlend(HdFonts.apply(ResourceManager.client(), this.fontLocation, batcher, this.characterWidths));
     }
 }
