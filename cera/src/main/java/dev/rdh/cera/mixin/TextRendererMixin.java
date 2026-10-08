@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(TextRenderer.class)
+@Mixin(value = TextRenderer.class, priority = 1100)
 public abstract class TextRendererMixin implements TextRendererExtension {
     @Mutable
     @Shadow
@@ -40,8 +40,8 @@ public abstract class TextRendererMixin implements TextRendererExtension {
         this.fontLocation = HdFonts.resolve(ResourceManager.client(), this.cera$vanillaFontLocation);
     }
 
-    @Inject(method = "reload", at = @At("RETURN"))
-    private void cera$applyWidths(@Coerce Object resources, CallbackInfo ci) {
+    @Inject(method = "init", at = @At("RETURN"))
+    private void cera$applyWidths(CallbackInfo ci) {
         var batcher = this.argentum$getBatcher();
         batcher.setBlend(HdFonts.apply(ResourceManager.client(), this.fontLocation, batcher, this.characterWidths));
     }
