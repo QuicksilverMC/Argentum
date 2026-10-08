@@ -31,6 +31,7 @@ import net.ornithemc.osl.resource.loader.api.resource.manager.ResourceManager;
 import net.ornithemc.osl.resource.loader.api.resource.reload.ResourceReloadListener;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 public final class DynamicLights {
     private static final String CONFIG = "optifine/dynamic_lights.properties";
@@ -83,13 +84,27 @@ public final class DynamicLights {
         lights = tracked.values().toArray(Light[]::new);
     }
 
-    public boolean active() {
-        return Cera.CONFIG.dynamicLights != Mode.OFF && lights.length > 0;
+    public Light[] near(int sectionX, int sectionY, int sectionZ) {
+        Light[] lights = this.lights;
+        if (lights.length == 0 || Cera.CONFIG.dynamicLights == Mode.OFF) return NO_LIGHTS;
+
+        // light lookups reach a couple of blocks past the section being built
+        double reach = MAX_DISTANCE + 2.0;
+        int count = 0;
+        Light[] near = new Light[lights.length];
+        for (Light light : lights) {
+            if (outside(light.x, sectionX, reach) || outside(light.y, sectionY, reach) || outside(light.z, sectionZ, reach)) continue;
+            near[count++] = light;
+        }
+        return count == 0 ? NO_LIGHTS : Arrays.copyOf(near, count);
     }
 
-    public int combine(int x, int y, int z, int packedLight) {
-        if (Cera.CONFIG.dynamicLights == Mode.OFF) return packedLight;
+    private static boolean outside(double position, int section, double reach) {
+        int min = section << 4;
+        return position < min - reach || position > min + 15 + reach;
+    }
 
+    public static int combine(Light[] lights, int x, int y, int z, int packedLight) {
         double maximum = 0.0;
         for (Light light : lights) {
             double dx = x - light.x;
@@ -218,7 +233,7 @@ public final class DynamicLights {
         }
     }
 
-    private record Light(double x, double y, double z, int level, boolean underwater) {
+    public record Light(double x, double y, double z, int level, boolean underwater) {
         private boolean changed(double x, double y, double z, int level, boolean underwater) {
             return Math.abs(this.x - x) > 0.1 || Math.abs(this.y - y) > 0.1 || Math.abs(this.z - z) > 0.1
                     || this.level != level || this.underwater != underwater;
