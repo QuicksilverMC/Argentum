@@ -23,3 +23,8 @@ A non-exhaustive list of features that currently exist:
 A companion mod also exists under the [`extras`](/extras) folder, providing extra rendering customization and eye candy.
 
 The [`cera`](/cera) subproject reimplements MCPatcher/OptiFine resource pack extensions.
+
+## License
+All Rights Reserved.
+
+The Celeritas jar Argentum bundles remains licensed under the [GNU Lesser General Public License, version 3](https://www.gnu.org/licenses/lgpl-3.0.html).
