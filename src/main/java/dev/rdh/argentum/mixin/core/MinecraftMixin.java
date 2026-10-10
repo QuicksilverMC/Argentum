@@ -2,6 +2,7 @@ package dev.rdh.argentum.mixin.core;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.platform.GLX;
+import net.minecraft.client.world.ClientWorld;
 
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import org.embeddedt.embeddium.impl.render.frame.RenderAheadManager;
@@ -29,6 +30,9 @@ public abstract class MinecraftMixin {
 
     @Shadow
     private boolean logGlErrors;
+
+    @Shadow
+    public ClientWorld world;
 
     @ModifyArg(method = "initDisplay", at = @At(value = "INVOKE",
             target = "Lorg/lwjgl/opengl/PixelFormat;withDepthBits(I)Lorg/lwjgl/opengl/PixelFormat;", remap = false))
@@ -83,7 +87,7 @@ public abstract class MinecraftMixin {
 
     @WrapWithCondition(method = "runGame", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;clear(I)V"))
     private boolean argentum$needsBackbufferClear(int mask) {
-        return !GLX.useFbo();
+        return !GLX.useFbo() || this.world == null;
     }
 
     @WrapWithCondition(method = "runGame", at = @At(value = "INVOKE", target = "Ljava/lang/Thread;yield()V"))
