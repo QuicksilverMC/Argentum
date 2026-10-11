@@ -2,6 +2,7 @@ package dev.rdh.argentum.impl.ext;
 
 import net.minecraft.resource.Identifier;
 
+import dev.rdh.argentum.impl.render.gui.GlyphSink;
 import dev.rdh.argentum.impl.render.gui.TextBatcher;
 
 public interface TextRendererExtension {
@@ -21,7 +22,7 @@ public interface TextRendererExtension {
         throw new UnsupportedOperationException();
     }
 
-    default byte[] argentum$getGlyphSizes() {
+    default float argentum$captureUnicodeGlyph(char character, boolean italic, float x, float y, GlyphSink sink) {
         throw new UnsupportedOperationException();
     }
 

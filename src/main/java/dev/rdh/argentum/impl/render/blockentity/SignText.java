@@ -1,5 +1,6 @@
 package dev.rdh.argentum.impl.render.blockentity;
 
+import dev.rdh.argentum.impl.render.gui.GlyphSink;
 import dev.rdh.argentum.impl.render.gui.TextBatcher;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
@@ -63,21 +64,22 @@ public record SignText(Text[] lines, String font, BakedBlockEntities.Region regi
                 layout.colors.toIntArray(), layout.textures.toByteArray());
     }
 
-    private static final class Layout {
+    private static final class Layout implements GlyphSink {
         private final TextRenderer textRenderer;
         private final TextBatcher batcher;
-        private final byte[] glyphSizes;
         private final SlotSheet sheet;
         private final boolean unicode;
         private final List<SlotSheet.Entry> pages = new ArrayList<>();
         private final FloatArrayList vertices = new FloatArrayList();
         private final IntArrayList colors = new IntArrayList();
         private final ByteArrayList textures = new ByteArrayList();
+        private int glyphColor;
+        private int glyphTexture;
+        private int glyphVertices;
 
         private Layout(TextRenderer textRenderer, TextBatcher batcher, SlotSheet sheet, boolean unicode) {
             this.textRenderer = textRenderer;
             this.batcher = batcher;
-            this.glyphSizes = textRenderer.argentum$getGlyphSizes();
             this.sheet = sheet;
             this.unicode = unicode;
         }
@@ -129,21 +131,43 @@ public record SignText(Text[] lines, String font, BakedBlockEntities.Region regi
                 return width;
             }
 
-            if (this.glyphSizes[character] == 0) return 0.0F;
-            SlotSheet.Entry page = this.sheet == null ? null
-                    : this.sheet.upload(new Identifier(String.format("textures/font/unicode_page_%02x.png", character / 256)));
-            if (page == null) return Float.NaN;
+            this.glyphColor = color;
+            this.glyphTexture = 0;
+            this.glyphVertices = 0;
+            float advance = this.textRenderer.argentum$captureUnicodeGlyph(character, italic, x, y, this);
+            return this.glyphTexture < 0 ? Float.NaN : advance;
+        }
+
+        @Override
+        public void texture(Identifier location) {
+            SlotSheet.Entry page = this.sheet == null ? null : this.sheet.upload(location);
+            if (page == null) {
+                this.glyphTexture = -1;
+                return;
+            }
             int texture = this.pages.indexOf(page);
             if (texture < 0) {
                 texture = this.pages.size();
                 this.pages.add(page);
             }
-            int left = this.glyphSizes[character] >>> 4;
-            int right = (this.glyphSizes[character] & 15) + 1;
-            float width = right - left - 0.02F;
-            this.quad(x, y, character % 16 * 16 + left, (character & 255) / 16 * 16, width / 2.0F, width, 15.98F, italic, 256.0F, color,
-                    texture + 1);
-            return (right - left) / 2.0F + 1.0F;
+            this.glyphTexture = texture + 1;
+        }
+
+        @Override
+        public void vertex(float x, float y, float u, float v) {
+            if (this.glyphTexture <= 0) return;
+            int index = this.glyphVertices++;
+            this.vertex(x, y, u, v, 1.0F);
+            if (index == 3) {
+                int end = this.vertices.size();
+                for (int i = 0; i < 4; i++) {
+                    float swap = this.vertices.getFloat(end - 8 + i);
+                    this.vertices.set(end - 8 + i, this.vertices.getFloat(end - 4 + i));
+                    this.vertices.set(end - 4 + i, swap);
+                }
+                this.colors.add(this.glyphColor);
+                this.textures.add((byte)this.glyphTexture);
+            }
         }
 
         private void quad(float x, float y, float u, float v, float width, float textureWidth, float textureHeight, boolean italic,

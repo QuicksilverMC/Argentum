@@ -6,6 +6,7 @@ import dev.rdh.argentum.impl.render.entity.NameTagBatch;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.TextRenderer;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.texture.TextureManager;
 import net.minecraft.client.render.texture.TextureUtil;
@@ -85,6 +86,8 @@ public final class TextBatcher {
     private int generation;
     private int endColor;
     private ByteBuffer uploadBuffer;
+    private final float[] glyph = new float[16];
+    private int glyphVertices;
 
     public void readWidths(Identifier fontLocation, int[] characterWidths) {
         this.readWidths(fontLocation, characterWidths, 0, true);
@@ -163,23 +166,18 @@ public final class TextBatcher {
         return character == '\u202f' || character == '\u00a0' || character == '\u2007' ? ' ' : character;
     }
 
-    public float charWidth(char character, boolean unicode, byte[] glyphSizes) {
+    /**
+     * {@return NaN for one that vanilla's unicode path measures}
+     */
+    public float basicCharWidth(char character, boolean unicode) {
         if (character == SECTION) return -1.0F;
 
         int index = CHARACTERS.indexOf(character);
         if ((character > 0 && index != -1 && !unicode) || character == ' ') return this.widths[index];
-
-        if (glyphSizes[character] == 0) return 0.0F;
-        int left = glyphSizes[character] >>> 4;
-        int right = glyphSizes[character] & 15;
-        if (right > 7) {
-            right = 15;
-            left = 0;
-        }
-        return (right + 1 - left) / 2 + 1;
+        return Float.NaN;
     }
 
-    public int stringWidth(String text, boolean unicode, byte[] glyphSizes) {
+    public int stringWidth(String text, boolean unicode, TextRenderer renderer) {
         if (text == null) return 0;
 
         boolean cache = Minecraft.getInstance().isOnSameThread();
@@ -190,7 +188,8 @@ public final class TextBatcher {
         boolean bold = false;
         for (int i = 0; i < text.length(); i++) {
             char character = normalizeSpace(text.charAt(i));
-            float width = this.charWidth(character, unicode, glyphSizes);
+            float width = this.basicCharWidth(character, unicode);
+            if (Float.isNaN(width)) width = renderer.getWidth(character);
             if (width < 0.0F && i < text.length() - 1) {
                 character = text.charAt(++i);
                 if (character == 'l' || character == 'L') bold = true;
@@ -345,27 +344,23 @@ public final class TextBatcher {
         return width;
     }
 
-    public float drawUnicodeGlyph(char character, boolean italic, float x, float y,
-            TextureManager textureManager, Identifier page, byte[] glyphSizes) {
-        if (!this.batching) return Float.NaN;
-        if (glyphSizes[character] == 0) return 0.0F;
+    public void useGlyphTexture(TextureManager textureManager, Identifier texture) {
+        this.useTexture(textureManager, texture);
+        this.glyphVertices = 0;
+    }
 
-        int left = glyphSizes[character] >>> 4;
-        int right = (glyphSizes[character] & 15) + 1;
-        float textureX = character % 16 * 16 + left;
-        float textureY = (character & 255) / 16 * 16;
-        float width = right - left - 0.02F;
-        float slant = italic ? 1.0F : 0.0F;
-
-        this.useTexture(textureManager, page);
-        this.quad(
-                x + slant, y, textureX / 256.0F, textureY / 256.0F,
-                x - slant, y + 7.99F, textureX / 256.0F, (textureY + 15.98F) / 256.0F,
-                x + width / 2.0F + slant, y, (textureX + width) / 256.0F, textureY / 256.0F,
-                x + width / 2.0F - slant, y + 7.99F,
-                (textureX + width) / 256.0F, (textureY + 15.98F) / 256.0F
-        );
-        return (right - left) / 2.0F + 1.0F;
+    public void glyphVertex(float x, float y, float u, float v) {
+        float[] glyph = this.glyph;
+        int offset = this.glyphVertices++ * 4;
+        glyph[offset] = x;
+        glyph[offset + 1] = y;
+        glyph[offset + 2] = u;
+        glyph[offset + 3] = v;
+        if (this.glyphVertices == 4) {
+            this.glyphVertices = 0;
+            this.quad(glyph[0], glyph[1], glyph[2], glyph[3], glyph[4], glyph[5], glyph[6], glyph[7],
+                    glyph[8], glyph[9], glyph[10], glyph[11], glyph[12], glyph[13], glyph[14], glyph[15]);
+        }
     }
 
     public void beginElementBatch(Runnable beforeImmediateText) {
