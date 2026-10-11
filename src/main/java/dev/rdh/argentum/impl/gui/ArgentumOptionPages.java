@@ -6,6 +6,7 @@ import org.embeddedt.embeddium.impl.gui.framework.TextComponent;
 import org.embeddedt.embeddium.impl.render.chunk.compile.executor.ChunkBuilder;
 import org.embeddedt.embeddium.impl.render.chunk.occlusion.AsyncOcclusionMode;
 import org.lwjgl.opengl.Display;
+import org.lwjgl.opengl.DisplayMode;
 import org.taumc.celeritas.api.options.OptionIdentifier;
 import org.taumc.celeritas.api.options.control.ControlValueFormatter;
 import org.taumc.celeritas.api.options.control.CyclingControl;
@@ -21,9 +22,11 @@ import org.taumc.celeritas.api.options.structure.StandardOptions;
 
 import dev.rdh.argentum.api.config.JsonOptionStorage;
 import dev.rdh.argentum.impl.Argentum;
+import dev.rdh.argentum.impl.compat.PylonFullscreen;
 import dev.rdh.argentum.impl.config.ArgentumConfig;
 import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService.FogShape;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -75,6 +78,8 @@ public final class ArgentumOptionPages {
         private static final OptionIdentifier<Void> FASTER_WEATHER = OptionIdentifier.create(Argentum.ID, "faster_weather");
         private static final OptionIdentifier<Void> GREEDY_RENDER_THREAD = OptionIdentifier.create(Argentum.ID, "greedy_render_thread");
         private static final OptionIdentifier<Void> FOG_SHAPE = OptionIdentifier.create(Argentum.ID, "fog_shape");
+        private static final OptionIdentifier<Void> FULLSCREEN_MODE = OptionIdentifier.create(Argentum.ID, "fullscreen_mode");
+        private static final OptionIdentifier<Void> FULLSCREEN_RESOLUTION = OptionIdentifier.create(Argentum.ID, "fullscreen_resolution");
     }
 
     private ArgentumOptionPages() {
@@ -98,6 +103,14 @@ public final class ArgentumOptionPages {
                         .build())
                 .build();
 
+        OptionImpl<ArgentumConfig, Boolean> fullscreenMode = PylonFullscreen.SUPPORTED
+                ? option(boolean.class, CONFIG_STORAGE, Option.FULLSCREEN_MODE)
+                        .setControl(option -> new CyclingControl<>(option, new Boolean[]{false, true},
+                                new TextComponent[]{text("value.borderless"), text("value.exclusive")}))
+                        .setBinding((config, value) -> config.exclusiveFullscreen = value, config -> config.exclusiveFullscreen)
+                        .build()
+                : null;
+
         OptionGroup window = OptionGroup.createBuilder()
                 .setId(Group.WINDOW)
                 .add(option(int.class, VANILLA, StandardOptions.Option.GUI_SCALE)
@@ -113,15 +126,26 @@ public final class ArgentumOptionPages {
                 .add(option(boolean.class, VANILLA, StandardOptions.Option.FULLSCREEN)
                         .setName(vanilla("options.fullscreen"))
                         .setControl(TickBoxControl::new)
-                        .setBinding((options, value) -> {
-                            options.fullscreen = value;
-                            Minecraft minecraft = Minecraft.getInstance();
-                            if (minecraft.isFullscreen() != value) {
-                                minecraft.toggleFullscreen();
-                                options.fullscreen = minecraft.isFullscreen();
-                            }
-                        }, options -> options.fullscreen)
+                        .setBinding((options, value) -> options.fullscreen = value, options -> options.fullscreen)
                         .build())
+                .addConditionally(PylonFullscreen.SUPPORTED, () -> fullscreenMode)
+                .addConditionally(PylonFullscreen.SUPPORTED, () -> {
+                    DisplayMode[] modes = PylonFullscreen.displayModes();
+                    return option(int.class, CONFIG_STORAGE, Option.FULLSCREEN_RESOLUTION)
+                            .setControl(option -> new SliderControl(option, 0, Math.max(1, modes.length), 1, value -> {
+                                if (value == 0 || value > modes.length) return text("value.desktop");
+                                DisplayMode mode = modes[value - 1];
+                                return text("value.display_mode", mode.getWidth(), mode.getHeight(), mode.getFrequency());
+                            }))
+                            .setBinding((config, value) -> {
+                                DisplayMode mode = value > 0 && value <= modes.length ? modes[value - 1] : null;
+                                config.fullscreenWidth = mode != null ? mode.getWidth() : 0;
+                                config.fullscreenHeight = mode != null ? mode.getHeight() : 0;
+                                config.fullscreenRefreshRate = mode != null ? mode.getFrequency() : 0;
+                            }, config -> 1 + Arrays.asList(modes).indexOf(PylonFullscreen.configuredMode()))
+                            .setEnabledPredicate(() -> fullscreenMode.getValue())
+                            .build();
+                })
                 .add(option(int.class, VANILLA, StandardOptions.Option.MAX_FRAMERATE)
                         .setName(vanilla("options.framerateLimit"))
                         .setControl(option -> new SliderControl(option, Argentum.CONFIG.explicitVsyncOption ? 5 : 0, 260, 5,

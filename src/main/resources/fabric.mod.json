@@ -21,6 +21,9 @@
   "depends": {
     "minecraft": "1.8.9"
   },
+  "breaks": {
+    "pylon": "<0.2.1"
+  },
   "accessWidener": "argentum.classtweaker",
   "mixins": ["mixins.argentum.json"],
   "custom": {

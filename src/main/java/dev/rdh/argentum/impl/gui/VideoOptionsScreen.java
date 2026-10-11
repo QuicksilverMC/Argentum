@@ -7,6 +7,8 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.taumc.celeritas.api.options.structure.OptionFlag;
 
+import dev.rdh.argentum.impl.compat.PylonFullscreen;
+
 import java.util.Set;
 
 public final class VideoOptionsScreen extends Screen {
@@ -23,6 +25,13 @@ public final class VideoOptionsScreen extends Screen {
             protected void applyFlagSideEffects(Set<OptionFlag> flags) {
                 super.applyFlagSideEffects(flags);
                 Minecraft minecraft = Minecraft.getInstance();
+                boolean fullscreenModeChanged = PylonFullscreen.sync();
+                if (minecraft.isFullscreen() != minecraft.options.fullscreen) {
+                    minecraft.toggleFullscreen();
+                    minecraft.options.fullscreen = minecraft.isFullscreen();
+                } else if (fullscreenModeChanged && minecraft.isFullscreen()) {
+                    PylonFullscreen.reenter();
+                }
                 if (flags.contains(OptionFlag.REQUIRES_RENDERER_RELOAD)) {
                     minecraft.worldRenderer.reload();
                 }
