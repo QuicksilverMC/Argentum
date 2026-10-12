@@ -84,12 +84,15 @@ public class GameRendererMixin {
                     target = "Lnet/minecraft/client/render/GameRenderer;setupFog(IF)V",
                     shift = At.Shift.AFTER))
     private void argentumExtras$changeCloudFog(WorldRenderer renderer, float tickDelta, int pass, CallbackInfo ci) {
+        if (this.argentumExtras$isBlind()) {
+            return;
+        }
         if (!ArgentumExtras.CONFIG.cloudFog) {
             GlStateManager.disableFog();
             return;
         }
         int distance = ArgentumExtras.CONFIG.cloudRenderDistance;
-        if (distance != 0 && GlStateManager.FOG.mode == GL11.GL_LINEAR && !this.argentumExtras$isBlind()) {
+        if (distance != 0 && GlStateManager.FOG.mode == GL11.GL_LINEAR) {
             GlStateManager.fogStart(distance * 0.75F);
             GlStateManager.fogEnd(distance);
         }
