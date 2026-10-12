@@ -33,6 +33,10 @@ public class ArgentumConfig {
     public boolean guiItemAtlas = true;
     public boolean greedyRenderThread = false;
     public boolean explicitVsyncOption = true; // file only
+    public boolean exclusiveFullscreen = false;
+    public int fullscreenWidth = 0; // 0 = desktop mode
+    public int fullscreenHeight = 0;
+    public int fullscreenRefreshRate = 0;
 
 	public void validate() {
         this.chunkBuilderThreads = Math.max(0, this.chunkBuilderThreads);

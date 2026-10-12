@@ -18,6 +18,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.compat.NvidiaWorkarounds;
+import dev.rdh.argentum.impl.compat.PylonFullscreen;
 import dev.rdh.argentum.impl.render.gui.hud.item.GuiItemIcons;
 
 import java.util.ArrayList;
@@ -43,6 +44,11 @@ public abstract class MinecraftMixin {
     @Inject(method = "initDisplay", at = @At("HEAD"))
     private void argentum$installNvidiaWorkarounds(CallbackInfo ci) {
         NvidiaWorkarounds.install();
+    }
+
+    @Inject(method = "initDisplayMode", at = @At("HEAD"))
+    private void argentum$applyFullscreenMode(CallbackInfo ci) {
+        PylonFullscreen.sync();
     }
 
     @Inject(method = "initDisplay", at = @At("RETURN"))
