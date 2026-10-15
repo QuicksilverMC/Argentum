@@ -23,6 +23,7 @@ public class ArgentumConfig {
     public int chunkFadeInDuration = 0;
     public FogShape fogShape = FogShape.SPHERICAL;
     public boolean fasterClouds = true;
+    public boolean defaultClouds = false;
     public boolean fasterWeather = true;
     public int cpuRenderAheadLimit = 3;
     public int biomeBlendRadius = 3;

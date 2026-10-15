@@ -2,7 +2,9 @@ package dev.rdh.argentum.mixin.core;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.options.GameOptions;
+import dev.rdh.argentum.impl.Argentum;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import org.objectweb.asm.*;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,6 +22,14 @@ import java.io.PrintWriter;
 public class GameOptionsMixin {
     @Shadow
     public boolean useVbo;
+
+    @Shadow
+    public boolean fancyGraphics;
+
+    @ModifyExpressionValue(method = "getCloudRenderMode", at = @At(value = "FIELD", target = "Lnet/minecraft/client/options/GameOptions;cloudRenderMode:I", opcode = Opcodes.GETFIELD))
+    private int argentum$defaultClouds(int original) {
+        return Argentum.CONFIG.defaultClouds ? (this.fancyGraphics ? 2 : 1) : original;
+    }
 
     @Inject(method = "<init>(Lnet/minecraft/client/Minecraft;Ljava/io/File;)V", at = @At("RETURN"))
     private void argentum$enableVbos(Minecraft minecraft, File directory, CallbackInfo ci) {

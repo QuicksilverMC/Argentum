@@ -219,9 +219,12 @@ public final class ArgentumOptionPages {
                 .add(option(int.class, VANILLA, StandardOptions.Option.CLOUDS)
                         .setName(vanilla("options.renderClouds"))
                         .setControl(option -> new CyclingControl<>(option,
-                                new Integer[]{0, 1, 2}, vanillaValues("options.off", "options.graphics.fast", "options.graphics.fancy")))
-                        .setBinding((options, value) -> options.cloudRenderMode = value,
-                                options -> options.cloudRenderMode)
+                                new Integer[]{-1, 0, 1, 2}, new TextComponent[]{text("value.default"), vanilla("options.off"), vanilla("options.graphics.fast"), vanilla("options.graphics.fancy")}))
+                        .setBinding((options, value) -> {
+                            CONFIG.defaultClouds = value == -1;
+                            if (value >= 0) options.cloudRenderMode = value;
+                            CONFIG_STORAGE.save();
+                        }, options -> CONFIG.defaultClouds ? -1 : options.cloudRenderMode)
                         .setImpact(OptionImpact.LOW)
                         .build())
                 .add(option(int.class, VANILLA, StandardOptions.Option.PARTICLES)
