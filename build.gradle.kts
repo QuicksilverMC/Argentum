@@ -236,7 +236,7 @@ publishMods {
     val ceraChangelog = providers.gradleProperty("ceraChangelog")
 
     val modrinthDefaults = modrinthOptions {
-        accessToken.set(providers.environmentVariable("MODRINTH_TOKEN"))
+        accessToken.set(providers.environmentVariable("MODRINTH_PAT"))
         minecraftVersions.add(providers.gradleProperty("minecraft_version"))
     }
 
