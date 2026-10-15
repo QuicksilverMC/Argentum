@@ -30,6 +30,7 @@ minecraft.view_bobbing.tooltip=If enabled the player's view will sway and bob wh
 
 minecraft.graphics_mode.tooltip=Controls the quality of graphics rendering. 'Fast' disables many visual effects for improved performance, while 'Fancy' enables all visual effects for the best appearance.
 minecraft.anaglyph.tooltip=Renders red/cyan stereoscopic output.
+minecraft.alternate_blocks.tooltip=Varies block models and rotations based on their position.
 
 minecraft.clouds.tooltip=Controls the presence of rendered clouds in the sky. Default follows the resource pack's preference when supported, otherwise the Graphics setting.
 argentum.options.value.default=Default

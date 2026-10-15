@@ -66,6 +66,7 @@ public final class ArgentumOptionPages {
 
     private static final class Option {
         private static final OptionIdentifier<Void> ANAGLYPH = OptionIdentifier.create("minecraft", "anaglyph");
+        private static final OptionIdentifier<Void> ALTERNATE_BLOCKS = OptionIdentifier.create("minecraft", "alternate_blocks");
         private static final OptionIdentifier<Void> ENTITY_OCCLUSION_INTERVAL = OptionIdentifier.create(Argentum.ID, "entity_occlusion_interval");
         private static final OptionIdentifier<Void> PARTICLE_CULLING = OptionIdentifier.create(Argentum.ID, "particle_culling");
         private static final OptionIdentifier<Void> ENTITY_INSTANCING = OptionIdentifier.create(Argentum.ID, "entity_instancing");
@@ -216,6 +217,12 @@ public final class ArgentumOptionPages {
 
         OptionGroup details = OptionGroup.createBuilder()
                 .setId(Group.DETAILS)
+                .add(option(boolean.class, VANILLA, Option.ALTERNATE_BLOCKS)
+                        .setName(vanilla("options.blockAlternatives"))
+                        .setControl(TickBoxControl::new)
+                        .setBinding((options, value) -> options.allowBlockAlternatives = value, options -> options.allowBlockAlternatives)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build())
                 .add(option(int.class, VANILLA, StandardOptions.Option.CLOUDS)
                         .setName(vanilla("options.renderClouds"))
                         .setControl(option -> new CyclingControl<>(option,
