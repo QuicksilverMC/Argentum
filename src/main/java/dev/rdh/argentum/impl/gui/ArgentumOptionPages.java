@@ -104,15 +104,7 @@ public final class ArgentumOptionPages {
                         .build())
                 .build();
 
-        OptionImpl<ArgentumConfig, Boolean> fullscreenMode = PylonFullscreen.SUPPORTED
-                ? option(boolean.class, CONFIG_STORAGE, Option.FULLSCREEN_MODE)
-                        .setControl(option -> new CyclingControl<>(option, new Boolean[]{false, true},
-                                new TextComponent[]{text("value.borderless"), text("value.exclusive")}))
-                        .setBinding((config, value) -> config.exclusiveFullscreen = value, config -> config.exclusiveFullscreen)
-                        .build()
-                : null;
-
-        OptionGroup window = OptionGroup.createBuilder()
+		OptionGroup window = OptionGroup.createBuilder()
                 .setId(Group.WINDOW)
                 .add(option(int.class, VANILLA, StandardOptions.Option.GUI_SCALE)
                         .setName(vanilla("options.guiScale"))
@@ -129,7 +121,11 @@ public final class ArgentumOptionPages {
                         .setControl(TickBoxControl::new)
                         .setBinding((options, value) -> options.fullscreen = value, options -> options.fullscreen)
                         .build())
-                .addConditionally(PylonFullscreen.SUPPORTED, () -> fullscreenMode)
+                .addConditionally(PylonFullscreen.SUPPORTED, () -> option(boolean.class, CONFIG_STORAGE, Option.FULLSCREEN_MODE)
+						.setControl(option1 -> new CyclingControl<>(option1, new Boolean[]{false, true},
+								new TextComponent[]{text("value.borderless"), text("value.exclusive")}))
+						.setBinding((config1, value1) -> config1.exclusiveFullscreen = value1, config1 -> config1.exclusiveFullscreen)
+						.build())
                 .addConditionally(PylonFullscreen.SUPPORTED, () -> {
                     DisplayMode[] modes = PylonFullscreen.displayModes();
                     return option(int.class, CONFIG_STORAGE, Option.FULLSCREEN_RESOLUTION)
@@ -143,8 +139,8 @@ public final class ArgentumOptionPages {
                                 config.fullscreenWidth = mode != null ? mode.getWidth() : 0;
                                 config.fullscreenHeight = mode != null ? mode.getHeight() : 0;
                                 config.fullscreenRefreshRate = mode != null ? mode.getFrequency() : 0;
-                            }, config -> 1 + Arrays.asList(modes).indexOf(PylonFullscreen.configuredMode()))
-                            .setEnabledPredicate(() -> fullscreenMode.getValue())
+                            }, config -> 1 + Arrays.asList(modes).indexOf(PylonFullscreen.configuredMode(config)))
+                            .setEnabledPredicate(() -> Argentum.CONFIG.exclusiveFullscreen)
                             .build();
                 })
                 .add(option(int.class, VANILLA, StandardOptions.Option.MAX_FRAMERATE)

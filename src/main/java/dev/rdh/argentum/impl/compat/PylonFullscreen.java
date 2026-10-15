@@ -22,7 +22,7 @@ public final class PylonFullscreen {
     public static boolean sync() {
         if (!SUPPORTED) return false;
         boolean exclusive = Argentum.CONFIG.exclusiveFullscreen;
-        DisplayMode mode = configuredMode();
+        DisplayMode mode = configuredMode(Argentum.CONFIG);
         DisplaySdl display = DisplaySdl.instance();
         boolean changed = display.isExclusiveFullscreen() != exclusive
                 || exclusive && !Objects.equals(display.getFullscreenDisplayMode(), mode);
@@ -36,8 +36,7 @@ public final class PylonFullscreen {
         Display.setFullscreen(true);
     }
 
-    public static DisplayMode configuredMode() {
-        ArgentumConfig config = Argentum.CONFIG;
+    public static DisplayMode configuredMode(ArgentumConfig config) {
         return config.fullscreenWidth > 0
                 ? new DisplayMode(config.fullscreenWidth, config.fullscreenHeight, 0, config.fullscreenRefreshRate)
                 : null;
@@ -50,7 +49,7 @@ public final class PylonFullscreen {
         } catch (IllegalStateException e) {
             available = new DisplayMode[0];
         }
-        DisplayMode configured = configuredMode();
+        DisplayMode configured = configuredMode(Argentum.CONFIG);
         return Stream.concat(Arrays.stream(available), configured != null ? Stream.of(configured) : Stream.empty())
                 .map(mode -> new DisplayMode(mode.getWidth(), mode.getHeight(), 0, mode.getFrequency()))
                 .distinct()
