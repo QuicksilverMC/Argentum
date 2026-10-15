@@ -12,6 +12,7 @@ import org.joml.Matrix4f;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.blockentity.BakedBlockEntities;
 import dev.rdh.argentum.impl.render.blockentity.BakedItemFrames;
+import dev.rdh.argentum.impl.render.blockentity.EndPortalBatcher;
 import dev.rdh.argentum.impl.render.entity.EntityOcclusionCuller;
 import dev.rdh.argentum.impl.render.entity.EntityGatherer;
 import dev.rdh.argentum.impl.render.entity.EntityShadowBatch;
@@ -58,6 +59,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     private ChunkRenderMatrices matrices = null;
     private boolean renderingBlockEntities;
     private final List<BlockEntity> bakeCandidates = new ArrayList<>();
+    private final EndPortalBatcher endPortals = new EndPortalBatcher();
 
     /**
      * @return The ArgentumWorldRenderer based on the current dimension
@@ -348,6 +350,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
         float partialTicks = partialTicksBoxed;
         for (var blockEntity : list) {
             if (blockEntity instanceof SkullBlockEntity || blockEntity instanceof SignBlockEntity) this.bakeCandidates.add(blockEntity);
+            if (this.endPortals.add(blockEntity)) continue;
             try {
                 BlockEntityRenderDispatcher.INSTANCE.render(blockEntity, partialTicks, -1);
             } catch(RuntimeException e) {
@@ -358,5 +361,6 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
                 }
             }
         }
+        this.endPortals.flush();
     }
 }
