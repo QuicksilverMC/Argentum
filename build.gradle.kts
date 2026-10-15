@@ -1,9 +1,12 @@
 plugins {
     id("mc")
     `maven-publish`
+    id("me.modmuss50.mod-publish-plugin") version "2.2.1"
 }
 
+val releaseBuild = providers.gradleProperty("release").isPresent
 version = providers.environmentVariable("GITHUB_SHA")
+    .filter { !releaseBuild }
     .flatMap { sha -> providers.gradleProperty("mod_version").map { "$it+${sha.take(7)}" } }
     .orElse(providers.gradleProperty("mod_version"))
     .get()
@@ -219,5 +222,61 @@ publishing {
                 password = System.getenv("TAUMC_MAVEN_PASSWORD")
             }
         }
+    }
+}
+
+publishMods {
+    file.set(tasks.remapJar.flatMap { it.archiveFile })
+    type.set(STABLE)
+    modLoaders.add("ornithe")
+    dryRun.set(providers.gradleProperty("publishDryRun").map(String::toBoolean).orElse(false))
+
+    val argentumChangelog = providers.gradleProperty("argentumChangelog")
+    val extrasChangelog = providers.gradleProperty("extrasChangelog")
+    val ceraChangelog = providers.gradleProperty("ceraChangelog")
+
+    val modrinthDefaults = modrinthOptions {
+        accessToken.set(providers.environmentVariable("MODRINTH_TOKEN"))
+        minecraftVersions.add(providers.gradleProperty("minecraft_version"))
+    }
+
+    modrinth("modrinthArgentum") {
+        from(modrinthDefaults)
+        projectId.set("QRMV06RW")
+        displayName.set("Argentum ${project.version}")
+        changelog.set(argentumChangelog)
+        requires("osl")
+        optional("pylon")
+        optional("moehreag-legacy-lwjgl3")
+    }
+    modrinth("modrinthExtras") {
+        from(modrinthDefaults)
+        file(project(":extras"))
+        projectId.set("Tc8Lbsu7")
+        displayName.set("Argentum Extras ${project.version}")
+        changelog.set(extrasChangelog)
+        requires { id.set("QRMV06RW") }
+    }
+    modrinth("modrinthCera") {
+        from(modrinthDefaults)
+        file(project(":cera"))
+        projectId.set("z4ctq7MO")
+        displayName.set("Cera ${project.version}")
+        changelog.set(ceraChangelog)
+        requires { id.set("QRMV06RW") }
+    }
+    github {
+        accessToken.set(providers.environmentVariable("GITHUB_TOKEN"))
+        repository.set("QuicksilverMC/Argentum")
+        commitish.set(providers.environmentVariable("GITHUB_SHA").orElse("main"))
+        tagName.set("v${project.version}")
+        displayName.set(project.version.toString())
+        additionalFile(project(":extras"))
+        additionalFile(project(":cera"))
+        changelog.set(argentumChangelog.zip(extrasChangelog) { argentum, extras ->
+            "## Argentum\n\n$argentum\n\n## Argentum Extras\n\n$extras"
+        }.zip(ceraChangelog) { changelog, cera ->
+            "$changelog\n\n## Cera\n\n$cera"
+        })
     }
 }
