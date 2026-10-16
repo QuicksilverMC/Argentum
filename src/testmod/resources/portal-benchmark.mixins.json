@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "dev.rdh.argentum.test.mixin",
+  "plugin": "dev.rdh.argentum.test.PortalMixinPlugin",
+  "compatibilityLevel": "JAVA_8",
+  "client": [
+    "MinecraftPortalBenchmarkMixin",
+    "EndPortalRendererTimeMixin",
+    "ArgentumEndPortalRendererTimeMixin",
+    "PortalEffectsMixin",
+    "PortalDispatcherEffectsMixin"
+  ]
+}

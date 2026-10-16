@@ -7,6 +7,7 @@
   "entrypoints": {
     "client": ["dev.rdh.argentum.test.ArgentumTestMod"]
   },
+  "mixins": ["portal-benchmark.mixins.json"],
   "depends": {
     "fabricloader": "*",
     "minecraft": "1.8.9",

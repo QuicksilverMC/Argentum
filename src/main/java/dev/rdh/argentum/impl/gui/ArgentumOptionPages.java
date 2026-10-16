@@ -76,6 +76,7 @@ public final class ArgentumOptionPages {
         private static final OptionIdentifier<Void> GUI_ITEM_ATLAS = OptionIdentifier.create(Argentum.ID, "gui_item_atlas");
         private static final OptionIdentifier<Void> SAFE_CHUNK_EDGES = OptionIdentifier.create(Argentum.ID, "safe_chunk_edges");
         private static final OptionIdentifier<Void> CHECK_GL_ERRORS = OptionIdentifier.create(Argentum.ID, "check_gl_errors");
+        private static final OptionIdentifier<Void> FASTER_END_PORTALS = OptionIdentifier.create(Argentum.ID, "faster_end_portals");
         private static final OptionIdentifier<Void> FASTER_WEATHER = OptionIdentifier.create(Argentum.ID, "faster_weather");
         private static final OptionIdentifier<Void> GREEDY_RENDER_THREAD = OptionIdentifier.create(Argentum.ID, "greedy_render_thread");
         private static final OptionIdentifier<Void> FOG_SHAPE = OptionIdentifier.create(Argentum.ID, "fog_shape");
@@ -366,6 +367,8 @@ public final class ArgentumOptionPages {
                 .add(toggle(StandardOptions.Option.USE_FASTER_CLOUDS,
                         OptionImpact.MEDIUM,
                         (config, value) -> config.fasterClouds = value, config -> config.fasterClouds))
+                .add(toggle(Option.FASTER_END_PORTALS, OptionImpact.MEDIUM,
+                        (config, value) -> config.fasterEndPortals = value, config -> config.fasterEndPortals))
                 .add(toggle(Option.FASTER_WEATHER, OptionImpact.MEDIUM,
                         (config, value) -> config.fasterWeather = value, config -> config.fasterWeather))
                 .add(toggle(Option.SAFE_CHUNK_EDGES, OptionImpact.LOW, (config1, value1) -> config1.safeChunkEdges = value1, config2 -> config2.safeChunkEdges, OptionFlag.REQUIRES_RENDERER_RELOAD))

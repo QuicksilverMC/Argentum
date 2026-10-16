@@ -96,6 +96,19 @@ loom {
             systemProperties.put("argentum.guiBenchmark", "true")
             systemProperties.put("argentum.guiBenchmarkBatched", "false")
         }
+        create("portalBenchmarkClient") {
+            inherit(getByName("client"))
+            sourceSet = testmod.name
+            displayName = "Portal Benchmark"
+            jvmArguments.add("-XstartOnFirstThread")
+            programArgs("--width", "1280", "--height", "720")
+            systemProperties.put("argentum.portalBenchmarkEffect", findProperty("portalBenchmarkEffect")?.toString() ?: "none")
+            systemProperties.put("argentum.portalBenchmarkHeightStep", findProperty("portalBenchmarkHeightStep")?.toString() ?: "0")
+            systemProperties.put("argentum.portalBenchmarkVariant", findProperty("portalBenchmarkVariant")?.toString() ?: "vanilla")
+            systemProperties.put("argentum.portalBenchmarkOutput", findProperty("portalBenchmarkOutput")?.toString() ?: "/tmp/argentum-portal-benchmark")
+            systemProperties.put("argentum.portalBenchmarkWarmupSeconds", findProperty("portalBenchmarkWarmupSeconds")?.toString() ?: "15")
+            systemProperties.put("argentum.portalBenchmarkMeasureSeconds", findProperty("portalBenchmarkMeasureSeconds")?.toString() ?: "20")
+        }
     }
 }
 

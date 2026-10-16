@@ -25,6 +25,7 @@ public class ArgentumConfig {
     public boolean fasterClouds = true;
     public boolean defaultClouds = false;
     public boolean fasterWeather = true;
+    public boolean fasterEndPortals = true;
     public int cpuRenderAheadLimit = 3;
     public int biomeBlendRadius = 3;
     public boolean safeChunkEdges = false;

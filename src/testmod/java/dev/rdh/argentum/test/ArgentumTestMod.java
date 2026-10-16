@@ -8,7 +8,9 @@ public class ArgentumTestMod implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         MinecraftClientEvents.READY.register(minecraft -> {
-            if (System.getProperty("argentum.itemTestVariant") != null) {
+            if (System.getProperty("argentum.portalBenchmarkVariant") != null) {
+                PortalBenchmark.start(minecraft);
+            } else if (System.getProperty("argentum.itemTestVariant") != null) {
                 Argentum.CONFIG.guiItemAtlas = "atlas".equals(System.getProperty("argentum.itemTestVariant"));
                 minecraft.openScreen(new GuiItemVisualTestScreen());
             } else if (Boolean.getBoolean("argentum.guiBenchmark")) {

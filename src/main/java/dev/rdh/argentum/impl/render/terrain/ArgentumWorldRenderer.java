@@ -19,6 +19,7 @@ import dev.rdh.argentum.impl.render.entity.NameTagBatch;
 import dev.rdh.argentum.impl.render.entity.instancing.EntityInstancing;
 import dev.rdh.argentum.impl.render.entity.instancing.ModelInstancer;
 import dev.rdh.argentum.impl.render.environment.WeatherRenderer;
+import dev.rdh.argentum.impl.render.environment.EndPortalRenderer;
 import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
 
 import net.minecraft.block.entity.BlockEntity;
@@ -54,6 +55,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     private final ModelInstancer modelInstancer = new ModelInstancer();
     private final EntityInstancing entityInstancing = new EntityInstancing(this.modelInstancer);
     private final WeatherRenderer weatherRenderer = new WeatherRenderer();
+    private final EndPortalRenderer endPortalRenderer = new EndPortalRenderer();
 
     private ChunkRenderMatrices matrices = null;
     private boolean renderingBlockEntities;
@@ -104,6 +106,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
             this.entityShadowBatch.close(commandList);
             this.modelInstancer.close(commandList);
             this.weatherRenderer.close(commandList);
+            this.endPortalRenderer.close();
         }
         BakedBlockEntities.clearSlotSheets();
         super.unloadWorld();
@@ -112,7 +115,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     @Override
     public void reload() {
         boolean reloadModels = this.modelInstancer.isInitialized();
-        if (reloadModels || this.entityShadowBatch.isInitialized() || this.weatherRenderer.isInitialized()) {
+        if (reloadModels || this.entityShadowBatch.isInitialized() || this.weatherRenderer.isInitialized() || this.endPortalRenderer.isInitialized()) {
             try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
                 if (reloadModels) {
                     this.entityInstancing.discardBatch();
@@ -120,6 +123,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
                 }
                 this.entityShadowBatch.close(commandList);
                 this.weatherRenderer.close(commandList);
+                this.endPortalRenderer.close();
             }
         }
         BakedBlockEntities.clearSlotSheets();
@@ -145,6 +149,10 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
 
     public ModelInstancer getModelInstancer() {
         return this.modelInstancer;
+    }
+
+    public EndPortalRenderer getEndPortalRenderer() {
+        return this.endPortalRenderer;
     }
 
     public boolean renderWeather(Entity camera, int ticks, float tickDelta, float strength, int radius, float[] sizeX, float[] sizeZ) {
@@ -346,10 +354,13 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     @Override
     protected void renderBlockEntityList(List<BlockEntity> list, Float partialTicksBoxed) {
         float partialTicks = partialTicksBoxed;
+        this.endPortalRenderer.begin(list);
         for (var blockEntity : list) {
             if (blockEntity instanceof SkullBlockEntity || blockEntity instanceof SignBlockEntity) this.bakeCandidates.add(blockEntity);
             try {
-                BlockEntityRenderDispatcher.INSTANCE.render(blockEntity, partialTicks, -1);
+                if (!this.endPortalRenderer.render(blockEntity, partialTicks)) {
+                    BlockEntityRenderDispatcher.INSTANCE.render(blockEntity, partialTicks, -1);
+                }
             } catch(RuntimeException e) {
                 if(blockEntity.isRemoved()) {
                     Argentum.LOGGER.warn("Suppressing crash from invalid tile entity");
@@ -358,5 +369,6 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
                 }
             }
         }
+        this.endPortalRenderer.end();
     }
 }
