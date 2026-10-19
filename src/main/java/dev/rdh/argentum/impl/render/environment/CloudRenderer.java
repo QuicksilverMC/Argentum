@@ -64,6 +64,10 @@ public final class CloudRenderer {
     private int vertexCount;
     private int meshTexelX;
     private int meshTexelZ;
+    private int textureWidth;
+    private int textureHeight;
+    private float scaleX;
+    private float scaleZ;
     private boolean[] cloudTexels;
     private ByteBuffer meshBytes;
     private FloatBuffer meshVertices;
@@ -79,15 +83,15 @@ public final class CloudRenderer {
             }
             if (this.cloudTexels == null) {
                 // vanilla has just bound the cloud texture
-                this.cloudTexels = readCloudTexels();
+                this.cloudTexels = this.readCloudTexels();
                 if (this.cloudTexels == null) {
                     this.supported = false;
-                    Argentum.LOGGER.warn("Faster clouds disabled: the cloud texture is not {}x{}", TEXTURE_SIZE, TEXTURE_SIZE);
+                    Argentum.LOGGER.warn("Faster clouds disabled: invalid cloud texture dimensions {}x{}", this.textureWidth, this.textureHeight);
                     return false;
                 }
             }
-            int texelX = MathHelper.floor(cloudX);
-            int texelZ = MathHelper.floor(cloudZ);
+            int texelX = MathHelper.floor(cloudX * this.scaleX);
+            int texelZ = MathHelper.floor(cloudZ * this.scaleZ);
             if (this.vertexBuffer == null || firstCell != this.meshFirstCell || lastCell != this.meshLastCell
                     || texelX != this.meshTexelX || texelZ != this.meshTexelZ) {
                 try {
@@ -108,10 +112,10 @@ public final class CloudRenderer {
                 return false;
             }
 
-            this.frame0[0] = texelX;
-            this.frame0[1] = texelZ;
-            this.frame0[2] = (float)(cloudX - texelX);
-            this.frame0[3] = (float)(cloudZ - texelZ);
+            this.frame0[0] = texelX / this.scaleX;
+            this.frame0[1] = texelZ / this.scaleZ;
+            this.frame0[2] = (float)(cloudX - texelX / this.scaleX);
+            this.frame0[3] = (float)(cloudZ - texelZ / this.scaleZ);
             this.frame1[0] = red;
             this.frame1[1] = green;
             this.frame1[2] = blue;
@@ -207,16 +211,18 @@ public final class CloudRenderer {
         return this.programs.get(ArgentumFogService.INSTANCE.getFogMode());
     }
 
-    private static boolean[] readCloudTexels() {
-        int width = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
-        int height = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
-        // vanilla scales cloud uvs for 256 texels
-        if (width != TEXTURE_SIZE || height != TEXTURE_SIZE) {
+    private boolean[] readCloudTexels() {
+        this.textureWidth = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
+        this.textureHeight = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
+        if (this.textureWidth <= 0 || this.textureHeight <= 0) {
             return null;
         }
-        ByteBuffer pixels = BufferUtils.createByteBuffer(TEXTURE_SIZE * TEXTURE_SIZE * 4);
+        this.scaleX = (float)this.textureWidth / TEXTURE_SIZE;
+        this.scaleZ = (float)this.textureHeight / TEXTURE_SIZE;
+        int pixelCount = Math.multiplyExact(this.textureWidth, this.textureHeight);
+        ByteBuffer pixels = BufferUtils.createByteBuffer(Math.multiplyExact(pixelCount, 4));
         GL11.glGetTexImage(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixels);
-        boolean[] texels = new boolean[TEXTURE_SIZE * TEXTURE_SIZE];
+        boolean[] texels = new boolean[pixelCount];
         for (int i = 0; i < texels.length; i++) {
             texels[i] = (pixels.get(i * 4 + 3) & 0xFF) >= MIN_ALPHA;
         }
@@ -224,16 +230,18 @@ public final class CloudRenderer {
     }
 
     private void createMesh(CommandList commandList, int texelX, int texelZ, int firstCell, int lastCell) {
-        int origin = firstCell * 8;
-        int size = (lastCell - firstCell + 1) * 8;
-        boolean[] solid = new boolean[size * size];
-        for (int z = 0; z < size; z++) {
-            int row = Math.floorMod(texelZ + origin + z, TEXTURE_SIZE) * TEXTURE_SIZE;
-            for (int x = 0; x < size; x++) {
-                solid[z * size + x] = this.cloudTexels[row + Math.floorMod(texelX + origin + x, TEXTURE_SIZE)];
+        int originX = MathHelper.floor(firstCell * 8 * this.scaleX);
+        int originZ = MathHelper.floor(firstCell * 8 * this.scaleZ);
+        int width = (int)Math.ceil((lastCell + 1) * 8 * this.scaleX) - originX;
+        int depth = (int)Math.ceil((lastCell + 1) * 8 * this.scaleZ) - originZ;
+        boolean[] solid = new boolean[Math.multiplyExact(width, depth)];
+        for (int z = 0; z < depth; z++) {
+            int row = Math.floorMod(texelZ + originZ + z, this.textureHeight) * this.textureWidth;
+            for (int x = 0; x < width; x++) {
+                solid[z * width + x] = this.cloudTexels[row + Math.floorMod(texelX + originX + x, this.textureWidth)];
             }
         }
-        IntArrayList plates = plates(solid, size);
+        IntArrayList plates = plates(solid, width, depth);
 
         if (this.meshBytes == null) {
             this.meshBytes = BufferUtils.createByteBuffer(4096 * 4 * VERTEX_FLOATS * Float.BYTES);
@@ -241,18 +249,18 @@ public final class CloudRenderer {
         }
         this.meshVertices.clear();
         for (int i = 0; i < plates.size(); i += 4) {
-            this.horizontal(origin + plates.getInt(i), origin + plates.getInt(i + 1), plates.getInt(i + 2), plates.getInt(i + 3), 0.0F, 0.7F);
+            this.horizontal(originX + plates.getInt(i), originZ + plates.getInt(i + 1), plates.getInt(i + 2), plates.getInt(i + 3), 0.0F, 0.7F);
         }
 
         this.sidesStart = this.meshVertices.position() / VERTEX_FLOATS;
-        this.walls(solid, size, origin, true, -1);
-        this.walls(solid, size, origin, true, 1);
-        this.walls(solid, size, origin, false, -1);
-        this.walls(solid, size, origin, false, 1);
+        this.walls(solid, width, depth, originX, originZ, true, -1);
+        this.walls(solid, width, depth, originX, originZ, true, 1);
+        this.walls(solid, width, depth, originX, originZ, false, -1);
+        this.walls(solid, width, depth, originX, originZ, false, 1);
 
         this.topStart = this.meshVertices.position() / VERTEX_FLOATS;
         for (int i = 0; i < plates.size(); i += 4) {
-            this.horizontal(origin + plates.getInt(i), origin + plates.getInt(i + 1), plates.getInt(i + 2), plates.getInt(i + 3), 4.0F - INSET, 1.0F);
+            this.horizontal(originX + plates.getInt(i), originZ + plates.getInt(i + 1), plates.getInt(i + 2), plates.getInt(i + 3), 4.0F - INSET, 1.0F);
         }
         this.vertexCount = this.meshVertices.position() / VERTEX_FLOATS;
         this.meshFirstCell = firstCell;
@@ -271,60 +279,65 @@ public final class CloudRenderer {
         commandList.uploadData(this.vertexBuffer, this.meshBytes, GlBufferUsage.STATIC_DRAW);
     }
 
-    private static IntArrayList plates(boolean[] solid, int size) {
+    private static IntArrayList plates(boolean[] solid, int width, int depth) {
         boolean[] open = solid.clone();
         IntArrayList rects = new IntArrayList();
-        for (int z = 0; z < size; z++) {
-            for (int x = 0; x < size; x++) {
-                if (!open[z * size + x]) {
+        for (int z = 0; z < depth; z++) {
+            for (int x = 0; x < width; x++) {
+                if (!open[z * width + x]) {
                     continue;
                 }
-                int width = 1;
-                while (x + width < size && open[z * size + x + width]) {
-                    width++;
+                int spanX = 1;
+                while (x + spanX < width && open[z * width + x + spanX]) {
+                    spanX++;
                 }
-                int depth = 1;
+                int spanZ = 1;
                 grow:
-                while (z + depth < size) {
-                    for (int dx = 0; dx < width; dx++) {
-                        if (!open[(z + depth) * size + x + dx]) {
+                while (z + spanZ < depth) {
+                    for (int dx = 0; dx < spanX; dx++) {
+                        if (!open[(z + spanZ) * width + x + dx]) {
                             break grow;
                         }
                     }
-                    depth++;
+                    spanZ++;
                 }
-                for (int dz = 0; dz < depth; dz++) {
-                    Arrays.fill(open, (z + dz) * size + x, (z + dz) * size + x + width, false);
+                for (int dz = 0; dz < spanZ; dz++) {
+                    Arrays.fill(open, (z + dz) * width + x, (z + dz) * width + x + spanX, false);
                 }
                 rects.add(x);
                 rects.add(z);
-                rects.add(width);
-                rects.add(depth);
+                rects.add(spanX);
+                rects.add(spanZ);
             }
         }
         return rects;
     }
 
-    private void walls(boolean[] solid, int size, int origin, boolean facingX, int step) {
-        for (int a = 0; a < size; a++) {
-            int edge = origin + a;
-            if (step < 0 ? edge < 0 : edge >= 16) {
+    private void walls(boolean[] solid, int width, int depth, int originX, int originZ, boolean facingX, int step) {
+        int sizeA = facingX ? width : depth;
+        int sizeB = facingX ? depth : width;
+        int originA = facingX ? originX : originZ;
+        int originB = facingX ? originZ : originX;
+        float scale = facingX ? this.scaleX : this.scaleZ;
+        for (int a = 0; a < sizeA; a++) {
+            int edge = originA + a;
+            if (step < 0 ? edge < 0 : edge >= 16 * scale) {
                 continue;
             }
-            float plane = edge + (step < 0 ? 0.0F : 1.0F - INSET);
+            float plane = edge + (step < 0 ? 0.0F : 1.0F - INSET * scale);
             float texel = edge + 0.5F;
             int b = 0;
-            while (b < size) {
+            while (b < sizeB) {
                 int start = b;
-                while (b < size && exposed(solid, size, origin, facingX ? a : b, facingX ? b : a, facingX ? step : 0, facingX ? 0 : step)) {
+                while (b < sizeB && this.exposed(solid, width, depth, originX, originZ, facingX ? a : b, facingX ? b : a, facingX ? step : 0, facingX ? 0 : step)) {
                     b++;
                 }
                 if (b == start) {
                     b++;
                     continue;
                 }
-                float from = origin + start;
-                float to = origin + b;
+                float from = originB + start;
+                float to = originB + b;
                 if (facingX) {
                     this.quad(0.9F,
                             plane, 0.0F, to, texel, to,
@@ -344,16 +357,16 @@ public final class CloudRenderer {
         }
     }
 
-    private static boolean exposed(boolean[] solid, int size, int origin, int x, int z, int dx, int dz) {
-        if (!solid[z * size + x]) {
+    private boolean exposed(boolean[] solid, int width, int depth, int originX, int originZ, int x, int z, int dx, int dz) {
+        if (!solid[z * width + x]) {
             return false;
         }
-        if (Math.abs(x + origin) <= 1 && Math.abs(z + origin) <= 1) {
+        if (Math.abs(x + originX) <= this.scaleX && Math.abs(z + originZ) <= this.scaleZ) {
             return true;
         }
         int neighborX = x + dx;
         int neighborZ = z + dz;
-        return neighborX < 0 || neighborZ < 0 || neighborX >= size || neighborZ >= size || !solid[neighborZ * size + neighborX];
+        return neighborX < 0 || neighborZ < 0 || neighborX >= width || neighborZ >= depth || !solid[neighborZ * width + neighborX];
     }
 
     private void horizontal(float x, float z, float width, float depth, float y, float shade) {
@@ -376,10 +389,10 @@ public final class CloudRenderer {
             this.meshVertices = this.meshBytes.asFloatBuffer().put(vertices.flip());
             vertices = this.meshVertices;
         }
-        vertices.put(x0).put(y0).put(z0).put(u0).put(v0).put(shade);
-        vertices.put(x1).put(y1).put(z1).put(u1).put(v1).put(shade);
-        vertices.put(x2).put(y2).put(z2).put(u2).put(v2).put(shade);
-        vertices.put(x3).put(y3).put(z3).put(u3).put(v3).put(shade);
+        vertices.put(x0 / this.scaleX).put(y0).put(z0 / this.scaleZ).put(u0 / this.scaleX).put(v0 / this.scaleZ).put(shade);
+        vertices.put(x1 / this.scaleX).put(y1).put(z1 / this.scaleZ).put(u1 / this.scaleX).put(v1 / this.scaleZ).put(shade);
+        vertices.put(x2 / this.scaleX).put(y2).put(z2 / this.scaleZ).put(u2 / this.scaleX).put(v2 / this.scaleZ).put(shade);
+        vertices.put(x3 / this.scaleX).put(y3).put(z3 / this.scaleZ).put(u3 / this.scaleX).put(v3 / this.scaleZ).put(shade);
     }
 
     private static GlProgram<CloudShader> createProgram(ChunkShaderComponent.Factory<?> fogFactory) {
