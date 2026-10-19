@@ -122,6 +122,10 @@ final class InstanceBatcher {
         }
         GlStateManager.enableBlend();
         GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        boolean hasTranslucent = this.has(InstanceRenderPass.TRANSLUCENT);
+        if (hasTranslucent) {
+            program.getInterface().setAlphaPass(InstanceShader.ALPHA_OPAQUE);
+        }
         Stats items = this.renderItems(commandList, program, InstanceRenderPass.ITEM);
         draws += items.draws;
         textureCount += items.textures;
@@ -129,7 +133,7 @@ final class InstanceBatcher {
         items = this.renderItems(commandList, program, InstanceRenderPass.ITEM_NO_CULL);
         draws += items.draws;
         textureCount += items.textures;
-        if (this.has(InstanceRenderPass.TRANSLUCENT)) {
+        if (hasTranslucent) {
             GlStateManager.disableBlend();
             program.getInterface().setAlphaPass(InstanceShader.ALPHA_OPAQUE);
             Stats opaque = this.renderPass(commandList, program, InstanceRenderPass.TRANSLUCENT);
@@ -142,6 +146,14 @@ final class InstanceBatcher {
             Stats translucent = this.renderPass(commandList, program, InstanceRenderPass.TRANSLUCENT);
             draws += translucent.draws;
             textureCount += translucent.textures;
+            GlStateManager.enableCull();
+            items = this.renderItems(commandList, program, InstanceRenderPass.ITEM);
+            draws += items.draws;
+            textureCount += items.textures;
+            GlStateManager.disableCull();
+            items = this.renderItems(commandList, program, InstanceRenderPass.ITEM_NO_CULL);
+            draws += items.draws;
+            textureCount += items.textures;
             program.getInterface().setAlphaPass(InstanceShader.ALPHA_ALL);
         }
         GlStateManager.blendFunc(1, 1);
