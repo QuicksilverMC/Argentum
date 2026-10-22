@@ -296,14 +296,7 @@ public final class CustomSky implements ResourceReloadListener {
             boolean rotate = props.getBoolean("rotate", true).value();
             float speed = props.getFloat("speed", 1.0F).value();
             if (speed < 0.0F) throw new IllegalArgumentException("Invalid speed");
-            String[] axis = props.get("axis", "1 0 0").trim().split("\\s+");
-            if (axis.length != 3) throw new IllegalArgumentException("Invalid axis");
-            float x = Float.parseFloat(axis[0]);
-            float y = Float.parseFloat(axis[1]);
-            float z = Float.parseFloat(axis[2]);
-            if (Math.abs(x) > 1.0F || Math.abs(y) > 1.0F || Math.abs(z) > 1.0F || x * x + y * y + z * z < 1.0E-5F) {
-                throw new IllegalArgumentException("Invalid axis");
-            }
+            float[] axis = axis(props.get("axis"));
             int daysLoop = props.getInt("daysLoop", 8).value();
             if (daysLoop <= 0) throw new IllegalArgumentException("Invalid daysLoop");
             Set<String> weather = new ObjectOpenHashSet<>();
@@ -323,12 +316,36 @@ public final class CustomSky implements ResourceReloadListener {
             return new Layer(source,
                     startFadeIn, endFadeIn, startFadeOut, endFadeOut,
                     blend, rotate, speed,
-                    z, y, -x,
+                    axis[0], axis[1], axis[2],
                     props.getNumberList("days").value(), daysLoop,
                     weather.contains("clear"), weather.contains("rain"), weather.contains("thunder"),
                     Set.copyOf(biomes), excludeBiomes,
                     props.getNumberList("heights").value(), transition
             );
+        }
+
+        private static float[] axis(String value) {
+            float[] fallback = {1.0F, 0.0F, 0.0F};
+            if (value == null) return fallback;
+            String[] parts = value.trim().split("\\s+");
+            if (parts.length != 3) {
+                Cera.LOGGER.warn("[CustomSky] Invalid axis: {}", value);
+                return fallback;
+            }
+            float x, y, z;
+            try {
+                x = Float.parseFloat(parts[0]);
+                y = Float.parseFloat(parts[1]);
+                z = Float.parseFloat(parts[2]);
+            } catch (NumberFormatException e) {
+                Cera.LOGGER.warn("[CustomSky] Invalid axis: {}", value);
+                return fallback;
+            }
+            if (Math.abs(x) > 1.0F || Math.abs(y) > 1.0F || Math.abs(z) > 1.0F || x * x + y * y + z * z < 1.0E-5F) {
+                Cera.LOGGER.warn("[CustomSky] Invalid axis values: {}", value);
+                return fallback;
+            }
+            return new float[] {z, y, -x};
         }
 
         private void render(ClientWorld world, int time, float tickDelta, float rainStrength, float thunderStrength, float positionBrightness) {
