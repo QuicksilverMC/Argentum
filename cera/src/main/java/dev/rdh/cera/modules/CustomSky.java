@@ -25,6 +25,7 @@ import net.ornithemc.osl.resource.loader.api.resource.Resource;
 import net.ornithemc.osl.resource.loader.api.resource.manager.ResourceManager;
 import net.ornithemc.osl.resource.loader.api.resource.reload.ResourceReloadListener;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.util.vector.Vector3f;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -265,7 +266,7 @@ public final class CustomSky implements ResourceReloadListener {
             Identifier source,
             int startFadeIn, int endFadeIn, int startFadeOut, int endFadeOut,
             BlendMethod blend, boolean rotate, float speed,
-            float axisX, float axisY, float axisZ,
+            Vector3f axis,
             NumberList days, int daysLoop,
             boolean clear, boolean rain, boolean thunder,
             Set<String> biomes, boolean excludeBiomes, NumberList heights, float transition
@@ -296,14 +297,7 @@ public final class CustomSky implements ResourceReloadListener {
             boolean rotate = props.getBoolean("rotate", true).value();
             float speed = props.getFloat("speed", 1.0F).value();
             if (speed < 0.0F) throw new IllegalArgumentException("Invalid speed");
-            String[] axis = props.get("axis", "1 0 0").trim().split("\\s+");
-            if (axis.length != 3) throw new IllegalArgumentException("Invalid axis");
-            float x = Float.parseFloat(axis[0]);
-            float y = Float.parseFloat(axis[1]);
-            float z = Float.parseFloat(axis[2]);
-            if (Math.abs(x) > 1.0F || Math.abs(y) > 1.0F || Math.abs(z) > 1.0F || x * x + y * y + z * z < 1.0E-5F) {
-                throw new IllegalArgumentException("Invalid axis");
-            }
+            Vector3f axis = axis(props.get("axis", "1 0 0"));
             int daysLoop = props.getInt("daysLoop", 8).value();
             if (daysLoop <= 0) throw new IllegalArgumentException("Invalid daysLoop");
             Set<String> weather = new ObjectOpenHashSet<>();
@@ -323,12 +317,24 @@ public final class CustomSky implements ResourceReloadListener {
             return new Layer(source,
                     startFadeIn, endFadeIn, startFadeOut, endFadeOut,
                     blend, rotate, speed,
-                    z, y, -x,
+                    axis,
                     props.getNumberList("days").value(), daysLoop,
                     weather.contains("clear"), weather.contains("rain"), weather.contains("thunder"),
                     Set.copyOf(biomes), excludeBiomes,
                     props.getNumberList("heights").value(), transition
             );
+        }
+
+        private static Vector3f axis(String value) {
+            try {
+                String[] p = value.trim().split("\\s+");
+                float x = Float.parseFloat(p[0]), y = Float.parseFloat(p[1]), z = Float.parseFloat(p[2]);
+                if (p.length == 3 && Math.abs(x) <= 1.0F && Math.abs(y) <= 1.0F && Math.abs(z) <= 1.0F && x * x + y * y + z * z >= 1.0E-5F) {
+                    return new Vector3f(z, y, -x);
+                }
+            } catch (NumberFormatException | ArrayIndexOutOfBoundsException ignored) {}
+            Cera.LOGGER.warn("[CustomSky] Invalid axis: {}", value);
+            return new Vector3f(0.0F, 0.0F, -1.0F);
         }
 
         private void render(ClientWorld world, int time, float tickDelta, float rainStrength, float thunderStrength, float positionBrightness) {
@@ -339,7 +345,7 @@ public final class CustomSky implements ResourceReloadListener {
             if (rotate) {
                 long day = (world.getTimeOfDay() + 18000L) / 24000L;
                 float offset = speed == Math.round(speed) ? 0.0F : (float)((day * (double)(speed % 1.0F)) % 1.0);
-                GlStateManager.rotatef(360.0F * (offset + world.getTimeOfDay(tickDelta) * speed), axisX, axisY, axisZ);
+                GlStateManager.rotatef(360.0F * (offset + world.getTimeOfDay(tickDelta) * speed), axis.x, axis.y, axis.z);
             }
             blend.apply(brightness);
             Minecraft.getInstance().getTextureManager().bind(source);
