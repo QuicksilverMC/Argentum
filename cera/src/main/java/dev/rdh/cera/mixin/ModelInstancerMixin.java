@@ -36,7 +36,7 @@ public abstract class ModelInstancerMixin {
 
     @Unique
     private static boolean cera$hasCustomGlint(ItemStack item) {
-        return item != null && item.hasEnchantmentGlint() && !Minecraft.getInstance().cera$getCustomItems().effects(item).isEmpty();
+        return item != null && item.getItem() != null && item.hasEnchantmentGlint() && !Minecraft.getInstance().cera$getCustomItems().effects(item).isEmpty();
     }
 
     @Inject(method = "submit", at = @At("TAIL"))
