@@ -66,6 +66,8 @@ argentum.entity_occlusion_interval.name=Entity Occlusion Interval
 argentum.entity_occlusion_interval.tooltip=Specifies the minimum delay between visibility checks for each entity. Lower values can cull hidden entities sooner but increase CPU and GPU overhead, while higher values reduce overhead at the cost of entities remaining visible longer after moving behind walls.
 argentum.gui_item_atlas.name=Cache Item Icons
 argentum.gui_item_atlas.tooltip=Renders each inventory and hotbar item icon into a shared texture once per tick and reuses it, instead of rebuilding the item model every frame.
+argentum.direct_rendering.name=Direct Rendering
+argentum.direct_rendering.tooltip=Draws straight to the window instead of to an offscreen image that is then copied to it, which can greatly improve performance on integrated graphics. The offscreen image is still used while effects need it, such as spectator mob views and outlines. Some mods that draw their own screen effects may not work with this enabled.
 argentum.particle_culling.name=Particle Culling
 argentum.particle_culling.tooltip=If enabled particles outside the camera frustum or hidden behind terrain will be skipped during rendering. This can improve performance in particle-heavy scenes, but may cause particles to disappear unexpectedly with some mods.
 

@@ -1,7 +1,6 @@
 package dev.rdh.argentum.mixin.core;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.render.platform.GLX;
 import net.minecraft.client.world.ClientWorld;
 
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
@@ -14,7 +13,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.compat.NvidiaWorkarounds;
@@ -34,12 +32,6 @@ public abstract class MinecraftMixin {
 
     @Shadow
     public ClientWorld world;
-
-    @ModifyArg(method = "initDisplay", at = @At(value = "INVOKE",
-            target = "Lorg/lwjgl/opengl/PixelFormat;withDepthBits(I)Lorg/lwjgl/opengl/PixelFormat;", remap = false))
-    private int argentum$noBackbufferDepth(int bits) {
-        return GLX.useFbo() ? 0 : bits;
-    }
 
     @Inject(method = "initDisplay", at = @At("HEAD"))
     private void argentum$installNvidiaWorkarounds(CallbackInfo ci) {

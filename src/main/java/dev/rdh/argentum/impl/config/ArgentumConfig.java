@@ -33,6 +33,7 @@ public class ArgentumConfig {
     public boolean checkGlErrors = false;
     public boolean fontBatching = true;
     public boolean guiItemAtlas = true;
+    public boolean directRendering = false;
     public boolean greedyRenderThread = false;
     public boolean explicitVsyncOption = true; // file only
     public boolean exclusiveFullscreen = false;

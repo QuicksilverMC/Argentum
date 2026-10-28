@@ -74,6 +74,7 @@ public final class ArgentumOptionPages {
         private static final OptionIdentifier<Void> NAME_TAG_BATCHING = OptionIdentifier.create(Argentum.ID, "name_tag_batching");
         private static final OptionIdentifier<Void> FONT_BATCHING = OptionIdentifier.create(Argentum.ID, "font_batching");
         private static final OptionIdentifier<Void> GUI_ITEM_ATLAS = OptionIdentifier.create(Argentum.ID, "gui_item_atlas");
+        private static final OptionIdentifier<Void> DIRECT_RENDERING = OptionIdentifier.create(Argentum.ID, "direct_rendering");
         private static final OptionIdentifier<Void> SAFE_CHUNK_EDGES = OptionIdentifier.create(Argentum.ID, "safe_chunk_edges");
         private static final OptionIdentifier<Void> CHECK_GL_ERRORS = OptionIdentifier.create(Argentum.ID, "check_gl_errors");
         private static final OptionIdentifier<Void> FASTER_END_PORTALS = OptionIdentifier.create(Argentum.ID, "faster_end_portals");
@@ -360,6 +361,8 @@ public final class ArgentumOptionPages {
                 .add(toggle(Option.FONT_BATCHING, OptionImpact.HIGH, (config3, value2) -> config3.fontBatching = value2, config4 -> config4.fontBatching))
                 .add(toggle(Option.GUI_ITEM_ATLAS, OptionImpact.HIGH,
                         (config, value) -> config.guiItemAtlas = value, config -> config.guiItemAtlas))
+                .add(toggle(Option.DIRECT_RENDERING, OptionImpact.HIGH,
+                        (config, value) -> config.directRendering = value, config -> config.directRendering))
                 .add(toggle(StandardOptions.Option.TRANSLUCENT_FACE_SORTING,
                         OptionImpact.VARIES,
                         (config, value) -> config.translucencySorting = value,

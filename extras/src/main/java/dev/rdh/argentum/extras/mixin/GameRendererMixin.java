@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.rdh.argentum.extras.ArgentumExtras;
 import dev.rdh.argentum.extras.FxaaRenderer;
+import dev.rdh.argentum.impl.ext.MinecraftExtension;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.platform.GlStateManager;
@@ -118,6 +119,11 @@ public class GameRendererMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;fogDensity(F)V"))
     private float argentumExtras$changeFluidFog(float density) {
         return this.thiccFog ? density : density * strength(ArgentumExtras.CONFIG.fluidFogDensity);
+    }
+
+    @Inject(method = "render(FJ)V", at = @At("HEAD"))
+    private void argentumExtras$requestFxaaFramebuffer(float tickDelta, long startTime, CallbackInfo ci) {
+        if (ArgentumExtras.CONFIG.fxaa) ((MinecraftExtension) this.minecraft).argentum$requestFramebuffer();
     }
 
     @Inject(method = "render(FJ)V",
