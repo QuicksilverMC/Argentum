@@ -121,6 +121,29 @@ public class GameRendererMixin {
         return this.thiccFog ? density : density * strength(ArgentumExtras.CONFIG.fluidFogDensity);
     }
 
+    @ModifyExpressionValue(method = "render(IFJ)V",
+            at = @At(value = "FIELD", target = "Lnet/minecraft/client/options/GameOptions;viewDistance:I"))
+    private int argentumExtras$forceSkyViewDistance(int viewDistance) {
+        return skyViewDistance(viewDistance);
+    }
+
+    @ModifyExpressionValue(method = "setupClearColor",
+            at = @At(value = "FIELD", target = "Lnet/minecraft/client/options/GameOptions;viewDistance:I", ordinal = 1))
+    private int argentumExtras$forceSunriseViewDistance(int viewDistance) {
+        return skyViewDistance(viewDistance);
+    }
+
+    @Inject(method = "render(IFJ)V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/render/GameRenderer;setupFog(IF)V",
+                    ordinal = 0,
+                    shift = At.Shift.AFTER))
+    private void argentumExtras$extendSkyFog(int pass, float tickDelta, long renderTimeLimit, CallbackInfo ci) {
+        if (ArgentumExtras.CONFIG.forceSky && !this.argentumExtras$isBlind()) {
+            GlStateManager.fogEnd(Math.max(this.renderDistance, 64.0F));
+        }
+    }
+
     @Inject(method = "render(FJ)V", at = @At("HEAD"))
     private void argentumExtras$requestFxaaFramebuffer(float tickDelta, long startTime, CallbackInfo ci) {
         if (ArgentumExtras.CONFIG.fxaa) ((MinecraftExtension) this.minecraft).argentum$requestFramebuffer();
@@ -168,6 +191,11 @@ public class GameRendererMixin {
     @ModifyConstant(method = "renderSnowAndRain", constant = @Constant(intValue = 10))
     private int argentumExtras$changeFancyWeatherDistance(int vanilla) {
         return weatherDistance(vanilla);
+    }
+
+    @Unique
+    private static int skyViewDistance(int vanilla) {
+        return ArgentumExtras.CONFIG.forceSky ? Math.max(vanilla, 4) : vanilla;
     }
 
     @Unique

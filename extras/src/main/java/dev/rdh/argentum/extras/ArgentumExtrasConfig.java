@@ -34,6 +34,7 @@ public class ArgentumExtrasConfig {
     public boolean nameTags = true;
     public boolean secondNameTagLayer = true;
     public boolean sky = true;
+    public boolean forceSky = false;
     public boolean lowerSky = false;
     public boolean sunAndMoon = true;
     public boolean stars = true;
