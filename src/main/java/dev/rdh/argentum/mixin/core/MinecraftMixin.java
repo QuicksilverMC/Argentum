@@ -93,7 +93,7 @@ public abstract class MinecraftMixin {
 
     @WrapWithCondition(method = "runGame", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;clear(I)V"))
     private boolean argentum$needsBackbufferClear(int mask) {
-        return !GLX.useFbo() || this.world == null;
+        return this.world == null;
     }
 
     @WrapWithCondition(method = "runGame", at = @At(value = "INVOKE", target = "Ljava/lang/Thread;yield()V"))
