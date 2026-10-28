@@ -69,10 +69,11 @@ public class WorldRendererMixin {
     }
 
     @Inject(method = "renderBlockOutline", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;enableTexture()V"))
-    private void disableSmoothLines(PlayerEntity camera, HitResult hit, int i, float tickDelta, CallbackInfo ci) {
+    private void restoreLineState(PlayerEntity camera, HitResult hit, int i, float tickDelta, CallbackInfo ci) {
         if (ArgentumExtras.CONFIG.smoothBlockOutlines) {
             GL11.glDisable(GL11.GL_LINE_SMOOTH);
         }
+        GL11.glLineWidth(2.0F);
     }
 
     @ModifyArg(method = "renderBlockOutline", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glLineWidth(F)V"))
