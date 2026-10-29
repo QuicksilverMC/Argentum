@@ -34,6 +34,7 @@ public final class FontSet {
     private static final Identifier ASCII = new Identifier("textures/font/ascii.png");
     private static final Identifier GLYPH_SIZES = new Identifier("font/glyph_sizes.bin");
     private static final String UNICODE_PAGES = "minecraft:font/unicode_page_%s.png";
+    private static final String SPACES = " \u00a0\u202f\u2007";
 
     private final float[] widths;
     private final Glyph[][] blocks = new Glyph[0x1100][];
@@ -100,6 +101,8 @@ public final class FontSet {
 
         ResourceManager resources = Minecraft.getInstance().getResourceManager();
         List<IntFunction<Glyph>> providers = new ObjectArrayList<>();
+        Glyph space = new Glyph(this.widths[32], false);
+        providers.add(codepoint -> SPACES.indexOf(codepoint) == -1 ? null : space);
         boolean defined = false;
         if (this.sheet.getPath().endsWith("font/ascii.png")) {
             List<Resource> stack = List.of();

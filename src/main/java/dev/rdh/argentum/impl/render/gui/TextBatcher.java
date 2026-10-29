@@ -177,7 +177,6 @@ public final class TextBatcher {
 
     public float charWidth(int codepoint, boolean unicode) {
         if (codepoint == SECTION) return -1.0F;
-        if (codepoint < Character.MIN_SUPPLEMENTARY_CODE_POINT && normalizeSpace((char) codepoint) == ' ') return this.widths[32];
         return this.fonts.glyph(codepoint, unicode).advance;
     }
 
@@ -315,10 +314,9 @@ public final class TextBatcher {
             int codepoint = text.codePointAt(i);
             i += Character.charCount(codepoint) - 1;
             if ((style & OBFUSCATED) != 0) codepoint = this.obfuscate(codepoint, unicode);
-            boolean space = codepoint < Character.MIN_SUPPLEMENTARY_CODE_POINT && normalizeSpace((char) codepoint) == ' ';
-            Glyph glyph = space ? null : this.fonts.glyph(codepoint, unicode);
-            float advance = glyph == null ? this.widths[32] : glyph.advance;
-            if (glyph != null && glyph.visible()) {
+            Glyph glyph = this.fonts.glyph(codepoint, unicode);
+            float advance = glyph.advance;
+            if (glyph.visible()) {
                 boolean half = unicode || glyph.unicodePage;
                 float shift = half ? 0.5F : 1.0F;
                 float pull = shadow && half ? shift : 0.0F;
