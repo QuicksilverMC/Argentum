@@ -114,7 +114,10 @@ final class InstanceBatcher {
             GlStateManager.enableBlend();
             GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
             GlStateManager.depthMask(false);
+            GlStateManager.enablePolygonOffset();
+            GlStateManager.polygonOffset(-1.0F, -1.0F);
             Stats replace = this.renderPass(commandList, program, InstanceRenderPass.EMISSIVE_REPLACE);
+            GlStateManager.disablePolygonOffset();
             draws += replace.draws;
             textureCount += replace.textures;
             GlStateManager.depthMask(true);
