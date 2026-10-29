@@ -33,6 +33,7 @@ import java.nio.IntBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.IntStream;
 
 public final class TextBatcher {
     private static final int WIDTH_CACHE_SIZE = 2048;
@@ -69,7 +70,8 @@ public final class TextBatcher {
     private boolean blend;
     private final boolean vanilla = Boolean.getBoolean("argentum.vanillaText");
     private final Random random = new Random();
-    private Int2ObjectMap<int[]> obfuscation;
+    private Int2ObjectMap<int[]> asciiObfuscation;
+    private Int2ObjectMap<int[]> unicodeObfuscation;
     private boolean obfuscationUnicode;
 
     private float red = 1.0F;
@@ -162,7 +164,8 @@ public final class TextBatcher {
     public void clearCaches() {
         this.generation++;
         this.widthCache.clear();
-        this.obfuscation = null;
+        this.asciiObfuscation = null;
+        this.unicodeObfuscation = null;
         this.fonts.reset();
         this.invalidateGeometry();
     }
@@ -334,20 +337,34 @@ public final class TextBatcher {
     }
 
     private int obfuscate(int codepoint, boolean unicode) {
-        if (codepoint >= Character.MIN_SUPPLEMENTARY_CODE_POINT || CHARACTERS.indexOf(codepoint) == -1) return codepoint;
+        if (codepoint >= Character.MIN_SUPPLEMENTARY_CODE_POINT) return codepoint;
 
-        if (this.obfuscation == null || this.obfuscationUnicode != unicode) {
-            Int2ObjectMap<IntArrayList> byWidth = new Int2ObjectOpenHashMap<>();
-            for (int i = 0; i < CHARACTERS.length(); i++) {
-                char candidate = CHARACTERS.charAt(i);
-                byWidth.computeIfAbsent(Math.round(this.charWidth(candidate, unicode)), _ -> new IntArrayList()).add(candidate);
-            }
-            this.obfuscation = new Int2ObjectOpenHashMap<>();
-            byWidth.forEach((width, candidates) -> this.obfuscation.put((int) width, candidates.toIntArray()));
+        if (this.obfuscationUnicode != unicode) {
+            this.asciiObfuscation = null;
+            this.unicodeObfuscation = null;
             this.obfuscationUnicode = unicode;
         }
-        int[] candidates = this.obfuscation.get(Math.round(this.charWidth(codepoint, unicode)));
-        return candidates[this.random.nextInt(candidates.length)];
+        Int2ObjectMap<int[]> buckets;
+        if (CHARACTERS.indexOf(codepoint) != -1) {
+            if (this.asciiObfuscation == null) this.asciiObfuscation = this.byWidth(CHARACTERS.chars(), unicode);
+            buckets = this.asciiObfuscation;
+        } else {
+            if (this.unicodeObfuscation == null) {
+                this.unicodeObfuscation = this.byWidth(IntStream.range(0, Character.MIN_SUPPLEMENTARY_CODE_POINT)
+                        .filter(candidate -> this.fonts.glyph(candidate, unicode).visible()), unicode);
+            }
+            buckets = this.unicodeObfuscation;
+        }
+        int[] candidates = buckets.get(Math.round(this.charWidth(codepoint, unicode)));
+        return candidates == null ? codepoint : candidates[this.random.nextInt(candidates.length)];
+    }
+
+    private Int2ObjectMap<int[]> byWidth(IntStream codepoints, boolean unicode) {
+        Int2ObjectMap<IntArrayList> lists = new Int2ObjectOpenHashMap<>();
+        codepoints.forEach(codepoint -> lists.computeIfAbsent(Math.round(this.charWidth(codepoint, unicode)), _ -> new IntArrayList()).add(codepoint));
+        Int2ObjectMap<int[]> buckets = new Int2ObjectOpenHashMap<>();
+        lists.forEach((width, candidates) -> buckets.put((int) width, candidates.toIntArray()));
+        return buckets;
     }
 
     private void glyph(Glyph glyph, float x, float y, boolean italic, TextureManager textureManager) {

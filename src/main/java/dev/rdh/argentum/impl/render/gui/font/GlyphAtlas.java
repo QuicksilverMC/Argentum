@@ -26,8 +26,11 @@ final class GlyphAtlas {
     }
 
     void bake(Glyph glyph) {
-        int width = glyph.srcWidth;
-        int height = glyph.srcHeight;
+        Glyph.Sheet sheet = glyph.sheet;
+        if (!sheet.load()) return;
+        int scale = sheet.scale;
+        int width = glyph.srcWidth * scale;
+        int height = glyph.srcHeight * scale;
         if (width >= SIZE || height >= SIZE) return;
 
         if (this.pages.isEmpty()) this.addPage();
@@ -39,7 +42,7 @@ final class GlyphAtlas {
 
         int[] texels = new int[width * height];
         for (int row = 0; row < height; row++) {
-            System.arraycopy(glyph.pixels, (glyph.srcY + row) * glyph.stride + glyph.srcX, texels, row * width, width);
+            System.arraycopy(sheet.pixels, (glyph.srcY * scale + row) * sheet.width + glyph.srcX * scale, texels, row * width, width);
         }
         Page page = this.pages.get(this.pages.size() - 1);
         page.upload(texels, width, height, this.x, this.y);
@@ -47,8 +50,8 @@ final class GlyphAtlas {
         glyph.page = page.id;
         glyph.u0 = this.x / (float) SIZE;
         glyph.v0 = this.y / (float) SIZE;
-        glyph.u1 = (this.x + glyph.width * glyph.oversample) / SIZE;
-        glyph.v1 = (this.y + (glyph.height - 0.01F) * glyph.oversample) / SIZE;
+        glyph.u1 = (this.x + glyph.width * glyph.oversample * scale) / SIZE;
+        glyph.v1 = (this.y + (glyph.height - 0.01F) * glyph.oversample * scale) / SIZE;
 
         this.x += width;
         this.rowHeight = Math.max(this.rowHeight, height);

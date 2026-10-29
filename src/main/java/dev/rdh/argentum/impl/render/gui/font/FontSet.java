@@ -197,6 +197,7 @@ public final class FontSet {
         int cellWidth = imageWidth / grid[0].length;
         int cellHeight = imageHeight / grid.length;
         float scale = (float) height / cellHeight;
+        Glyph.Sheet sheet = new Glyph.Sheet(pixels, imageWidth);
 
         Int2ObjectMap<Glyph> glyphs = new Int2ObjectOpenHashMap<>();
         for (int row = 0; row < grid.length; row++) {
@@ -212,7 +213,7 @@ public final class FontSet {
                         ? this.widths[slot]
                         : (int) (0.5 + used * scale) + 1;
                 glyphs.put(codepoint, new Glyph(advance, advance - 1.01F, 7 - ascent, height, 1.0F / scale, false,
-                        used == 0 ? null : pixels, imageWidth, x, y, cellWidth, cellHeight));
+                        used == 0 ? null : sheet, x, y, cellWidth, cellHeight));
             }
         }
         return glyphs::get;
@@ -234,32 +235,21 @@ public final class FontSet {
             IOUtils.read(stream, sizes);
         }
 
-        int[][] pages = new int[256][];
-        int[] pageWidths = new int[256];
+        Glyph.Sheet[] pages = new Glyph.Sheet[256];
         return codepoint -> {
             if (codepoint > 0xFFFF || sizes[codepoint] == 0) return null;
 
             int start = sizes[codepoint] >> 4 & 15;
             int columns = (sizes[codepoint] & 15) + 1 - start;
+            if (columns <= 0) return null;
+
             int page = codepoint >> 8;
             if (pages[page] == null) {
                 Identifier name = new Identifier(String.format(template, String.format("%02x", page)));
-                Identifier location = new Identifier(name.getNamespace(), "textures/" + name.getPath());
-                try (InputStream stream = resources.getResource(location).asStream()) {
-                    BufferedImage image = TextureUtil.readImage(stream);
-                    pageWidths[page] = image.getWidth();
-                    pages[page] = image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth());
-                } catch (IOException | RuntimeException e) {
-                    Argentum.LOGGER.warn("Could not read unicode page {}", location, e);
-                    pages[page] = new int[0];
-                }
+                pages[page] = new Glyph.Sheet(resources, new Identifier(name.getNamespace(), "textures/" + name.getPath()), 256);
             }
-            if (pages[page].length == 0 || columns <= 0) return null;
-
-            int scale = Math.max(1, pageWidths[page] / 256);
-            return new Glyph(columns / 2 + 1, (columns - 0.02F) / 2.0F, 0.0F, 8.0F, 2.0F * scale, true,
-                    pages[page], pageWidths[page], ((codepoint & 15) * 16 + start) * scale,
-                    (codepoint >> 4 & 15) * 16 * scale, columns * scale, 16 * scale);
+            return new Glyph(columns / 2 + 1, (columns - 0.02F) / 2.0F, 0.0F, 8.0F, 2.0F, true,
+                    pages[page], (codepoint & 15) * 16 + start, (codepoint >> 4 & 15) * 16, columns, 16);
         };
     }
 
