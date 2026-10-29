@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.living.LivingEntity;
+import net.minecraft.entity.living.effect.StatusEffect;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.embeddedt.embeddium.api.util.ColorARGB;
@@ -40,7 +41,7 @@ public abstract class GameRendererMixin {
         Minecraft mc = Minecraft.getInstance();
         World world = mc.world;
         if (world == null || mc.player == null) return;
-        boolean nightvision = this.getNightVisionScale(mc.player, tickDelta) > 0.0F;
+        boolean nightvision = mc.player.hasStatusEffect(StatusEffect.NIGHTVISION) && this.getNightVisionScale(mc.player, tickDelta) > 0.0F;
         mc.cera$getLightMaps().apply(this.lightMapPixels, world, this.lightMapFlicker, tickDelta, nightvision, mc.options.gamma);
     }
 
