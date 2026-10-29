@@ -7,7 +7,7 @@ import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.living.effect.StatusEffect;
+import net.minecraft.entity.living.LivingEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.embeddedt.embeddium.api.util.ColorARGB;
@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GameRenderer.class)
-public class GameRendererMixin {
+public abstract class GameRendererMixin {
     @Shadow private float fogRed;
     @Shadow private float fogGreen;
     @Shadow private float fogBlue;
@@ -32,12 +32,15 @@ public class GameRendererMixin {
     @Shadow @Final private int[] lightMapPixels;
     @Shadow private float lightMapFlicker;
 
+    @Shadow
+    protected abstract float getNightVisionScale(LivingEntity player, float tickDelta);
+
     @Inject(method = "updateLightMap", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/texture/DynamicTexture;upload()V"))
     private void cera$customLightmap(float tickDelta, CallbackInfo ci) {
         Minecraft mc = Minecraft.getInstance();
         World world = mc.world;
         if (world == null || mc.player == null) return;
-        boolean nightvision = mc.player.hasStatusEffect(StatusEffect.NIGHTVISION);
+        boolean nightvision = this.getNightVisionScale(mc.player, tickDelta) > 0.0F;
         mc.cera$getLightMaps().apply(this.lightMapPixels, world, this.lightMapFlicker, tickDelta, nightvision, mc.options.gamma);
     }
 
