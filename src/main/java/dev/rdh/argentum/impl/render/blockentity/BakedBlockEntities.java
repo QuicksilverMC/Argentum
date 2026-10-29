@@ -207,11 +207,11 @@ public final class BakedBlockEntities {
 
     private static int[] fontPagePixels(Identifier page) throws IOException {
         BufferedImage image = TextureUtil.readImage(Minecraft.getInstance().getResourceManager().getResource(page).asStream());
-        if (image == null || image.getWidth() != FONT_PAGE_SIZE || image.getHeight() != FONT_PAGE_SIZE) {
+        if (image == null || image.getWidth() > FONT_PAGE_SIZE || image.getHeight() > FONT_PAGE_SIZE) {
             throw new IOException("Unsupported font page size for " + page);
         }
         int[] pixels = new int[FONT_PAGE_SIZE * FONT_PAGE_SIZE];
-        image.getRGB(0, 0, FONT_PAGE_SIZE, FONT_PAGE_SIZE, pixels, 0, FONT_PAGE_SIZE);
+        image.getRGB(0, 0, image.getWidth(), image.getHeight(), pixels, 0, FONT_PAGE_SIZE);
         return pixels;
     }
 

@@ -200,7 +200,7 @@ public final class FontSet {
         int cellWidth = imageWidth / grid[0].length;
         int cellHeight = imageHeight / grid.length;
         float scale = (float) height / cellHeight;
-        Glyph.Sheet sheet = new Glyph.Sheet(pixels, imageWidth);
+        Glyph.Sheet sheet = new Glyph.Sheet(texture, pixels, imageWidth);
 
         Int2ObjectMap<Glyph> glyphs = new Int2ObjectOpenHashMap<>();
         for (int row = 0; row < grid.length; row++) {

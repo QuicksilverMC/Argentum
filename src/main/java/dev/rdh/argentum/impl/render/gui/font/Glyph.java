@@ -59,6 +59,17 @@ public final class Glyph {
         return this.page;
     }
 
+    public Identifier texture() {
+        return this.sheet.location;
+    }
+
+    public float[] texels() {
+        if (!this.sheet.load()) return null;
+        int scale = this.sheet.scale;
+        return new float[] {this.srcX * scale, this.srcY * scale, (this.srcX + this.width * this.oversample) * scale,
+                (this.srcY + (this.height - 0.01F) * this.oversample) * scale};
+    }
+
     static final class Sheet {
         private final ResourceManager resources;
         private final Identifier location;
@@ -67,9 +78,9 @@ public final class Glyph {
         int width;
         int scale = 1;
 
-        Sheet(int[] pixels, int width) {
+        Sheet(Identifier location, int[] pixels, int width) {
             this.resources = null;
-            this.location = null;
+            this.location = location;
             this.nominalWidth = width;
             this.pixels = pixels;
             this.width = width;

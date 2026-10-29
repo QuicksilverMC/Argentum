@@ -14,7 +14,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import dev.rdh.argentum.impl.ext.TextRendererExtension;
-import dev.rdh.argentum.impl.render.gui.GlyphSink;
 import dev.rdh.argentum.impl.render.gui.TextBatcher;
 
 @Mixin(TextRenderer.class)
@@ -60,22 +59,8 @@ public abstract class TextRendererMixin implements TextRendererExtension {
     @Shadow
     private boolean strikethrough;
 
-    @Shadow
-    private Identifier getFontPage(int page) {
-        return null;
-    }
-
     @Unique
     private final TextBatcher argentum$batcher = new TextBatcher();
-
-    @Unique
-    private GlyphSink argentum$glyphSink;
-
-    @Unique
-    private float argentum$glyphU;
-
-    @Unique
-    private float argentum$glyphV;
 
     @Override
     public TextBatcher argentum$getBatcher() {
@@ -95,14 +80,6 @@ public abstract class TextRendererMixin implements TextRendererExtension {
     @Inject(method = "getWidth(C)I", at = @At("HEAD"), cancellable = true)
     private void argentum$charWidth(char chr, CallbackInfoReturnable<Integer> cir) {
         cir.setReturnValue(Math.round(this.argentum$batcher.charWidth(chr, this.unicode)));
-    }
-
-    @Shadow
-    protected abstract void initGlyphSizes();
-
-    @Inject(method = "reload", at = @At("HEAD"))
-    private void argentum$reloadGlyphSizes(CallbackInfo ci) {
-        this.initGlyphSizes();
     }
 
     @Inject(method = {"reload", "setUnicode"}, at = @At("RETURN"))
@@ -146,61 +123,6 @@ public abstract class TextRendererMixin implements TextRendererExtension {
         this.strikethrough = (style & TextBatcher.STRIKETHROUGH) != 0;
         this.underlined = (style & TextBatcher.UNDERLINED) != 0;
         this.italic = (style & TextBatcher.ITALIC) != 0;
-    }
-
-    @WrapWithCondition(method = "drawUnicodeGlyph",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/TextRenderer;bindFontPageTexture(I)V"))
-    private boolean argentum$captureGlyphTexture(TextRenderer renderer, int page) {
-        if (this.argentum$glyphSink == null) return true;
-        this.argentum$glyphSink.texture(this.getFontPage(page));
-        return false;
-    }
-
-    @WrapWithCondition(method = "drawUnicodeGlyph",
-            at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glBegin(I)V", remap = false))
-    private boolean argentum$captureGlyphBegin(int mode) {
-        return this.argentum$glyphSink == null;
-    }
-
-    @WrapWithCondition(method = "drawUnicodeGlyph",
-            at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glEnd()V", remap = false))
-    private boolean argentum$captureGlyphEnd() {
-        return this.argentum$glyphSink == null;
-    }
-
-    @WrapWithCondition(method = "drawUnicodeGlyph",
-            at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glTexCoord2f(FF)V", remap = false), require = 4)
-    private boolean argentum$captureGlyphTexCoord(float u, float v) {
-        this.argentum$glyphU = u;
-        this.argentum$glyphV = v;
-        return this.argentum$glyphSink == null;
-    }
-
-    @WrapWithCondition(method = "drawUnicodeGlyph",
-            at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glVertex3f(FFF)V", remap = false), require = 4)
-    private boolean argentum$captureGlyphVertex(float x, float y, float z) {
-        if (this.argentum$glyphSink == null) return true;
-        this.argentum$glyphSink.vertex(x, y, this.argentum$glyphU, this.argentum$glyphV);
-        return false;
-    }
-
-    @Shadow
-    protected abstract float drawUnicodeGlyph(char chr, boolean italic);
-
-    @Override
-    public float argentum$captureUnicodeGlyph(char character, boolean italic, float x, float y, GlyphSink sink) {
-        float previousX = this.x;
-        float previousY = this.y;
-        this.x = x;
-        this.y = y;
-        this.argentum$glyphSink = sink;
-        try {
-            return this.drawUnicodeGlyph(character, italic);
-        } finally {
-            this.argentum$glyphSink = null;
-            this.x = previousX;
-            this.y = previousY;
-        }
     }
 
     @WrapWithCondition(

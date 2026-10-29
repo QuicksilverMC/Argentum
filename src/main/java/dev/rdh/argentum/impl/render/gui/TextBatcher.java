@@ -170,9 +170,8 @@ public final class TextBatcher {
         this.invalidateGeometry();
     }
 
-    /** Characters vanilla has no glyph for but which should both render and measure as a space */
-    public static char normalizeSpace(char character) {
-        return character == '\u202f' || character == '\u00a0' || character == '\u2007' ? ' ' : character;
+    public FontSet fonts() {
+        return this.fonts;
     }
 
     public float charWidth(int codepoint, boolean unicode) {
