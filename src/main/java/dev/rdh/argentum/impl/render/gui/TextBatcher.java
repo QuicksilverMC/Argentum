@@ -2,11 +2,15 @@ package dev.rdh.argentum.impl.render.gui;
 
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.entity.NameTagBatch;
+import dev.rdh.argentum.impl.render.gui.font.FontSet;
+import dev.rdh.argentum.impl.render.gui.font.Glyph;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.render.TextRenderer;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.texture.TextureManager;
 import net.minecraft.client.render.texture.TextureUtil;
@@ -28,6 +32,7 @@ import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 public final class TextBatcher {
     private static final int WIDTH_CACHE_SIZE = 2048;
@@ -42,18 +47,17 @@ public final class TextBatcher {
     public static final int UNDERLINED =    0b01000;
     public static final int ITALIC =        0b10000;
     private static final VertexFormat FORMAT = DefaultVertexFormat.POSITION_TEX_COLOR;
-    private static final VertexFormat DECORATION_FORMAT = DefaultVertexFormat.POSITION_COLOR;
     private static final int ALPHA_SHIFT = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? 24 : 0;
 
     // this got proguarded out in vanilla so we have to duplicate it
     public static final String CHARACTERS = "ÀÁÂÈÊËÍÓÔÕÚßãõğİıŒœŞşŴŵžȇ\u0000\u0000\u0000\u0000\u0000\u0000\u0000 !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u0000ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜø£Ø×ƒáíóúñÑªº¿®¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αβΓπΣσμτΦΘΩδ∞∅∈∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\u0000";
 
     private final BufferBuilder buffer = new BufferBuilder(64 * 1024 / Integer.BYTES);
-    private final BufferBuilder decorationBuffer = new BufferBuilder(4 * 1024 / Integer.BYTES);
     private final Map<Identifier, BufferBuilder> elementBuffers = new Object2ObjectLinkedOpenHashMap<>(4);
     private final BufferUploader uploader = new BufferUploader();
 
     private final float[] widths = new float[256];
+    private final FontSet fonts = new FontSet(this.widths);
 
     private final Object2IntOpenHashMap<String> widthCache = new Object2IntOpenHashMap<>(256);
     { this.widthCache.defaultReturnValue(-1); }
@@ -61,10 +65,12 @@ public final class TextBatcher {
     private final GeometryKey lookupKey = new GeometryKey();
 
     private Identifier texture;
-    private boolean batching;
     private boolean drawing;
-    private boolean drawingDecorations;
     private boolean blend;
+    private final boolean vanilla = Boolean.getBoolean("argentum.vanillaText");
+    private final Random random = new Random();
+    private Int2ObjectMap<int[]> obfuscation;
+    private boolean obfuscationUnicode;
 
     private float red = 1.0F;
     private float green = 1.0F;
@@ -74,7 +80,6 @@ public final class TextBatcher {
     private GeometryKey pendingKey;
     private final List<Segment> pendingSegments = new ObjectArrayList<>(4);
     private boolean appendable;
-    private boolean appendingDecorations;
     private float originX;
     private float originY;
 
@@ -86,14 +91,13 @@ public final class TextBatcher {
     private int generation;
     private int endColor;
     private ByteBuffer uploadBuffer;
-    private final float[] glyph = new float[16];
-    private int glyphVertices;
 
     public void readWidths(Identifier fontLocation, int[] characterWidths) {
         this.readWidths(fontLocation, characterWidths, 0, true);
     }
 
     public void readWidths(Identifier fontLocation, int[] characterWidths, int alphaThreshold, boolean round) {
+        this.fonts.setSheet(fontLocation);
         BufferedImage image;
         try {
             image = TextureUtil.readImage(
@@ -158,6 +162,8 @@ public final class TextBatcher {
     public void clearCaches() {
         this.generation++;
         this.widthCache.clear();
+        this.obfuscation = null;
+        this.fonts.reset();
         this.invalidateGeometry();
     }
 
@@ -166,18 +172,13 @@ public final class TextBatcher {
         return character == '\u202f' || character == '\u00a0' || character == '\u2007' ? ' ' : character;
     }
 
-    /**
-     * {@return NaN for one that vanilla's unicode path measures}
-     */
-    public float basicCharWidth(char character, boolean unicode) {
-        if (character == SECTION) return -1.0F;
-
-        int index = CHARACTERS.indexOf(character);
-        if ((character > 0 && index != -1 && !unicode) || character == ' ') return this.widths[index];
-        return Float.NaN;
+    public float charWidth(int codepoint, boolean unicode) {
+        if (codepoint == SECTION) return -1.0F;
+        if (codepoint < Character.MIN_SUPPLEMENTARY_CODE_POINT && normalizeSpace((char) codepoint) == ' ') return this.widths[32];
+        return this.fonts.glyph(codepoint, unicode).advance;
     }
 
-    public int stringWidth(String text, boolean unicode, TextRenderer renderer) {
+    public int stringWidth(String text, boolean unicode) {
         if (text == null) return 0;
 
         boolean cache = Minecraft.getInstance().isOnSameThread();
@@ -187,13 +188,13 @@ public final class TextBatcher {
         float total = 0.0F;
         boolean bold = false;
         for (int i = 0; i < text.length(); i++) {
-            char character = normalizeSpace(text.charAt(i));
-            float width = this.basicCharWidth(character, unicode);
-            if (Float.isNaN(width)) width = renderer.getWidth(character);
+            int codepoint = text.codePointAt(i);
+            i += Character.charCount(codepoint) - 1;
+            float width = this.charWidth(codepoint, unicode);
             if (width < 0.0F && i < text.length() - 1) {
-                character = text.charAt(++i);
-                if (character == 'l' || character == 'L') bold = true;
-                else if (character == 'r' || character == 'R') bold = false;
+                int code = FORMATTING.indexOf(Character.toLowerCase(text.charAt(++i)));
+                if (code == 17) bold = true;
+                else if (code < 16 || code == 21) bold = false;
                 width = 0.0F;
             }
             total += width;
@@ -215,26 +216,6 @@ public final class TextBatcher {
         this.alpha = alpha;
     }
 
-    public boolean isBatching() {
-        return this.batching;
-    }
-
-    public BufferBuilder decorationBuffer() {
-        return this.decorationBuffer;
-    }
-
-    public boolean beginDecorations(int mode) {
-        if (this.batching && !this.drawingDecorations) {
-            this.decorationBuffer.begin(mode, DefaultVertexFormat.POSITION_COLOR);
-            this.drawingDecorations = true;
-        }
-        return !this.batching;
-    }
-
-    public void colorDecoration(BufferBuilder buffer) {
-        if (this.batching) buffer.color(this.red, this.green, this.blue, this.alpha);
-    }
-
     public boolean shouldFlushBeforeImmediate(String text) {
         return this.elementBatchDepth > 0 && this.beforeImmediateText != null
                 && text != null && !text.isEmpty()
@@ -245,22 +226,24 @@ public final class TextBatcher {
         this.beforeImmediateText.run();
     }
 
-    public float begin(String text, boolean shadow, int style, float x, float y, TextureManager textureManager) {
+    public float begin(String text, boolean shadow, int style, float x, float y, TextureManager textureManager,
+            int[] colors, boolean unicode) {
         if (text.isEmpty()) return 0.0F;
+        if (this.vanilla) return Float.NaN;
 
-        this.batching = Argentum.CONFIG.fontBatching;
+        boolean batching = Argentum.CONFIG.fontBatching;
         this.pendingKey = null;
         this.pendingSegments.clear();
         this.appendable = false;
-        this.nameTags = NameTagBatch.capturing();
+        this.nameTags = batching ? NameTagBatch.capturing() : null;
         if (this.nameTags != null && !this.nameTags.canCaptureText()) {
             this.nameTags.flush();
             this.nameTags = null;
         }
 
-        if (!this.batching || !cacheable(text) || (style & OBFUSCATED) != 0) {
+        if (!batching || !cacheable(text) || (style & OBFUSCATED) != 0) {
             this.flushElementBatch(textureManager);
-            return Float.NaN;
+            return this.draw(text, shadow, style, x, y, textureManager, colors, unicode);
         }
         this.appendable = this.elementBatchDepth > 0 || this.nameTags != null;
 
@@ -274,10 +257,6 @@ public final class TextBatcher {
                 if (this.appendable) {
                     if (this.nameTags == null) segment.setAlpha(alpha);
                     this.append(segment.texture, segment.vertices, x, y);
-                } else if (segment.texture == null) {
-                    GlStateManager.disableTexture();
-                    this.drawCached(segment, alpha, x, y);
-                    GlStateManager.enableTexture();
                 } else {
                     textureManager.bind(segment.texture);
                     this.drawCached(segment, alpha, x, y);
@@ -287,14 +266,115 @@ public final class TextBatcher {
             this.setColor(geometry.red(), geometry.green(), geometry.blue(), this.alpha);
             this.endStyle = geometry.style();
             this.endColor = geometry.color();
-            this.batching = false;
             return geometry.advance();
         }
 
         this.pendingKey = new GeometryKey(key);
         this.originX = x;
         this.originY = y;
-        return Float.NaN;
+        return this.draw(text, shadow, style, x, y, textureManager, colors, unicode);
+    }
+
+    private float draw(String text, boolean shadow, int style, float x, float y, TextureManager textureManager,
+            int[] colors, boolean unicode) {
+        float advance = this.layout(text, shadow, style, x, y, textureManager, colors, unicode);
+        this.end(x + advance, this.endStyle, this.endColor);
+        GlStateManager.color4f(this.red, this.green, this.blue, this.alpha);
+        return advance;
+    }
+
+    private float layout(String text, boolean shadow, int style, float x, float y, TextureManager textureManager,
+            int[] colors, boolean unicode) {
+        float red = this.red;
+        float green = this.green;
+        float blue = this.blue;
+        float pen = x;
+        this.endColor = -1;
+
+        for (int i = 0; i < text.length(); i++) {
+            char character = text.charAt(i);
+            if (character == SECTION && i + 1 < text.length()) {
+                int code = FORMATTING.indexOf(Character.toLowerCase(text.charAt(++i)));
+                if (code < 16) {
+                    style = 0;
+                    int color = colors[(code < 0 ? 15 : code) + (shadow ? 16 : 0)];
+                    this.endColor = color;
+                    this.setColor((color >> 16) / 255.0F, (color >> 8 & 0xFF) / 255.0F, (color & 0xFF) / 255.0F, this.alpha);
+                } else if (code == 21) {
+                    style = 0;
+                    this.setColor(red, green, blue, this.alpha);
+                } else {
+                    style |= 1 << (code - 16);
+                }
+                continue;
+            }
+
+            int codepoint = text.codePointAt(i);
+            i += Character.charCount(codepoint) - 1;
+            if ((style & OBFUSCATED) != 0) codepoint = this.obfuscate(codepoint, unicode);
+            boolean space = codepoint < Character.MIN_SUPPLEMENTARY_CODE_POINT && normalizeSpace((char) codepoint) == ' ';
+            Glyph glyph = space ? null : this.fonts.glyph(codepoint, unicode);
+            float advance = glyph == null ? this.widths[32] : glyph.advance;
+            if (glyph != null && glyph.visible()) {
+                boolean half = unicode || glyph.unicodePage;
+                float shift = half ? 0.5F : 1.0F;
+                float pull = shadow && half ? shift : 0.0F;
+                boolean italic = (style & ITALIC) != 0;
+                this.glyph(glyph, pen - pull, y - pull, italic, textureManager);
+                if ((style & BOLD) != 0) this.glyph(glyph, pen + shift - pull, y - pull, italic, textureManager);
+            }
+            if ((style & BOLD) != 0) advance++;
+            if ((style & STRIKETHROUGH) != 0) this.decoration(pen, y + 4.0F, pen + advance, y + 3.0F, textureManager, unicode);
+            if ((style & UNDERLINED) != 0) this.decoration(pen - 1.0F, y + 9.0F, pen + advance, y + 8.0F, textureManager, unicode);
+            pen += (int) advance;
+        }
+
+        this.endStyle = style;
+        return pen - x;
+    }
+
+    private int obfuscate(int codepoint, boolean unicode) {
+        if (codepoint >= Character.MIN_SUPPLEMENTARY_CODE_POINT || CHARACTERS.indexOf(codepoint) == -1) return codepoint;
+
+        if (this.obfuscation == null || this.obfuscationUnicode != unicode) {
+            Int2ObjectMap<IntArrayList> byWidth = new Int2ObjectOpenHashMap<>();
+            for (int i = 0; i < CHARACTERS.length(); i++) {
+                char candidate = CHARACTERS.charAt(i);
+                byWidth.computeIfAbsent(Math.round(this.charWidth(candidate, unicode)), _ -> new IntArrayList()).add(candidate);
+            }
+            this.obfuscation = new Int2ObjectOpenHashMap<>();
+            byWidth.forEach((width, candidates) -> this.obfuscation.put((int) width, candidates.toIntArray()));
+            this.obfuscationUnicode = unicode;
+        }
+        int[] candidates = this.obfuscation.get(Math.round(this.charWidth(codepoint, unicode)));
+        return candidates[this.random.nextInt(candidates.length)];
+    }
+
+    private void glyph(Glyph glyph, float x, float y, boolean italic, TextureManager textureManager) {
+        Identifier page = this.fonts.bake(glyph);
+        if (page == null) return;
+
+        this.useTexture(textureManager, page);
+        float top = y + glyph.top;
+        float bottom = top + glyph.height - 0.01F;
+        float right = x + glyph.width;
+        float topSlant = italic ? 1.0F - 0.25F * glyph.top : 0.0F;
+        float bottomSlant = italic ? 1.0F - 0.25F * (glyph.top + glyph.height) : 0.0F;
+        this.quad(
+                x + topSlant, top, glyph.u0, glyph.v0,
+                x + bottomSlant, bottom, glyph.u0, glyph.v1,
+                right + topSlant, top, glyph.u1, glyph.v0,
+                right + bottomSlant, bottom, glyph.u1, glyph.v1
+        );
+    }
+
+    private void decoration(float x0, float y0, float x1, float y1, TextureManager textureManager, boolean unicode) {
+        this.useTexture(textureManager, this.fonts.whitePage(this.drawing ? this.texture : null, unicode));
+        float white = FontSet.whiteUv();
+        this.vertex(x0, y0, white, white);
+        this.vertex(x1, y0, white, white);
+        this.vertex(x1, y1, white, white);
+        this.vertex(x0, y1, white, white);
     }
 
     public int endStyle() {
@@ -307,7 +387,6 @@ public final class TextBatcher {
 
     public void end(float x, int style, int color) {
         this.flush();
-        this.flushDecorations();
         if (!this.pendingSegments.isEmpty()) {
             this.geometryCache.put(this.pendingKey, new Geometry(this.pendingSegments.toArray(new Segment[0]),
                     x - this.originX, style, this.red, this.green, this.blue,
@@ -319,48 +398,7 @@ public final class TextBatcher {
         this.pendingKey = null;
         this.pendingSegments.clear();
         this.appendable = false;
-        this.batching = false;
         this.nameTags = null;
-    }
-
-    public float drawBasicGlyph(int character, boolean italic, float x, float y,
-            TextureManager textureManager, Identifier fontLocation) {
-        if (!this.batching) return Float.NaN;
-
-        int textureX = character % 16 * 8;
-        int textureY = character / 16 * 8;
-        int slant = italic ? 1 : 0;
-        float width = this.widths[character];
-        float right = width - 0.01F;
-
-        this.useTexture(textureManager, fontLocation);
-        this.quad(
-                x + slant, y, textureX / 128.0F, textureY / 128.0F,
-                x - slant, y + 7.99F, textureX / 128.0F, (textureY + 7.99F) / 128.0F,
-                x + right - 1.0F + slant, y, (textureX + right - 1.0F) / 128.0F, textureY / 128.0F,
-                x + right - 1.0F - slant, y + 7.99F,
-                (textureX + right - 1.0F) / 128.0F, (textureY + 7.99F) / 128.0F
-        );
-        return width;
-    }
-
-    public void useGlyphTexture(TextureManager textureManager, Identifier texture) {
-        this.useTexture(textureManager, texture);
-        this.glyphVertices = 0;
-    }
-
-    public void glyphVertex(float x, float y, float u, float v) {
-        float[] glyph = this.glyph;
-        int offset = this.glyphVertices++ * 4;
-        glyph[offset] = x;
-        glyph[offset + 1] = y;
-        glyph[offset + 2] = u;
-        glyph[offset + 3] = v;
-        if (this.glyphVertices == 4) {
-            this.glyphVertices = 0;
-            this.quad(glyph[0], glyph[1], glyph[2], glyph[3], glyph[4], glyph[5], glyph[6], glyph[7],
-                    glyph[8], glyph[9], glyph[10], glyph[11], glyph[12], glyph[13], glyph[14], glyph[15]);
-        }
     }
 
     public void beginElementBatch(Runnable beforeImmediateText) {
@@ -472,35 +510,6 @@ public final class TextBatcher {
                 .nextVertex();
     }
 
-    private void flushDecorations() {
-        if (!this.drawingDecorations) return;
-
-        this.decorationBuffer.end();
-        int[] vertices = null;
-        if (this.pendingKey != null) {
-            IntBuffer source = this.decorationBuffer.getBuffer().asIntBuffer();
-            vertices = new int[source.remaining()];
-            source.get(vertices);
-            for (int i = 0; i < vertices.length; i += DECORATION_FORMAT.getIntSize()) {
-                vertices[i] = Float.floatToRawIntBits(Float.intBitsToFloat(vertices[i]) - this.originX);
-                vertices[i + 1] = Float.floatToRawIntBits(Float.intBitsToFloat(vertices[i + 1]) - this.originY);
-            }
-            this.pendingSegments.add(new Segment(null, vertices, this.alphaByte()));
-        }
-        if (this.nameTags != null) {
-            this.nameTags.text(null, this.decorationBuffer.getBuffer().asIntBuffer(), this.alphaByte());
-            this.decorationBuffer.clear();
-        } else if (this.appendable) {
-            this.append(null, vertices, this.originX, this.originY);
-            this.decorationBuffer.clear();
-        } else {
-            GlStateManager.disableTexture();
-            this.upload(this.decorationBuffer);
-            GlStateManager.enableTexture();
-        }
-        this.drawingDecorations = false;
-    }
-
     private static boolean hasColorCode(String text) {
         for (int i = 0; i + 1 < text.length(); i++) {
             if (text.charAt(i) == SECTION && "klmnor".indexOf(Character.toLowerCase(text.charAt(i + 1))) == -1) return true;
@@ -515,17 +524,10 @@ public final class TextBatcher {
             if (text.charAt(i) == SECTION && i + 1 < text.length()) {
                 char formatting = Character.toLowerCase(text.charAt(++i));
                 // obfuscated text changes every frame
-                if (formatting == 'k' || FORMATTING.indexOf(formatting) == -1) return false;
+                if (formatting == 'k') return false;
             }
         }
         return true;
-    }
-
-    public static boolean hasCustomFormatting(String text) {
-        for (int i = text.indexOf(SECTION); i != -1 && i + 1 < text.length(); i = text.indexOf(SECTION, i + 2)) {
-            if (FORMATTING.indexOf(Character.toLowerCase(text.charAt(i + 1))) == -1) return true;
-        }
-        return false;
     }
 
     private int alphaByte() {
@@ -567,21 +569,20 @@ public final class TextBatcher {
 
     private void draw(VertexBuffer buffer, VertexFormat format, float x, float y) {
         boolean pushed = this.pushBlend();
-        boolean textured = format == FORMAT;
         GlStateManager.pushMatrix();
         GlStateManager.translatef(x, y, 0.0F);
         buffer.bind();
         GL11.glEnableClientState(GL11.GL_VERTEX_ARRAY);
-        if (textured) GL11.glEnableClientState(GL11.GL_TEXTURE_COORD_ARRAY);
+        GL11.glEnableClientState(GL11.GL_TEXTURE_COORD_ARRAY);
         GL11.glEnableClientState(GL11.GL_COLOR_ARRAY);
         int stride = format.getVertexSize();
         GL11.glVertexPointer(3, GL11.GL_FLOAT, stride, format.getOffset(0));
-        if (textured) GL11.glTexCoordPointer(2, GL11.GL_FLOAT, stride, format.getUvOffset(0));
+        GL11.glTexCoordPointer(2, GL11.GL_FLOAT, stride, format.getUvOffset(0));
         GL11.glColorPointer(4, GL11.GL_UNSIGNED_BYTE, stride, format.getColorOffset());
         buffer.draw(GL11.GL_QUADS);
         GL11.glDisableClientState(GL11.GL_COLOR_ARRAY);
         GlStateManager.clearColor();
-        if (textured) GL11.glDisableClientState(GL11.GL_TEXTURE_COORD_ARRAY);
+        GL11.glDisableClientState(GL11.GL_TEXTURE_COORD_ARRAY);
         GL11.glDisableClientState(GL11.GL_VERTEX_ARRAY);
         buffer.unbind();
         GlStateManager.popMatrix();
@@ -593,29 +594,15 @@ public final class TextBatcher {
             this.nameTags.text(texture, vertices, vertices.length, x, y, this.alphaByte());
             return;
         }
-        if ((texture == null) != this.appendingDecorations) {
-            this.appendingDecorations = texture == null;
-            if (this.hasElementVertices()) {
-                if (this.beforeImmediateText != null) this.beforeImmediateText.run();
-                this.flushElementBatch(Minecraft.getInstance().getTextureManager());
-            }
-        }
         BufferBuilder buffer = this.elementBuffers.get(texture);
         if (buffer == null) {
             buffer = new BufferBuilder(256 * 1024 / Integer.BYTES);
             this.elementBuffers.put(texture, buffer);
         }
         if (buffer.getVertexCount() == 0) {
-            buffer.begin(GL11.GL_QUADS, texture == null ? DECORATION_FORMAT : FORMAT);
+            buffer.begin(GL11.GL_QUADS, FORMAT);
         }
         buffer.argentum$appendTranslated(vertices, x, y);
-    }
-
-    private boolean hasElementVertices() {
-        for (BufferBuilder buffer : this.elementBuffers.values()) {
-            if (buffer.getVertexCount() != 0) return true;
-        }
-        return false;
     }
 
     private void flushElementBatch(TextureManager textureManager) {
@@ -624,14 +611,8 @@ public final class TextBatcher {
             if (buffer.getVertexCount() == 0) continue;
 
             buffer.end();
-            if (entry.getKey() == null) {
-                GlStateManager.disableTexture();
-                this.upload(buffer);
-                GlStateManager.enableTexture();
-            } else {
-                textureManager.bind(entry.getKey());
-                this.upload(buffer);
-            }
+            textureManager.bind(entry.getKey());
+            this.upload(buffer);
         }
     }
 
@@ -694,7 +675,7 @@ public final class TextBatcher {
 
         private Segment(Identifier texture, int[] vertices, int alpha) {
             this.texture = texture;
-            this.format = texture == null ? DECORATION_FORMAT : FORMAT;
+            this.format = FORMAT;
             this.vertices = vertices;
             this.verticesAlpha = alpha;
             this.lastAlpha = alpha;

@@ -56,12 +56,21 @@ loom {
             systemProperties.put("argentum.disableFontBatching", findProperty("disableFontBatching")?.toString() ?: "false")
             systemProperties.put("argentum.fontTestVariant", findProperty("fontTestVariant")?.toString() ?: "batched")
         }
+        create("fontBenchmarkClient") {
+            inherit(getByName("client"))
+            sourceSet = testmod.name
+            displayName = "Font Benchmark"
+            jvmArguments.add("-XstartOnFirstThread")
+            systemProperties.put("argentum.fontBenchmark", findProperty("fontBenchmark")?.toString() ?: "batched")
+            systemProperties.put("argentum.vanillaText", (findProperty("fontBenchmark")?.toString() == "vanilla").toString())
+        }
         create("fontTestVanillaClient") {
             inherit(getByName("client"))
             sourceSet = testmod.name
             displayName = "Font Visual Test (Vanilla)"
             jvmArguments.add("-XstartOnFirstThread")
             systemProperties.put("argentum.disableFontBatching", "true")
+            systemProperties.put("argentum.vanillaText", "true")
             systemProperties.put("argentum.fontTestVariant", "vanilla")
         }
         create("itemTestClient") {

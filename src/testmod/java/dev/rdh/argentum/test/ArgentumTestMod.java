@@ -13,6 +13,9 @@ public class ArgentumTestMod implements ClientModInitializer {
             } else if (System.getProperty("argentum.itemTestVariant") != null) {
                 Argentum.CONFIG.guiItemAtlas = "atlas".equals(System.getProperty("argentum.itemTestVariant"));
                 minecraft.openScreen(new GuiItemVisualTestScreen());
+            } else if (System.getProperty("argentum.fontBenchmark") != null) {
+                Argentum.CONFIG.fontBatching = !"vanilla".equals(System.getProperty("argentum.fontBenchmark"));
+                minecraft.openScreen(new FontBenchmarkScreen());
             } else if (Boolean.getBoolean("argentum.guiBenchmark")) {
                 Argentum.CONFIG.fontBatching = true;
                 minecraft.openScreen(new GuiBatchBenchmarkScreen());

@@ -1,14 +1,8 @@
 package dev.rdh.argentum.mixin.features.font;
 
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import net.minecraft.client.render.TextRenderer;
 import net.minecraft.client.render.texture.TextureManager;
-import net.minecraft.client.render.vertex.BufferBuilder;
-import net.minecraft.client.render.vertex.Tesselator;
-import net.minecraft.client.render.vertex.VertexFormat;
 import net.minecraft.resource.Identifier;
 
 import org.spongepowered.asm.mixin.Final;
@@ -47,6 +41,9 @@ public abstract class TextRendererMixin implements TextRendererExtension {
 
     @Shadow
     private int color;
+
+    @Shadow
+    private int[] colors;
 
     @Shadow
     private boolean obfuscated;
@@ -92,15 +89,12 @@ public abstract class TextRendererMixin implements TextRendererExtension {
 
     @Inject(method = "getWidth(Ljava/lang/String;)I", at = @At("HEAD"), cancellable = true)
     private void argentum$stringWidth(String text, CallbackInfoReturnable<Integer> cir) {
-        if (text == null || !TextBatcher.hasCustomFormatting(text)) {
-            cir.setReturnValue(this.argentum$batcher.stringWidth(text, this.unicode, (TextRenderer)(Object)this));
-        }
+        cir.setReturnValue(this.argentum$batcher.stringWidth(text, this.unicode));
     }
 
     @Inject(method = "getWidth(C)I", at = @At("HEAD"), cancellable = true)
     private void argentum$charWidth(char chr, CallbackInfoReturnable<Integer> cir) {
-        float width = this.argentum$batcher.basicCharWidth(TextBatcher.normalizeSpace(chr), this.unicode);
-        if (!Float.isNaN(width)) cir.setReturnValue(Math.round(width));
+        cir.setReturnValue(Math.round(this.argentum$batcher.charWidth(chr, this.unicode)));
     }
 
     @Shadow
@@ -124,26 +118,16 @@ public abstract class TextRendererMixin implements TextRendererExtension {
         }
     }
 
-    @ModifyExpressionValue(method = "drawLayer(Ljava/lang/String;Z)V",
-            at = @At(value = "INVOKE", target = "Ljava/lang/String;charAt(I)C", ordinal = 0))
-    private char argentum$fixZeroWidthChars(char c) {
-        return TextBatcher.normalizeSpace(c);
-    }
-
     @Inject(method = "drawLayer(Ljava/lang/String;Z)V", at = @At("HEAD"), cancellable = true)
     private void argentum$beginLayer(String text, boolean shadow, CallbackInfo ci) {
-        float advance = this.argentum$batcher.begin(text, shadow, this.argentum$style(), this.x, this.y, this.textureManager);
+        float advance = this.argentum$batcher.begin(text, shadow, this.argentum$style(), this.x, this.y, this.textureManager,
+                this.colors, this.unicode);
         if (!Float.isNaN(advance)) {
             this.x += advance;
             this.argentum$setStyle(this.argentum$batcher.endStyle());
             if (this.argentum$batcher.endColor() != -1) this.color = this.argentum$batcher.endColor();
             ci.cancel();
         }
-    }
-
-    @Inject(method = "drawLayer(Ljava/lang/String;Z)V", at = @At("RETURN"))
-    private void argentum$endLayer(String text, boolean shadow, CallbackInfo ci) {
-        this.argentum$batcher.end(this.x, this.argentum$style(), this.color);
     }
 
     @Unique
@@ -164,36 +148,24 @@ public abstract class TextRendererMixin implements TextRendererExtension {
         this.italic = (style & TextBatcher.ITALIC) != 0;
     }
 
-    @Inject(method = "drawBasicGlyph", at = @At("HEAD"), cancellable = true)
-    private void argentum$drawBasicGlyph(int character, boolean italic, CallbackInfoReturnable<Float> cir) {
-        float advance = this.argentum$batcher.drawBasicGlyph(character, italic, this.x, this.y,
-                this.textureManager, this.fontLocation);
-        if (!Float.isNaN(advance)) cir.setReturnValue(advance);
-    }
-
     @WrapWithCondition(method = "drawUnicodeGlyph",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/TextRenderer;bindFontPageTexture(I)V"))
     private boolean argentum$captureGlyphTexture(TextRenderer renderer, int page) {
-        if (this.argentum$glyphSink != null) {
-            this.argentum$glyphSink.texture(this.getFontPage(page));
-        } else if (this.argentum$batcher.isBatching()) {
-            this.argentum$batcher.useGlyphTexture(this.textureManager, this.getFontPage(page));
-        } else {
-            return true;
-        }
+        if (this.argentum$glyphSink == null) return true;
+        this.argentum$glyphSink.texture(this.getFontPage(page));
         return false;
     }
 
     @WrapWithCondition(method = "drawUnicodeGlyph",
             at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glBegin(I)V", remap = false))
     private boolean argentum$captureGlyphBegin(int mode) {
-        return this.argentum$glyphSink == null && !this.argentum$batcher.isBatching();
+        return this.argentum$glyphSink == null;
     }
 
     @WrapWithCondition(method = "drawUnicodeGlyph",
             at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glEnd()V", remap = false))
     private boolean argentum$captureGlyphEnd() {
-        return this.argentum$glyphSink == null && !this.argentum$batcher.isBatching();
+        return this.argentum$glyphSink == null;
     }
 
     @WrapWithCondition(method = "drawUnicodeGlyph",
@@ -201,19 +173,14 @@ public abstract class TextRendererMixin implements TextRendererExtension {
     private boolean argentum$captureGlyphTexCoord(float u, float v) {
         this.argentum$glyphU = u;
         this.argentum$glyphV = v;
-        return this.argentum$glyphSink == null && !this.argentum$batcher.isBatching();
+        return this.argentum$glyphSink == null;
     }
 
     @WrapWithCondition(method = "drawUnicodeGlyph",
             at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glVertex3f(FFF)V", remap = false), require = 4)
     private boolean argentum$captureGlyphVertex(float x, float y, float z) {
-        if (this.argentum$glyphSink != null) {
-            this.argentum$glyphSink.vertex(x, y, this.argentum$glyphU, this.argentum$glyphV);
-        } else if (this.argentum$batcher.isBatching()) {
-            this.argentum$batcher.glyphVertex(x, y, this.argentum$glyphU, this.argentum$glyphV);
-        } else {
-            return true;
-        }
+        if (this.argentum$glyphSink == null) return true;
+        this.argentum$glyphSink.vertex(x, y, this.argentum$glyphU, this.argentum$glyphV);
         return false;
     }
 
@@ -237,61 +204,12 @@ public abstract class TextRendererMixin implements TextRendererExtension {
     }
 
     @WrapWithCondition(
-            method = {"drawLayer(Ljava/lang/String;FFIZ)I", "drawLayer(Ljava/lang/String;Z)V"},
+            method = "drawLayer(Ljava/lang/String;FFIZ)I",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;color4f(FFFF)V")
     )
     private boolean argentum$captureColor(float red, float green, float blue, float alpha) {
         this.argentum$batcher.setColor(red, green, blue, alpha);
         return true;
-    }
-
-    @WrapOperation(
-            method = "drawLayer(Ljava/lang/String;Z)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/vertex/Tesselator;getBuffer()Lnet/minecraft/client/render/vertex/BufferBuilder;"),
-            require = 2
-    )
-    private BufferBuilder argentum$decorationBuffer(Tesselator tesselator, Operation<BufferBuilder> original) {
-        return this.argentum$batcher.isBatching() ? this.argentum$batcher.decorationBuffer() : original.call(tesselator);
-    }
-
-    @WrapWithCondition(
-            method = "drawLayer(Ljava/lang/String;Z)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/vertex/BufferBuilder;begin(ILnet/minecraft/client/render/vertex/VertexFormat;)V"),
-            require = 2
-    )
-    private boolean argentum$beginDecorations(BufferBuilder buffer, int mode, VertexFormat format) {
-        return this.argentum$batcher.beginDecorations(mode);
-    }
-
-    @WrapWithCondition(
-            method = "drawLayer(Ljava/lang/String;Z)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/vertex/BufferBuilder;nextVertex()V"),
-            require = 8
-    )
-    private boolean argentum$colorDecoration(BufferBuilder buffer) {
-        this.argentum$batcher.colorDecoration(buffer);
-        return true;
-    }
-
-    @WrapWithCondition(
-            method = "drawLayer(Ljava/lang/String;Z)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/vertex/Tesselator;end()V"),
-            require = 2
-    )
-    private boolean argentum$deferDecorations(Tesselator tesselator) {
-        return !this.argentum$batcher.isBatching();
-    }
-
-    @WrapWithCondition(
-            method = "drawLayer(Ljava/lang/String;Z)V",
-            at = {
-                    @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;disableTexture()V"),
-                    @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;enableTexture()V")
-            },
-            require = 4
-    )
-    private boolean argentum$deferTextureState() {
-        return !this.argentum$batcher.isBatching();
     }
 
     @Override

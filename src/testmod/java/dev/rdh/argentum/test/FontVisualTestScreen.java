@@ -1,6 +1,7 @@
 package dev.rdh.argentum.test;
 
 import dev.rdh.argentum.api.render.gui.hud.HudBatch;
+import dev.rdh.argentum.impl.Argentum;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.resource.Identifier;
@@ -28,6 +29,7 @@ public class FontVisualTestScreen extends Screen {
         this.textRenderer.setBidirectional(true);
         this.textRenderer.draw("שלום עולם", x, y + 80, 0xFFFFFFFF);
         this.textRenderer.setBidirectional(bidirectional);
+        this.textRenderer.drawWithShadow("Glyphs: Рус 日本 ؆؇ ॱᅡ §lЖ日؆", x, y + 96, 0xFFFFFFFF);
 
         this.renderHudBatchTest(x, y + 112);
         this.renderCacheStateTest(270, y);
@@ -47,6 +49,11 @@ public class FontVisualTestScreen extends Screen {
         if (batch != null) batch.begin();
         for (int i = 0; i < alphas.length; i++) this.textRenderer.draw("Batched alpha", x, y + 80 + i * 12, alphas[i] << 24 | 0xFFFFFF);
         if (batch != null) batch.draw();
+
+        this.textRenderer.drawWithShadow("Unknown: §cred §zwhite §lbold §yplain", x, y + 136, 0xFFFFAA55);
+        Argentum.CONFIG.fontBatching = false;
+        this.textRenderer.drawWithShadow("Uncached: §aGreen §lBold §nUnder Ελλ 日", x, y + 150, 0xFFFFFFFF);
+        Argentum.CONFIG.fontBatching = !this.variant.equals("vanilla");
 
         this.textRenderer.draw("Leak: §cred", x, y + 120, 0xFFFFFFFF);
         this.minecraft.getTextureManager().bind(ICONS);
