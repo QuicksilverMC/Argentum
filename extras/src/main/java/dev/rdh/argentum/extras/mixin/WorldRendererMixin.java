@@ -10,6 +10,8 @@ import net.minecraft.client.render.world.WorldRenderer;
 import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.world.HitResult;
 
+import com.llamalad7.mixinextras.sugar.Share;
+import com.llamalad7.mixinextras.sugar.ref.LocalFloatRef;
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -68,21 +70,25 @@ public class WorldRendererMixin {
         }
     }
 
-    @Inject(method = "renderBlockOutline", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;enableTexture()V"))
-    private void disableSmoothLines(PlayerEntity camera, HitResult hit, int i, float tickDelta, CallbackInfo ci) {
-        if (ArgentumExtras.CONFIG.smoothBlockOutlines) {
-            GL11.glDisable(GL11.GL_LINE_SMOOTH);
-        }
-    }
-
     @ModifyArg(method = "renderBlockOutline", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glLineWidth(F)V"))
-    private float argentumExtras$blockOutlineWidth(float original) {
+    private float argentumExtras$blockOutlineWidth(float original, @Share("originalWidth") LocalFloatRef originalWidth) {
+        originalWidth.set(original);
         float f = ArgentumExtras.CONFIG.blockOutlineWidth;
         if (ArgentumExtras.CONFIG.scaledBlockOutlineWidth) {
             return Math.max(f, this.minecraft.width / 1920.0f * f);
         } else {
             return f;
         }
+    }
+
+    @Inject(method = "renderBlockOutline", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;enableTexture()V"))
+    private void disableSmoothLines(PlayerEntity camera, HitResult hit, int i, float tickDelta, CallbackInfo ci,
+                                    @Share("originalWidth") LocalFloatRef originalWidth) {
+        if (ArgentumExtras.CONFIG.smoothBlockOutlines) {
+            GL11.glDisable(GL11.GL_LINE_SMOOTH);
+            GL11.glHint(GL11.GL_LINE_SMOOTH_HINT, GL11.GL_DONT_CARE);
+        }
+        GL11.glLineWidth(originalWidth.get());
     }
 
     // this is somewhat cursed since we wrap a method that argentum redirects...
