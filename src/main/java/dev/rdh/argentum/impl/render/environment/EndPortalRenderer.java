@@ -7,9 +7,12 @@ import java.util.List;
 
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.ext.BufferBuilderExtension;
+import dev.rdh.argentum.impl.render.GlStateMirror;
 import dev.rdh.argentum.impl.render.terrain.ArgentumWorldRenderer;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EndPortalBlockEntity;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.platform.GLX;
 import net.minecraft.client.render.platform.GlStateManager;
@@ -263,8 +266,8 @@ public final class EndPortalRenderer {
         for (int i = 1; i < count; i++) {
             if (data.get(i * 4 + 3) != color) return this.decline();
         }
-        this.readMatrix(GL11.GL_MODELVIEW_MATRIX, this.nextModelView);
-        this.readMatrix(GL11.GL_PROJECTION_MATRIX, this.nextProjection);
+        this.nextModelView.set(GlStateMirror.matrix(GL11.GL_MODELVIEW_MATRIX));
+        this.nextProjection.set(GlStateMirror.matrix(GL11.GL_PROJECTION_MATRIX));
         if (!this.readProjection()) return this.decline();
         this.nextFog.capture();
         if (!this.nextFog.supported) return this.decline();
@@ -353,11 +356,12 @@ public final class EndPortalRenderer {
     }
 
     private boolean additiveBlend() {
-        int destinationAlpha = GL11.glGetInteger(GL14.GL_BLEND_DST_ALPHA);
+        GlStateManager.Blend blend = GlStateManager.BLEND;
+        int destinationAlpha = blend.dfactorAlpha;
         this.nextAddAlpha = destinationAlpha == GL11.GL_ONE ? 1 : 0;
-        return GL11.glGetInteger(GL14.GL_BLEND_SRC_RGB) == GL11.GL_ONE
-                && GL11.glGetInteger(GL14.GL_BLEND_DST_RGB) == GL11.GL_ONE
-                && GL11.glGetInteger(GL14.GL_BLEND_SRC_ALPHA) == GL11.GL_ONE
+        return blend.sfactorRGB == GL11.GL_ONE
+                && blend.dfactorRGB == GL11.GL_ONE
+                && blend.sfactorAlpha == GL11.GL_ONE
                 && (destinationAlpha == GL11.GL_ONE || destinationAlpha == GL11.GL_ZERO);
     }
 
@@ -451,13 +455,14 @@ public final class EndPortalRenderer {
         GlStateManager.activeTexture(GL13.GL_TEXTURE0);
         int previousTexture = GlStateManager.TEXTURES[0].texture;
         int previousProgram = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
-        int previousMode = GL11.glGetInteger(GL11.GL_MATRIX_MODE);
+        int previousMode = GlStateMirror.matrixMode();
         int sourceRgb = 0, destinationRgb = 0, sourceAlpha = 0, destinationAlpha = 0, equationRgb = 0, equationAlpha = 0;
         if (this.merging) {
-            sourceRgb = GL11.glGetInteger(GL14.GL_BLEND_SRC_RGB);
-            destinationRgb = GL11.glGetInteger(GL14.GL_BLEND_DST_RGB);
-            sourceAlpha = GL11.glGetInteger(GL14.GL_BLEND_SRC_ALPHA);
-            destinationAlpha = GL11.glGetInteger(GL14.GL_BLEND_DST_ALPHA);
+            GlStateManager.Blend blend = GlStateManager.BLEND;
+            sourceRgb = blend.sfactorRGB;
+            destinationRgb = blend.dfactorRGB;
+            sourceAlpha = blend.sfactorAlpha;
+            destinationAlpha = blend.dfactorAlpha;
             equationRgb = GL11.glGetInteger(GL20.GL_BLEND_EQUATION_RGB);
             equationAlpha = GL11.glGetInteger(GL20.GL_BLEND_EQUATION_ALPHA);
             GL14.glBlendFuncSeparate(GL11.GL_ONE, GL11.GL_ONE, GL11.GL_ONE, this.addAlpha != 0 ? GL11.GL_ONE : GL11.GL_ZERO);
@@ -651,7 +656,6 @@ public final class EndPortalRenderer {
 
     private static final class CapturedFog implements FogService {
         private final float[] color = new float[4];
-        private final FloatBuffer data = BufferUtils.createFloatBuffer(4);
         private int mode;
         private float start;
         private float end;
@@ -661,15 +665,17 @@ public final class EndPortalRenderer {
 
         private void capture() {
             this.supported = true;
-            this.mode = GL11.glIsEnabled(GL11.GL_FOG) ? GL11.glGetInteger(GL11.GL_FOG_MODE) : 0;
+            GlStateManager.Fog fog = GlStateManager.FOG;
+            this.mode = fog.state.enabled ? fog.mode : 0;
             if (this.mode == 0) return;
-            this.supported = GL11.glGetInteger(GL14.GL_FOG_COORDINATE_SOURCE) == GL14.GL_FRAGMENT_DEPTH;
             this.shape = Argentum.CONFIG.fogShape.index;
-            this.start = GL11.glGetFloat(GL11.GL_FOG_START);
-            this.end = GL11.glGetFloat(GL11.GL_FOG_END);
-            this.density = GL11.glGetFloat(GL11.GL_FOG_DENSITY);
-            GL11.glGetFloatv(GL11.GL_FOG_COLOR, this.data.clear());
-            for (int i = 0; i < 4; i++) this.color[i] = this.data.get(i);
+            this.start = fog.start;
+            this.end = fog.end;
+            this.density = fog.density;
+            GameRenderer renderer = Minecraft.getInstance().gameRenderer;
+            this.color[0] = renderer.fogRed;
+            this.color[1] = renderer.fogGreen;
+            this.color[2] = renderer.fogBlue;
             this.color[3] = 1.0F;
         }
 
