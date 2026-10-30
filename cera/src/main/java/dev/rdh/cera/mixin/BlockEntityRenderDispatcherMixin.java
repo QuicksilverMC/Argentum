@@ -2,14 +2,13 @@ package dev.rdh.cera.mixin;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import dev.rdh.argentum.impl.render.entity.instancing.EntityCapture;
 import dev.rdh.cera.entity.BlockEntityContext;
 import dev.rdh.cera.ext.CeraBlockEntityRenderDispatcherExtension;
-import dev.rdh.cera.modules.EmissiveTextures;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
-import net.minecraft.client.render.platform.GlStateManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -50,28 +49,7 @@ public class BlockEntityRenderDispatcherMixin implements CeraBlockEntityRenderDi
     )
     private void cera$emissivePass(BlockEntityRenderer<?> renderer, BlockEntity blockEntity, double x, double y, double z,
             float tickDelta, int breakStage, Operation<Void> original) {
-        EmissiveTextures emissive = Minecraft.getInstance().getTextureManager().cera$getEmissiveTextures();
-        if (!emissive.active()) {
-            original.call(renderer, blockEntity, x, y, z, tickDelta, breakStage);
-            return;
-        }
-        int previous = emissive.beginRender();
-        try {
-            GlStateManager.pushMatrix();
-            original.call(renderer, blockEntity, x, y, z, tickDelta, breakStage);
-            GlStateManager.popMatrix();
-            if (emissive.hasEmissive()) {
-                long brightness = emissive.beginRenderEmissive();
-                GlStateManager.pushMatrix();
-                try {
-                    original.call(renderer, blockEntity, x, y, z, tickDelta, breakStage);
-                } finally {
-                    GlStateManager.popMatrix();
-                    emissive.endRenderEmissive(brightness);
-                }
-            }
-        } finally {
-            emissive.endRender(previous);
-        }
+        Minecraft.getInstance().getTextureManager().cera$getEmissiveTextures().render(EntityCapture.current() != null,
+                () -> original.call(renderer, blockEntity, x, y, z, tickDelta, breakStage));
     }
 }

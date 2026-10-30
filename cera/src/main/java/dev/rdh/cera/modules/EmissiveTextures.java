@@ -5,6 +5,7 @@ import dev.rdh.cera.Cera;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.minecraft.client.render.platform.GLX;
+import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.texture.TextureAtlas;
 import net.minecraft.client.render.texture.TextureAtlasSprite;
 import net.minecraft.client.resource.model.BakedQuad;
@@ -85,6 +86,32 @@ public final class EmissiveTextures {
 
     private static float remap(float x, float a0, float a1, float b0, float b1) {
         return b0 + (x - a0) / (a1 - a0) * (b1 - b0);
+    }
+
+    // a captured render instances the overlay on its own, so drawing it twice would submit the geometry again
+    public void render(boolean captured, Runnable render) {
+        if (captured || !this.active()) {
+            render.run();
+            return;
+        }
+        int previous = this.beginRender();
+        try {
+            GlStateManager.pushMatrix();
+            render.run();
+            GlStateManager.popMatrix();
+            if (this.hasEmissive()) {
+                long brightness = this.beginRenderEmissive();
+                GlStateManager.pushMatrix();
+                try {
+                    render.run();
+                } finally {
+                    GlStateManager.popMatrix();
+                    this.endRenderEmissive(brightness);
+                }
+            }
+        } finally {
+            this.endRender(previous);
+        }
     }
 
     public int beginRender() {

@@ -30,19 +30,9 @@ public class ArrowRendererMixin {
         ci.cancel();
         ArrowRenderer self = (ArrowRenderer) (Object) this;
         this.cera$reentrant = true;
-        int previous = emissive.beginRender();
         try {
-            self.render(arrow, x, y, z, yaw, tickDelta);
-            if (emissive.hasEmissive()) {
-                long brightness = emissive.beginRenderEmissive();
-                try {
-                    self.render(arrow, x, y, z, yaw, tickDelta);
-                } finally {
-                    emissive.endRenderEmissive(brightness);
-                }
-            }
+            emissive.render(false, () -> self.render(arrow, x, y, z, yaw, tickDelta));
         } finally {
-            emissive.endRender(previous);
             this.cera$reentrant = false;
         }
     }
