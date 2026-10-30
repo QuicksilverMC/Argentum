@@ -6,6 +6,10 @@ import dev.rdh.argentum.impl.render.entity.instancing.EntityInstancing;
 import dev.rdh.cera.modules.EmissiveTextures;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
+import net.minecraft.client.render.entity.layer.EnderDragonEyesLayer;
+import net.minecraft.client.render.entity.layer.EndermanEyesLayer;
+import net.minecraft.client.render.entity.layer.EntityRenderLayer;
+import net.minecraft.client.render.entity.layer.SpiderEyesLayer;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.entity.living.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -24,6 +28,26 @@ public class LivingEntityRendererMixin<T extends LivingEntity> {
             float headYaw, float headPitch, float scale, CallbackInfo ci) {
         Minecraft.getInstance().cera$getCustomEntityModels().animations()
                 .setModelParameters(limbSwing, limbSpeed, age, headYaw, headPitch, scale);
+    }
+
+    @WrapOperation(
+            method = "renderLayers",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/layer/EntityRenderLayer;render(Lnet/minecraft/entity/living/LivingEntity;FFFFFFF)V")
+    )
+    private void cera$hideTexturedPartsInEyes(EntityRenderLayer<LivingEntity> layer, LivingEntity entity, float limbSwing,
+            float limbSpeed, float tickDelta, float age, float headYaw, float headPitch, float scale, Operation<Void> original) {
+        Object eyes = layer;
+        if (!(eyes instanceof SpiderEyesLayer || eyes instanceof EndermanEyesLayer || eyes instanceof EnderDragonEyesLayer)) {
+            original.call(layer, entity, limbSwing, limbSpeed, tickDelta, age, headYaw, headPitch, scale);
+            return;
+        }
+        var models = Minecraft.getInstance().cera$getCustomEntityModels();
+        models.hideTexturedParts(this);
+        try {
+            original.call(layer, entity, limbSwing, limbSpeed, tickDelta, age, headYaw, headPitch, scale);
+        } finally {
+            models.showTexturedParts();
+        }
     }
 
     @WrapOperation(

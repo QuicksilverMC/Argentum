@@ -47,6 +47,8 @@ public final class CustomEntityModels implements ResourceReloadListener {
     private Map<String, Group> loaded = Map.of();
     private final List<Runnable> undo = new ArrayList<>();
     private final Map<Object, List<Slot>> dynamic = new IdentityHashMap<>();
+    private final Map<Object, List<Slot>> slots = new IdentityHashMap<>();
+    private final List<ModelPart> hidden = new ArrayList<>();
     private final List<Slot> selected = new ArrayList<>();
     private final IntArrayList renders = new IntArrayList();
     private final RandomChoices choices = new RandomChoices();
@@ -85,6 +87,7 @@ public final class CustomEntityModels implements ResourceReloadListener {
         this.undo.reversed().forEach(Runnable::run);
         this.undo.clear();
         this.dynamic.clear();
+        this.slots.clear();
         this.selected.clear();
         this.renders.clear();
         Set<Object> renderers = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -117,8 +120,9 @@ public final class CustomEntityModels implements ResourceReloadListener {
             if (candidates.isEmpty()) return;
 
             Slot slot = new Slot(binding, vanilla, List.copyOf(candidates));
-            slot.fallback().apply(binding);
+            slot.apply(slot.fallback());
             this.undo.add(() -> vanilla.apply(binding));
+            this.slots.computeIfAbsent(binding.renderer(), _ -> new ArrayList<>()).add(slot);
             if (!slot.isStatic()) this.dynamic.computeIfAbsent(binding.renderer(), _ -> new ArrayList<>()).add(slot);
             renderers.add(binding.renderer());
         });
@@ -150,7 +154,7 @@ public final class CustomEntityModels implements ResourceReloadListener {
         int start = this.renders.popInt();
         for (int i = this.selected.size() - 1; i >= start; i--) {
             Slot slot = this.selected.remove(i);
-            slot.fallback().apply(slot.binding());
+            slot.apply(slot.fallback());
         }
     }
 
@@ -176,9 +180,28 @@ public final class CustomEntityModels implements ResourceReloadListener {
                 break;
             }
             if (state == null) continue;
-            state.apply(slot.binding());
+            slot.apply(state);
             this.selected.add(slot);
         }
+    }
+
+    // eyes layers draw the model again with their own texture, which a part with its own texture would ignore
+    public void hideTexturedParts(Object renderer) {
+        List<Slot> slots = this.slots.get(renderer);
+        if (slots == null) return;
+        for (Slot slot : slots) {
+            for (ModelPart part : slot.current.textured()) {
+                if (part.visible) {
+                    part.visible = false;
+                    this.hidden.add(part);
+                }
+            }
+        }
+    }
+
+    public void showTexturedParts() {
+        for (ModelPart part : this.hidden) part.visible = true;
+        this.hidden.clear();
     }
 
     private State build(Loaded model, CemTargets.Binding binding) {
@@ -387,7 +410,36 @@ public final class CustomEntityModels implements ResourceReloadListener {
     private record Candidate(Predicate<Object> when, State[] states, RandomRules<Subject> rules) {
     }
 
-    private record Slot(CemTargets.Binding binding, State vanilla, List<Candidate> candidates) {
+    private static final class Slot {
+        private final CemTargets.Binding binding;
+        private final State vanilla;
+        private final List<Candidate> candidates;
+        private State current;
+
+        private Slot(CemTargets.Binding binding, State vanilla, List<Candidate> candidates) {
+            this.binding = binding;
+            this.vanilla = vanilla;
+            this.candidates = candidates;
+            this.current = vanilla;
+        }
+
+        CemTargets.Binding binding() {
+            return this.binding;
+        }
+
+        State vanilla() {
+            return this.vanilla;
+        }
+
+        List<Candidate> candidates() {
+            return this.candidates;
+        }
+
+        void apply(State state) {
+            state.apply(this.binding);
+            this.current = state;
+        }
+
         State fallback() {
             for (Candidate candidate : this.candidates) {
                 if (candidate.when() == CemTargets.ALWAYS) return candidate.states()[0];
@@ -403,7 +455,7 @@ public final class CustomEntityModels implements ResourceReloadListener {
     }
 
     private record State(ModelPart[] parts, List<ModelPart>[] children, boolean[] boxesVisible, Animation animation,
-                         Identifier texture, float shadowSize) {
+                         Identifier texture, float shadowSize, List<ModelPart> textured) {
         @SuppressWarnings("unchecked")
         static State capture(CemTargets.Binding binding, Animation animation) {
             ModelPart[] parts = binding.parts().values().toArray(new ModelPart[0]);
@@ -414,8 +466,22 @@ public final class CustomEntityModels implements ResourceReloadListener {
                 boxesVisible[i] = ((ModelPartExtension)parts[i]).argentum$areBoxesVisible();
             }
             EntityRenderer<?> renderer = binding.main() && binding.renderer() instanceof EntityRenderer<?> entityRenderer ? entityRenderer : null;
+            Set<ModelPart> named = Collections.newSetFromMap(new IdentityHashMap<>());
+            named.addAll(binding.parts().values());
+            List<ModelPart> textured = new ArrayList<>();
+            for (ModelPart part : parts) textured(part, named, textured);
             return new State(parts, children, boxesVisible, animation,
-                    renderer == null ? null : renderer.cera$getCustomTexture(), renderer == null ? 0.0F : renderer.shadowSize);
+                    renderer == null ? null : renderer.cera$getCustomTexture(), renderer == null ? 0.0F : renderer.shadowSize,
+                    List.copyOf(textured));
+        }
+
+        private static void textured(ModelPart part, Set<ModelPart> named, List<ModelPart> textured) {
+            if (part.children == null) return;
+            for (ModelPart child : part.children) {
+                if (named.contains(child)) continue;
+                if (((ModelPartExtension)child).argentum$getTexture() != null) textured.add(child);
+                else textured(child, named, textured);
+            }
         }
 
         void apply(CemTargets.Binding binding) {
