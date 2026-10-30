@@ -1,5 +1,6 @@
 package dev.rdh.argentum.impl.render.texture;
 
+import dev.rdh.argentum.impl.render.BufferUpload;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.opengl.GL15C;
 import org.lwjgl.opengl.GL21C;
@@ -54,7 +55,7 @@ public final class AtlasUploads {
         }
         GL15C.glBindBuffer(GL21C.GL_PIXEL_UNPACK_BUFFER, buffer);
         pixels.flip();
-        GL15C.glBufferData(GL21C.GL_PIXEL_UNPACK_BUFFER, pixels, GL15C.GL_STREAM_DRAW);
+        BufferUpload.stream(GL21C.GL_PIXEL_UNPACK_BUFFER, MemoryUtil.memAddress(pixels), pixels.remaining(), GL15C.GL_STREAM_DRAW);
         for (int i = 0; i < count * RECT_FIELDS; i += RECT_FIELDS) {
             GL11C.glTexSubImage2D(GL11C.GL_TEXTURE_2D, rects[i], rects[i + 1], rects[i + 2], rects[i + 3], rects[i + 4],
                     rects[i + 5], rects[i + 6], rects[i + 7]);

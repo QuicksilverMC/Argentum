@@ -2,6 +2,7 @@ package dev.rdh.argentum.api.render.instancing;
 
 import org.embeddedt.embeddium.impl.gl.array.GlVertexArray;
 import org.embeddedt.embeddium.impl.gl.attribute.GlVertexFormat;
+import org.embeddedt.embeddium.impl.gl.buffer.GlBufferTarget;
 import org.embeddedt.embeddium.impl.gl.buffer.GlBufferUsage;
 import org.embeddedt.embeddium.impl.gl.buffer.GlMutableBuffer;
 import org.embeddedt.embeddium.impl.gl.device.CommandList;
@@ -9,7 +10,10 @@ import org.embeddedt.embeddium.impl.gl.tessellation.GlVertexArrayTessellation;
 import org.embeddedt.embeddium.impl.gl.tessellation.TessellationBinding;
 import org.lwjgl.opengl.ARBDrawInstanced;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL15C;
 import org.lwjgl.system.MemoryUtil;
+
+import dev.rdh.argentum.impl.render.BufferUpload;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -57,7 +61,8 @@ public final class InstancedGeometryBuffer {
 
     public void upload(CommandList commandList, IntBuffer instances) {
         this.initialize(commandList);
-        commandList.uploadData(this.instanceBuffer, MemoryUtil.memAddress(instances), (long)instances.remaining() * Integer.BYTES, GlBufferUsage.STREAM_DRAW);
+        commandList.bindBuffer(GlBufferTarget.ARRAY_BUFFER, this.instanceBuffer);
+        BufferUpload.stream(GL15C.GL_ARRAY_BUFFER, MemoryUtil.memAddress(instances), (long)instances.remaining() * Integer.BYTES, GL15C.GL_STREAM_DRAW);
     }
 
     public void draw(CommandList commandList, int vertexCount, int instanceCount) {
