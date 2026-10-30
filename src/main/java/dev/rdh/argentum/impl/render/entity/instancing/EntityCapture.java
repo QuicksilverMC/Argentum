@@ -406,12 +406,17 @@ public final class EntityCapture implements AutoCloseable {
         if (this.pass == InstanceRenderPass.GLINT && !this.glintParts.add(part)) {
             return;
         }
+        Identifier previousTexture = this.boundTexture;
+        if (part.argentum$getTexture() != null) {
+            this.boundTexture = part.argentum$getTexture();
+        }
         this.pushMatrix();
         this.translate(part.translateX, part.translateY, part.translateZ);
         this.translate(part.x * scale, part.y * scale, part.z * scale);
         this.matrices.rotateZ(part.rotationZ).rotateY(part.rotationY).rotateX(part.rotationX);
+        this.matrices.scale(part.argentum$getScale());
 
-        if (!part.boxes.isEmpty() && !this.submitBoxes(part, scale)) {
+        if (part.argentum$areBoxesVisible() && !part.boxes.isEmpty() && !this.submitBoxes(part, scale)) {
             this.submit(this.modelFor(part).getGeometry(part, scale), this.matrices);
         }
         if (part.children != null) {
@@ -420,6 +425,7 @@ public final class EntityCapture implements AutoCloseable {
             }
         }
         this.popMatrix();
+        this.boundTexture = previousTexture;
     }
 
     /**

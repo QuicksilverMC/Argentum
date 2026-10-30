@@ -7,6 +7,7 @@ inject-interface net/minecraft/client/render/texture/TextureAtlasSprite dev/rdh/
 inject-interface net/minecraft/client/render/world/WorldRenderer dev/rdh/argentum/impl/ext/WorldRendererExtension
 inject-interface net/minecraft/client/render/texture/AbstractTexture dev/rdh/argentum/impl/ext/TextureGenerationExtension
 inject-interface net/minecraft/world/chunk/WorldChunk dev/rdh/argentum/impl/ext/WorldChunkExtension
+inject-interface net/minecraft/client/render/model/ModelPart dev/rdh/argentum/impl/ext/ModelPartExtension
 transitive-inject-interface net/minecraft/util/math/Direction dev/rdh/argentum/impl/ext/DirectionExtension
 
 transitive-accessible class net/minecraft/client/render/platform/GlStateManager$Fog
