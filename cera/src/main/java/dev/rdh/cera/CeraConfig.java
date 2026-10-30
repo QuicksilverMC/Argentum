@@ -14,6 +14,7 @@ public class CeraConfig {
     public boolean customColors = true;
     public boolean customLightmaps = true;
     public boolean randomEntities = true;
+    public boolean customEntityModels = true;
     public boolean customSky = true;
     public boolean customGuis = true;
     public boolean customItems = true;

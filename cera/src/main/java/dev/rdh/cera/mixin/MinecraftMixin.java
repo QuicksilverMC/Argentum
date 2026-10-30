@@ -8,6 +8,7 @@ import dev.rdh.cera.modules.colors.CustomColors;
 import dev.rdh.cera.modules.colors.LightMaps;
 import dev.rdh.cera.modules.DynamicLights;
 import dev.rdh.cera.modules.OptifineCosmetics;
+import dev.rdh.cera.modules.cem.CustomEntityModels;
 import dev.rdh.cera.modules.cit.CustomItems;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
@@ -35,6 +36,8 @@ public class MinecraftMixin implements CeraMinecraftExtension {
     private final CustomLoadingScreens cera$customLoadingScreens = new CustomLoadingScreens();
     @Unique
     private final CustomPanorama cera$customPanorama = new CustomPanorama();
+    @Unique
+    private final CustomEntityModels cera$customEntityModels = new CustomEntityModels();
 
     @Override
     public DynamicLights.Rules cera$getDynamicLightRules() {
@@ -74,6 +77,16 @@ public class MinecraftMixin implements CeraMinecraftExtension {
     @Override
     public OptifineCosmetics cera$getOptifineCosmetics() {
         return this.cera$optifineCosmetics;
+    }
+
+    @Override
+    public CustomEntityModels cera$getCustomEntityModels() {
+        return this.cera$customEntityModels;
+    }
+
+    @Inject(method = "init", at = @At("TAIL"))
+    private void cera$installCustomEntityModels(CallbackInfo ci) {
+        this.cera$customEntityModels.install();
     }
 
     @Inject(method = "reloadResources", at = @At("HEAD"))

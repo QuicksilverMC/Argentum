@@ -55,6 +55,7 @@ final class CeraOptionPages {
 
         OptionPage entities = page("entities", OptionGroup.createBuilder()
                 .add(toggle("random_entities", (config, value) -> config.randomEntities = value, config -> config.randomEntities))
+                .add(toggle("custom_entity_models", (config, value) -> config.customEntityModels = value, config -> config.customEntityModels, REQUIRES_ASSET_RELOAD))
                 .add(toggle("custom_items", (config, value) -> config.customItems = value, config -> config.customItems))
                 .add(toggle("optifine_cosmetics", (config, value) -> config.optifineCosmetics = value, config -> config.optifineCosmetics)));
 

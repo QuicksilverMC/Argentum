@@ -23,6 +23,7 @@
     "LivingEntityRendererMixin",
     "AbstractArmorLayerMixin",
     "EntityMixin",
+    "EntityRendererMixin",
     "FastBlockRendererMixin",
     "colors.MapColorAccessor",
     "colors.SpawnEggItemMixin",
