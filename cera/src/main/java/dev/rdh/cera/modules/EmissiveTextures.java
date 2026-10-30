@@ -1,5 +1,6 @@
 package dev.rdh.cera.modules;
 
+import dev.rdh.argentum.impl.render.blockentity.EntityTextureSprite;
 import dev.rdh.cera.Cera;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
@@ -53,7 +54,7 @@ public final class EmissiveTextures {
         Map<TextureAtlasSprite, TextureAtlasSprite> spriteMap = new Reference2ReferenceOpenHashMap<>();
         for (var entry : new ArrayList<>(sourcedSprites.entrySet())) {
             Identifier id = new Identifier(entry.getKey());
-            if (id.getPath().endsWith(suffix)) continue;
+            if (id.getPath().endsWith(suffix) || entry.getValue() instanceof EntityTextureSprite) continue;
             Identifier em = new Identifier(id.getNamespace(), id.getPath() + suffix);
             if (!resources.hasResource(new Identifier(id.getNamespace(), "textures/" + em.getPath() + ".png"))) continue;
             TextureAtlasSprite sprite = sourcedSprites.get(em.toString());
