@@ -57,8 +57,12 @@ public final class PartParser {
             if (offset == null && faceUvs == null) throw new JsonParseException("Texture offset not specified");
             float[] coordinates = coordinates(box, invert);
             float sizeAdd = Json.number(box, "sizeAdd", 0.0F);
+            float[] sizesAdd = Json.floats(box.get("sizesAdd"), 3);
+            if (sizesAdd != null && faceUvs == null) {
+                faceUvs = boxUvs(offset, (int)coordinates[3], (int)coordinates[4], (int)coordinates[5]);
+            }
             if (faceUvs != null) {
-                part.boxes.add(new UvBox(part, faceUvs, coordinates, sizeAdd));
+                part.boxes.add(new UvBox(part, faceUvs, coordinates, sizesAdd != null ? sizesAdd : new float[]{sizeAdd, sizeAdd, sizeAdd}));
             } else {
                 part.setTextureCoords(offset[0], offset[1]);
                 part.addBox(coordinates[0], coordinates[1], coordinates[2],
@@ -104,6 +108,18 @@ public final class PartParser {
         return coordinates;
     }
 
+    // the layout vanilla's box gives a texture offset, in the order and orientation UvBox reads face uvs
+    private static int[][] boxUvs(int[] offset, int width, int height, int depth) {
+        int u = offset[0];
+        int v = offset[1];
+        return new int[][]{{u + depth + 2 * width, v, u + depth + width, v + depth},
+                {u + depth + width, v + depth, u + depth, v},
+                {u + depth, v + depth, u + depth + width, v + depth + height},
+                {u + 2 * depth + width, v + depth, u + 2 * depth + 2 * width, v + depth + height},
+                {u + depth + width, v + depth, u + 2 * depth + width, v + depth + height},
+                {u, v + depth, u + depth, v + depth + height}};
+    }
+
     private static int[][] faceUvs(JsonObject box) {
         int[][] uvs = {Json.ints(box.get("uvDown"), 4), Json.ints(box.get("uvUp"), 4), Json.ints(box.get("uvNorth"), 4),
                 Json.ints(box.get("uvSouth"), 4), Json.ints(box.get("uvWest"), 4), Json.ints(box.get("uvEast"), 4)};
@@ -120,15 +136,15 @@ public final class PartParser {
     }
 
     private static final class UvBox extends Box {
-        private UvBox(ModelPart part, int[][] uvs, float[] coordinates, float sizeAdd) {
+        private UvBox(ModelPart part, int[][] uvs, float[] coordinates, float[] sizeAdd) {
             super(part, 0, 0, coordinates[0], coordinates[1], coordinates[2],
                     (int)coordinates[3], (int)coordinates[4], (int)coordinates[5], 0.0F, false);
-            float minX = coordinates[0] - sizeAdd;
-            float minY = coordinates[1] - sizeAdd;
-            float minZ = coordinates[2] - sizeAdd;
-            float maxX = coordinates[0] + coordinates[3] + sizeAdd;
-            float maxY = coordinates[1] + coordinates[4] + sizeAdd;
-            float maxZ = coordinates[2] + coordinates[5] + sizeAdd;
+            float minX = coordinates[0] - sizeAdd[0];
+            float minY = coordinates[1] - sizeAdd[1];
+            float minZ = coordinates[2] - sizeAdd[2];
+            float maxX = coordinates[0] + coordinates[3] + sizeAdd[0];
+            float maxY = coordinates[1] + coordinates[4] + sizeAdd[1];
+            float maxZ = coordinates[2] + coordinates[5] + sizeAdd[2];
             if (part.flipped) {
                 float swap = minX;
                 minX = maxX;
