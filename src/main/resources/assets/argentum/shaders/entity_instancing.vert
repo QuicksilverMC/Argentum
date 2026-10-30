@@ -44,6 +44,27 @@ vec2 glintCoord(vec2 texCoord, float layer) {
     return vec2(cos(angle) * uv.x - sin(angle) * uv.y, sin(angle) * uv.x + cos(angle) * uv.y) / 3.0;
 }
 
+bool similarity(mat3 m) {
+    float x = dot(m[0], m[0]);
+    float y = dot(m[1], m[1]);
+    float z = dot(m[2], m[2]);
+    float tolerance = 1.0e-4 * max(x, max(y, z));
+    return abs(x - y) <= tolerance && abs(y - z) <= tolerance && abs(dot(m[0], m[1])) <= tolerance
+            && abs(dot(m[1], m[2])) <= tolerance && abs(dot(m[0], m[2])) <= tolerance;
+}
+
+// what fixed function does under non-uniform scale: the inverse transpose, scaled by GL_RESCALE_NORMAL's factor. the
+// spec takes the factor from the inverse's third row, apple's implementation from its third column
+vec3 rescaledNormal(mat3 m, vec3 normal) {
+    mat3 cofactor = mat3(cross(m[1], m[2]), cross(m[2], m[0]), cross(m[0], m[1]));
+    mat3 inverseTranspose = gl_NormalMatrix * cofactor / dot(m[0], cofactor[0]);
+#ifdef APPLE_RESCALE_NORMAL
+    return inverseTranspose * normal / length(vec3(inverseTranspose[0].z, inverseTranspose[1].z, inverseTranspose[2].z));
+#else
+    return inverseTranspose * normal / length(inverseTranspose[2]);
+#endif
+}
+
 void main() {
     mat4 model = mat4(vec4(aModel0, 0.0), vec4(aModel1, 0.0), vec4(aModel2, 0.0), vec4(aModel3, 1.0));
     bool box = uBoxInstancing != 0;
@@ -51,7 +72,9 @@ void main() {
     // selector; it reuses the colour slot for uv coefficients and has no colour of its own
     vec4 vertexColor = box ? vec4(1.0) : aVertexColor;
     vec4 eyePosition = gl_ModelViewMatrix * model * vec4(aPosition, 1.0);
-    vec3 normal = normalize(gl_NormalMatrix * mat3(model) * aNormal) * length(aNormal);
+    vec3 normal = box || similarity(mat3(model))
+            ? normalize(gl_NormalMatrix * mat3(model) * aNormal) * length(aNormal)
+            : rescaledNormal(mat3(model), aNormal);
     float light0 = max(dot(normal, uLightDirection0), 0.0);
     float light1 = max(dot(normal, uLightDirection1), 0.0);
 

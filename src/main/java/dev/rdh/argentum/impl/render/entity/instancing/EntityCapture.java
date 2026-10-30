@@ -438,6 +438,10 @@ public final class EntityCapture implements AutoCloseable {
     }
 
     private boolean submitBoxes(ModelPart part, float scale) {
+        // the box matrix stretches the shared cube, which hides any other non-uniform scale from the shader's normals
+        if (!isSimilarity(this.matrices)) {
+            return false;
+        }
         BoxTemplate[] templates = this.owner.backend().boxTemplates(part);
         if (templates == null) {
             return false;
@@ -449,6 +453,17 @@ public final class EntityCapture implements AutoCloseable {
             this.submit(this.owner.backend().boxGeometry(template.flipped()), this.boxMatrix, template);
         }
         return true;
+    }
+
+    private static boolean isSimilarity(Matrix4f m) {
+        float x = m.m00() * m.m00() + m.m01() * m.m01() + m.m02() * m.m02();
+        float y = m.m10() * m.m10() + m.m11() * m.m11() + m.m12() * m.m12();
+        float z = m.m20() * m.m20() + m.m21() * m.m21() + m.m22() * m.m22();
+        float tolerance = 1.0E-4F * Math.max(x, Math.max(y, z));
+        return Math.abs(x - y) <= tolerance && Math.abs(y - z) <= tolerance
+                && Math.abs(m.m00() * m.m10() + m.m01() * m.m11() + m.m02() * m.m12()) <= tolerance
+                && Math.abs(m.m10() * m.m20() + m.m11() * m.m21() + m.m12() * m.m22()) <= tolerance
+                && Math.abs(m.m00() * m.m20() + m.m01() * m.m21() + m.m02() * m.m22()) <= tolerance;
     }
 
     private boolean tracksModelView() {

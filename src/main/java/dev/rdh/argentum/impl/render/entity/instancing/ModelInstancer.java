@@ -27,6 +27,7 @@ import org.joml.Matrix4fc;
 import org.joml.Vector4fc;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.system.Platform;
 
 public final class ModelInstancer {
     private final InstanceBatcher batcher = new InstanceBatcher();
@@ -335,6 +336,9 @@ public final class ModelInstancer {
         ShaderConstants.Builder constants = ShaderConstants.builder().addAll(fogFactory.getDefines());
         if (this.textureArraysSupported) {
             constants.add("TEXTURE_ARRAY");
+        }
+        if (Platform.get() == Platform.MACOSX) {
+            constants.add("APPLE_RESCALE_NORMAL");
         }
         ShaderConstants shaderConstants = constants.build();
         GlShader[] shaders = {
