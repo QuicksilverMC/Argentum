@@ -1,6 +1,7 @@
 package dev.rdh.cera.modules.cem;
 
 import dev.rdh.argentum.impl.ext.ModelPartExtension;
+import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.client.render.model.ModelPart;
 
 import java.util.ArrayList;
@@ -75,10 +76,19 @@ final class Animation implements Consumer<ModelPart> {
         }
     }
 
+    interface Setter {
+        void set(float value);
+    }
+
+    private record Target(Object key, ExpressionParser.FloatExpr get, Setter set) {
+    }
+
+    private record PartField(ModelPart part, Field field) {
+    }
+
     private final AnimationContext context;
     private final Runnable[] assignments;
-    private final ModelPart[] parts;
-    private final Field[] fields;
+    private final Target[] targets;
     private final float[] rest;
     private final float[] values;
     private final boolean usesVars;
@@ -89,11 +99,10 @@ final class Animation implements Consumer<ModelPart> {
     private Animation(Builder builder) {
         this.context = builder.context;
         this.assignments = builder.assignments.toArray(new Runnable[0]);
-        this.parts = builder.parts.toArray(new ModelPart[0]);
-        this.fields = builder.fields.toArray(new Field[0]);
-        this.rest = new float[this.parts.length];
-        this.values = new float[this.parts.length];
-        for (int i = 0; i < this.parts.length; i++) this.rest[i] = this.fields[i].get(this.parts[i]);
+        this.targets = builder.targets.toArray(new Target[0]);
+        this.rest = new float[this.targets.length];
+        this.values = new float[this.targets.length];
+        for (int i = 0; i < this.targets.length; i++) this.rest[i] = this.targets[i].get().eval();
         this.usesVars = builder.usesVars;
     }
 
@@ -106,9 +115,9 @@ final class Animation implements Consumer<ModelPart> {
             this.first = part;
             if (this.usesVars) this.context.loadVars();
             for (Runnable assignment : this.assignments) assignment.run();
-            for (int i = 0; i < this.parts.length; i++) this.values[i] = this.fields[i].get(this.parts[i]);
+            for (int i = 0; i < this.targets.length; i++) this.values[i] = this.targets[i].get().eval();
         } else if (part == this.first) {
-            for (int i = 0; i < this.parts.length; i++) this.fields[i].set(this.parts[i], this.values[i]);
+            for (int i = 0; i < this.targets.length; i++) this.targets[i].set().set(this.values[i]);
         } else {
             return;
         }
@@ -116,54 +125,50 @@ final class Animation implements Consumer<ModelPart> {
     }
 
     void restore() {
-        for (int i = 0; i < this.parts.length; i++) this.fields[i].set(this.parts[i], this.rest[i]);
+        for (int i = 0; i < this.targets.length; i++) this.targets[i].set().set(this.rest[i]);
         this.dirty = false;
     }
 
     static final class Builder {
         private final AnimationContext context;
+        private final EntityRenderer<?> renderer;
         private final List<Runnable> assignments = new ArrayList<>();
-        private final List<ModelPart> parts = new ArrayList<>();
-        private final List<Field> fields = new ArrayList<>();
+        private final List<Target> targets = new ArrayList<>();
         private boolean usesVars;
 
-        Builder(AnimationContext context) {
+        Builder(AnimationContext context, EntityRenderer<?> renderer) {
             this.context = context;
+            this.renderer = renderer;
         }
 
         boolean isEmpty() {
             return this.assignments.isEmpty();
         }
 
-        void add(String target, String expression, Function<String, ModelPart> models) {
-            Object value = new ExpressionParser(name -> this.variable(name, models), this.context).parse(expression);
+        void add(String name, String expression, Function<String, ModelPart> models) {
+            Object value = new ExpressionParser(variable -> this.variable(variable, models), this.context).parse(expression);
             AnimationContext context = this.context;
-            if (target.startsWith("var.") || target.startsWith("varb.")) {
-                int slot = context.varSlot(target);
+            if (name.startsWith("var.") || name.startsWith("varb.")) {
+                int slot = context.varSlot(name);
                 this.usesVars = true;
-                if (target.startsWith("varb.")) {
-                    ExpressionParser.BoolExpr bool = ExpressionParser.asBool(value, target);
+                if (name.startsWith("varb.")) {
+                    ExpressionParser.BoolExpr bool = ExpressionParser.asBool(value, name);
                     this.assignments.add(() -> context.vars[slot] = bool.eval() ? 1.0F : 0.0F);
                 } else {
-                    ExpressionParser.FloatExpr number = ExpressionParser.asFloat(value, target);
+                    ExpressionParser.FloatExpr number = ExpressionParser.asFloat(value, name);
                     this.assignments.add(() -> context.vars[slot] = number.eval());
                 }
                 return;
             }
-            int dot = target.lastIndexOf('.');
-            ModelPart part = dot < 0 ? null : models.apply(target.substring(0, dot));
-            Field field = dot < 0 ? null : Field.of(target.substring(dot + 1));
-            if (part == null || field == null) throw new IllegalArgumentException("Unknown model variable: " + target);
-            if (!this.targets(part, field)) {
-                this.parts.add(part);
-                this.fields.add(field);
-            }
-            if (field.bool()) {
-                ExpressionParser.BoolExpr bool = ExpressionParser.asBool(value, target);
-                this.assignments.add(() -> field.set(part, bool.eval() ? 1.0F : 0.0F));
+            Target target = this.target(name, models);
+            if (target == null) throw new IllegalArgumentException("Unknown model variable: " + name);
+            if (this.targets.stream().noneMatch(existing -> existing.key().equals(target.key()))) this.targets.add(target);
+            if (isBool(name)) {
+                ExpressionParser.BoolExpr bool = ExpressionParser.asBool(value, name);
+                this.assignments.add(() -> target.set().set(bool.eval() ? 1.0F : 0.0F));
             } else {
-                ExpressionParser.FloatExpr number = ExpressionParser.asFloat(value, target);
-                this.assignments.add(() -> field.set(part, number.eval()));
+                ExpressionParser.FloatExpr number = ExpressionParser.asFloat(value, name);
+                this.assignments.add(() -> target.set().set(number.eval()));
             }
         }
 
@@ -171,11 +176,33 @@ final class Animation implements Consumer<ModelPart> {
             return new Animation(this);
         }
 
-        private boolean targets(ModelPart part, Field field) {
-            for (int i = 0; i < this.parts.size(); i++) {
-                if (this.parts.get(i) == part && this.fields.get(i) == field) return true;
+        private static boolean isBool(String name) {
+            Field field = Field.of(name.substring(name.lastIndexOf('.') + 1));
+            return !name.startsWith("render.") && field != null && field.bool();
+        }
+
+        private Target target(String name, Function<String, ModelPart> models) {
+            AnimationContext context = this.context;
+            EntityRenderer<?> renderer = this.renderer;
+            if (name.startsWith("render.")) {
+                return switch (name) {
+                    case "render.shadow_size" -> renderer == null ? null
+                            : new Target(name, () -> renderer.shadowSize, value -> renderer.shadowSize = value);
+                    case "render.shadow_opacity" -> renderer == null ? null
+                            : new Target(name, () -> renderer.shadowDarkness, value -> renderer.shadowDarkness = value);
+                    case "render.shadow_offset_x" -> new Target(name, () -> context.shadowOffsetX, value -> context.shadowOffsetX = value);
+                    case "render.shadow_offset_z" -> new Target(name, () -> context.shadowOffsetZ, value -> context.shadowOffsetZ = value);
+                    case "render.leash_offset_x" -> new Target(name, () -> context.leashOffsetX, value -> context.leashOffsetX = value);
+                    case "render.leash_offset_y" -> new Target(name, () -> context.leashOffsetY, value -> context.leashOffsetY = value);
+                    case "render.leash_offset_z" -> new Target(name, () -> context.leashOffsetZ, value -> context.leashOffsetZ = value);
+                    default -> null;
+                };
             }
-            return false;
+            int dot = name.lastIndexOf('.');
+            ModelPart part = dot < 0 ? null : models.apply(name.substring(0, dot));
+            Field field = dot < 0 ? null : Field.of(name.substring(dot + 1));
+            if (part == null || field == null) return null;
+            return new Target(new PartField(part, field), () -> field.get(part), value -> field.set(part, value));
         }
 
         private Object variable(String name, Function<String, ModelPart> models) {
@@ -187,14 +214,11 @@ final class Animation implements Consumer<ModelPart> {
                         ? (ExpressionParser.BoolExpr)() -> context.vars[slot] != 0.0F
                         : (ExpressionParser.FloatExpr)() -> context.vars[slot];
             }
-            int dot = name.lastIndexOf('.');
-            if (dot < 0) return context.parameter(name);
-            ModelPart part = models.apply(name.substring(0, dot));
-            Field field = Field.of(name.substring(dot + 1));
-            if (part == null || field == null) return null;
-            return field.bool()
-                    ? (ExpressionParser.BoolExpr)() -> field.get(part) != 0.0F
-                    : (ExpressionParser.FloatExpr)() -> field.get(part);
+            if (name.indexOf('.') < 0) return context.parameter(name);
+            Target target = this.target(name, models);
+            if (target == null) return null;
+            ExpressionParser.FloatExpr get = target.get();
+            return isBool(name) ? (ExpressionParser.BoolExpr)() -> get.eval() != 0.0F : get;
         }
     }
 }

@@ -1,8 +1,12 @@
 package dev.rdh.cera.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.rdh.cera.ext.CeraEntityRendererExtension;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.entity.EntityRenderer;
+import net.minecraft.entity.Entity;
 import net.minecraft.resource.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -29,5 +33,15 @@ public class EntityRendererMixin implements CeraEntityRendererExtension {
     )
     private Identifier cera$customModelTexture(Identifier texture) {
         return this.cera$customTexture != null ? this.cera$customTexture : texture;
+    }
+
+    @WrapOperation(
+            method = "postRender",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/EntityRenderer;renderShadow(Lnet/minecraft/entity/Entity;DDDFF)V")
+    )
+    private void cera$offsetShadow(EntityRenderer<?> renderer, Entity entity, double x, double y, double z, float opacity,
+            float tickDelta, Operation<Void> original) {
+        var animations = Minecraft.getInstance().cera$getCustomEntityModels().animations();
+        original.call(renderer, entity, x + animations.shadowOffsetX(), y, z + animations.shadowOffsetZ(), opacity, tickDelta);
     }
 }

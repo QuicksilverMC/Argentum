@@ -278,7 +278,8 @@ public final class CustomEntityModels implements ResourceReloadListener {
     }
 
     private Animation animate(Loaded model, CemTargets.Binding binding, List<Runnable> undo) {
-        Animation.Builder builder = new Animation.Builder(this.animations);
+        Animation.Builder builder = new Animation.Builder(this.animations,
+                binding.main() && binding.renderer() instanceof EntityRenderer<?> renderer ? renderer : null);
         List<ModelPart> roots = model.attachments().stream().map(Attachment::model).toList();
         for (Attachment attachment : model.attachments()) {
             ModelPart parent = binding.parts().get(attachment.part());

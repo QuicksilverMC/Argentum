@@ -8,6 +8,9 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.living.LivingEntity;
+import net.minecraft.entity.living.mob.monster.EndermanEntity;
+import net.minecraft.entity.living.mob.monster.GhastEntity;
+import net.minecraft.entity.living.mob.passive.animal.tameable.WolfEntity;
 import net.minecraft.entity.living.mob.passive.animal.tameable.TameableEntity;
 import net.minecraft.world.World;
 
@@ -26,6 +29,13 @@ public final class AnimationContext {
     private float headPitch;
     private float scale;
     private int ruleIndex;
+    private boolean inGui;
+    private boolean onHead;
+    float shadowOffsetX;
+    float shadowOffsetZ;
+    float leashOffsetX;
+    float leashOffsetY;
+    float leashOffsetZ;
     long sequence;
 
     private long lastFrame;
@@ -64,6 +74,8 @@ public final class AnimationContext {
         this.limbSwing = this.limbSpeed = this.age = this.headYaw = this.headPitch = 0.0F;
         this.scale = 0.0625F;
         this.ruleIndex = 0;
+        this.shadowOffsetX = this.shadowOffsetZ = 0.0F;
+        this.leashOffsetX = this.leashOffsetY = this.leashOffsetZ = 0.0F;
     }
 
     public void setModelParameters(float limbSwing, float limbSpeed, float age, float headYaw, float headPitch, float scale) {
@@ -73,6 +85,30 @@ public final class AnimationContext {
         this.headYaw = headYaw;
         this.headPitch = headPitch;
         this.scale = scale;
+    }
+
+    public boolean setInGui(boolean inGui) {
+        boolean previous = this.inGui;
+        this.inGui = inGui;
+        return previous;
+    }
+
+    public boolean setOnHead(boolean onHead) {
+        boolean previous = this.onHead;
+        this.onHead = onHead;
+        return previous;
+    }
+
+    public float shadowOffsetX() {
+        return this.shadowOffsetX;
+    }
+
+    public float shadowOffsetZ() {
+        return this.shadowOffsetZ;
+    }
+
+    public float leashOffset(int axis) {
+        return axis == 0 ? this.leashOffsetX : axis == 1 ? this.leashOffsetY : this.leashOffsetZ;
     }
 
     void setRuleIndex(int ruleIndex) {
@@ -194,10 +230,30 @@ public final class AnimationContext {
             case "is_sneaking" -> (ExpressionParser.BoolExpr)() -> this.entity != null && this.entity.isSneaking();
             case "is_sprinting" -> (ExpressionParser.BoolExpr)() -> this.entity != null && this.entity.isSprinting();
             case "is_wet" -> (ExpressionParser.BoolExpr)() -> this.entity != null && this.entity.isInWaterOrRain();
+            case "rot_x" -> (ExpressionParser.FloatExpr)() -> this.entity == null ? 0.0F
+                    : (float)Math.toRadians(this.entity.lastPitch + (this.entity.pitch - this.entity.lastPitch) * this.tickDelta);
+            case "rot_y" -> (ExpressionParser.FloatExpr)() -> this.entity == null ? 0.0F
+                    : (float)Math.toRadians(this.entity.lastYaw + (this.entity.yaw - this.entity.lastYaw) * this.tickDelta);
+            case "player_pos_x" -> (ExpressionParser.FloatExpr)() -> player() == null ? 0.0F : (float)player().x;
+            case "player_pos_y" -> (ExpressionParser.FloatExpr)() -> player() == null ? 0.0F : (float)player().y;
+            case "player_pos_z" -> (ExpressionParser.FloatExpr)() -> player() == null ? 0.0F : (float)player().z;
+            case "player_rot_x" -> (ExpressionParser.FloatExpr)() -> player() == null ? 0.0F : (float)Math.toRadians(player().pitch);
+            case "player_rot_y" -> (ExpressionParser.FloatExpr)() -> player() == null ? 0.0F : (float)Math.toRadians(player().yaw);
+            case "anger_time", "anger_time_start" -> (ExpressionParser.FloatExpr)() -> 0.0F;
+            case "is_aggressive" -> (ExpressionParser.BoolExpr)() -> this.entity instanceof WolfEntity wolf && wolf.isAngry()
+                    || this.entity instanceof EndermanEntity enderman && enderman.isAngry()
+                    || this.entity instanceof GhastEntity ghast && ghast.isCharging();
+            case "is_in_gui" -> (ExpressionParser.BoolExpr)() -> this.inGui;
+            case "is_on_head" -> (ExpressionParser.BoolExpr)() -> this.onHead;
+            case "is_in_hand", "is_in_item_frame", "is_on_shoulder", "is_in_ground" -> (ExpressionParser.BoolExpr)() -> false;
             case "is_sitting" -> (ExpressionParser.BoolExpr)() -> this.entity instanceof TameableEntity tameable && tameable.isSitting();
             case "is_tamed" -> (ExpressionParser.BoolExpr)() -> this.entity instanceof TameableEntity tameable && tameable.isTamed();
             default -> null;
         };
+    }
+
+    private static Entity player() {
+        return Minecraft.getInstance().player;
     }
 
     private static final class Smoothed {

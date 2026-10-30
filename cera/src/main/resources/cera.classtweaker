@@ -126,6 +126,7 @@ accessible field net/minecraft/client/render/entity/ZombieRenderer zombieVillage
 accessible field net/minecraft/client/render/entity/layer/SheepFurLayer model Lnet/minecraft/client/render/model/entity/SheepFurModel;
 accessible field net/minecraft/client/render/entity/LivingEntityRenderer layers Ljava/util/List;
 accessible field net/minecraft/client/render/entity/EntityRenderer shadowSize F
+accessible field net/minecraft/client/render/entity/EntityRenderer shadowDarkness F
 accessible field net/minecraft/client/render/block/entity/ChestRenderer singleChestModel Lnet/minecraft/client/render/model/block/entity/ChestModel;
 accessible field net/minecraft/client/render/block/entity/ChestRenderer doubleChestModel Lnet/minecraft/client/render/model/block/entity/ChestModel;
 accessible field net/minecraft/client/render/block/entity/EnderChestRenderer model Lnet/minecraft/client/render/model/block/entity/ChestModel;
