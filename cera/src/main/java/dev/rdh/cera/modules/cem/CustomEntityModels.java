@@ -28,6 +28,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 public final class CustomEntityModels implements ResourceReloadListener {
     private static final String ROOT = "optifine/cem";
@@ -35,6 +36,11 @@ public final class CustomEntityModels implements ResourceReloadListener {
     private List<Loaded> loaded = List.of();
     private final List<Runnable> undo = new ArrayList<>();
     private volatile Set<Object> customized = Set.of();
+    private final AnimationContext animations = new AnimationContext();
+
+    public AnimationContext animations() {
+        return this.animations;
+    }
 
     @Override
     public void resourcesReloaded(ResourceManager resources) {
@@ -67,10 +73,17 @@ public final class CustomEntityModels implements ResourceReloadListener {
         CemTargets.Dispatchers dispatchers = new CemTargets.Dispatchers(minecraft.getEntityRenderDispatcher(),
                 BlockEntityRenderDispatcher.INSTANCE);
         for (Loaded model : this.loaded) {
+            int applied = this.undo.size();
             try {
                 CemTargets.Binding binding = CemTargets.TARGETS.get(model.name()).bind(dispatchers);
-                if (binding != null && this.apply(model, binding)) renderers.add(binding.renderer());
+                if (binding != null && this.apply(model, binding)) {
+                    this.animate(model, binding);
+                    renderers.add(binding.renderer());
+                }
             } catch (RuntimeException e) {
+                List<Runnable> partial = this.undo.subList(applied, this.undo.size());
+                partial.reversed().forEach(Runnable::run);
+                partial.clear();
                 Cera.LOGGER.warn("[CustomEntityModels] Failed to apply {}: {}", model.name(), e.toString());
             }
         }
@@ -122,6 +135,60 @@ public final class CustomEntityModels implements ResourceReloadListener {
         return true;
     }
 
+    private void animate(Loaded model, CemTargets.Binding binding) {
+        Animation.Builder builder = new Animation.Builder(this.animations);
+        List<ModelPart> roots = model.attachments().stream().map(Attachment::model).toList();
+        for (Attachment attachment : model.attachments()) {
+            ModelPart parent = binding.parts().get(attachment.part());
+            Function<String, ModelPart> models = name -> find(name, attachment.model(), parent, binding.parts(), roots);
+            for (Map.Entry<String, String> animation : attachment.animations()) {
+                try {
+                    builder.add(animation.getKey(), animation.getValue(), models);
+                } catch (RuntimeException e) {
+                    throw new IllegalArgumentException(animation.getKey() + " = " + animation.getValue() + ": " + e.getMessage(), e);
+                }
+            }
+        }
+        if (builder.isEmpty()) return;
+        Animation animation = builder.build();
+        for (ModelPart part : binding.parts().values()) ((ModelPartExtension)part).argentum$setRenderListener(animation);
+        this.undo.add(() -> {
+            animation.restore();
+            for (ModelPart part : binding.parts().values()) ((ModelPartExtension)part).argentum$setRenderListener(null);
+        });
+    }
+
+    private static ModelPart find(String name, ModelPart self, ModelPart parent, Map<String, ModelPart> parts, List<ModelPart> roots) {
+        if (name.indexOf(':') >= 0) {
+            String[] path = name.split(":");
+            ModelPart part = find(path[0], self, parent, parts, roots);
+            for (int i = 1; i < path.length && part != null; i++) part = child(part, path[i]);
+            return part;
+        }
+        if (name.equals("this")) return self;
+        if (name.equals("part")) return parent;
+        ModelPart part = parts.get(name);
+        if (part != null) return part;
+        for (ModelPart root : roots) {
+            if (name.equals(root.id)) return root;
+            ModelPart child = child(root, name);
+            if (child != null) return child;
+        }
+        return null;
+    }
+
+    private static ModelPart child(ModelPart part, String id) {
+        if (part.children == null) return null;
+        for (ModelPart child : part.children) {
+            if (id.equals(child.id)) return child;
+        }
+        for (ModelPart child : part.children) {
+            ModelPart found = child(child, id);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
     private static Loaded load(ResourceManager resources, String name, Identifier location, Resource resource) throws IOException {
         String path = location.getPath();
         String basePath = path.substring(0, path.lastIndexOf('/'));
@@ -156,8 +223,14 @@ public final class CustomEntityModels implements ResourceReloadListener {
 
             String part = Json.string(element, "part");
             if (part == null) throw new JsonParseException("Model part not specified");
+            List<Map.Entry<String, String>> animations = new ArrayList<>();
+            for (JsonObject block : Json.objects(element, "animations")) {
+                for (Map.Entry<String, JsonElement> entry : block.entrySet()) {
+                    animations.add(Map.entry(entry.getKey(), entry.getValue().getAsString()));
+                }
+            }
             attachments.add(new Attachment(part, Json.bool(element, "attach", false),
-                    PartParser.parse(element, owner, textureSize, basePath)));
+                    PartParser.parse(element, owner, textureSize, basePath), List.copyOf(animations)));
         }
         if (!json.has("models")) throw new JsonParseException("Missing models");
         return new Loaded(name, texture == null ? null : PartParser.resource(basePath, texture, ".png"),
@@ -175,6 +248,6 @@ public final class CustomEntityModels implements ResourceReloadListener {
     private record Loaded(String name, Identifier texture, float shadowSize, List<Attachment> attachments) {
     }
 
-    private record Attachment(String part, boolean attach, ModelPart model) {
+    private record Attachment(String part, boolean attach, ModelPart model, List<Map.Entry<String, String>> animations) {
     }
 }

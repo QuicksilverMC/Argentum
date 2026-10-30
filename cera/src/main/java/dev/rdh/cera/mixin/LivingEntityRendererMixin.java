@@ -11,11 +11,20 @@ import net.minecraft.entity.living.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LivingEntityRenderer.class)
 public class LivingEntityRendererMixin<T extends LivingEntity> {
     @Shadow
     protected boolean solidRender;
+
+    @Inject(method = "renderModel(Lnet/minecraft/entity/living/LivingEntity;FFFFFF)V", at = @At("HEAD"))
+    private void cera$captureAnimationParameters(LivingEntity entity, float limbSwing, float limbSpeed, float age,
+            float headYaw, float headPitch, float scale, CallbackInfo ci) {
+        Minecraft.getInstance().cera$getCustomEntityModels().animations()
+                .setModelParameters(limbSwing, limbSpeed, age, headYaw, headPitch, scale);
+    }
 
     @WrapOperation(
             method = "render(Lnet/minecraft/entity/living/LivingEntity;DDDFF)V",
