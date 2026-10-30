@@ -122,6 +122,7 @@ accessible field net/minecraft/client/render/entity/LeadKnotRenderer model Lnet/
 accessible field net/minecraft/client/render/entity/WitherSkullRenderer model Lnet/minecraft/client/render/model/block/entity/SkullModel;
 accessible field net/minecraft/client/render/entity/EnderCrystalRenderer model Lnet/minecraft/client/render/model/Model;
 accessible field net/minecraft/client/render/entity/ZombieRenderer zombieModel Lnet/minecraft/client/render/model/entity/HumanoidModel;
+accessible field net/minecraft/client/render/entity/ZombieRenderer zombieVillagerModel Lnet/minecraft/client/render/model/entity/ZombieVillagerModel;
 accessible field net/minecraft/client/render/entity/layer/SheepFurLayer model Lnet/minecraft/client/render/model/entity/SheepFurModel;
 accessible field net/minecraft/client/render/entity/LivingEntityRenderer layers Ljava/util/List;
 accessible field net/minecraft/client/render/entity/EntityRenderer shadowSize F

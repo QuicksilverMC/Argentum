@@ -32,7 +32,7 @@ public class BlockEntityRenderDispatcherMixin implements CeraBlockEntityRenderDi
     )
     private void cera$beginBlockEntityRender(BlockEntity blockEntity, double x, double y, double z, float tickDelta, int breakStage, CallbackInfo ci) {
         this.cera$blockEntityContext.begin(blockEntity);
-        Minecraft.getInstance().cera$getCustomEntityModels().animations().beginBlockEntity(tickDelta);
+        Minecraft.getInstance().cera$getCustomEntityModels().beginBlockEntity(blockEntity, tickDelta);
     }
 
     @Inject(
@@ -41,7 +41,7 @@ public class BlockEntityRenderDispatcherMixin implements CeraBlockEntityRenderDi
     )
     private void cera$endBlockEntityRender(BlockEntity blockEntity, double x, double y, double z, float tickDelta, int breakStage, CallbackInfo ci) {
         this.cera$blockEntityContext.end(blockEntity);
-        Minecraft.getInstance().cera$getCustomEntityModels().animations().endRender();
+        Minecraft.getInstance().cera$getCustomEntityModels().endRender();
     }
 
     @WrapOperation(

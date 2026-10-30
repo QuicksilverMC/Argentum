@@ -60,7 +60,7 @@ public final class RandomConditions {
         CAREER_IDS.put(id, table);
     }
 
-    static Function<Integer, Predicate<Subject>> reader(Props props) {
+    public static Function<Integer, Predicate<Subject>> reader(Props props) {
         return n -> build(props, n);
     }
 

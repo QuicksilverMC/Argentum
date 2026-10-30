@@ -1,5 +1,6 @@
 package dev.rdh.cera.modules.cem;
 
+import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.ChestBlockEntity;
@@ -73,6 +74,7 @@ import net.minecraft.entity.living.mob.monster.CaveSpiderEntity;
 import net.minecraft.entity.living.mob.monster.CreeperEntity;
 import net.minecraft.entity.living.mob.monster.EndermanEntity;
 import net.minecraft.entity.living.mob.monster.EndermiteEntity;
+import net.minecraft.entity.living.mob.monster.GiantEntity;
 import net.minecraft.entity.living.mob.monster.GhastEntity;
 import net.minecraft.entity.living.mob.monster.GuardianEntity;
 import net.minecraft.entity.living.mob.monster.MagmaCubeEntity;
@@ -98,23 +100,38 @@ import net.minecraft.entity.living.mob.passive.animal.tameable.WolfEntity;
 import net.minecraft.entity.living.mob.water.SquidEntity;
 import net.minecraft.entity.projectile.WitherSkullEntity;
 import net.minecraft.entity.vehicle.BoatEntity;
+import net.minecraft.entity.vehicle.ChestMinecartEntity;
+import net.minecraft.entity.vehicle.CommandBlockMinecartEntity;
+import net.minecraft.entity.vehicle.FurnaceMinecartEntity;
+import net.minecraft.entity.vehicle.HopperMinecartEntity;
 import net.minecraft.entity.vehicle.MinecartEntity;
 import net.minecraft.entity.vehicle.SpawnerMinecartEntity;
 import net.minecraft.entity.vehicle.TntMinecartEntity;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 final class CemTargets {
     record Dispatchers(EntityRenderDispatcher entities, BlockEntityRenderDispatcher blocks) {
     }
 
-    record Binding(Object renderer, Map<String, ModelPart> parts) {
+    record Binding(Object renderer, Map<String, ModelPart> parts, boolean main) {
     }
+
+    static final Predicate<Object> ALWAYS = _ -> true;
 
     interface Target {
         Binding bind(Dispatchers dispatchers);
+
+        default Predicate<Object> when() {
+            return ALWAYS;
+        }
+    }
+
+    record Variant(String name, Predicate<Object> when) {
     }
 
     static final Map<String, Target> TARGETS = Map.ofEntries(
@@ -143,7 +160,7 @@ final class CemTargets {
             Map.entry("pig", living(PigEntity.class, model -> quadruped((QuadrupedModel)model))),
             Map.entry("rabbit", living(RabbitEntity.class, model -> rabbit((RabbitModel)model))),
             Map.entry("sheep", living(SheepEntity.class, model -> quadruped((QuadrupedModel)model))),
-            Map.entry("sheep_wool", entity(SheepEntity.class, CemTargets::sheepWool)),
+            Map.entry("sheep_wool", layer(entity(SheepEntity.class, CemTargets::sheepWool))),
             Map.entry("silverfish", living(SilverfishEntity.class, model -> silverfish((SilverfishModel)model))),
             Map.entry("skeleton", living(SkeletonEntity.class, model -> biped((HumanoidModel)model))),
             Map.entry("slime", living(SlimeEntity.class, model -> slime((SlimeModel)model))),
@@ -159,7 +176,11 @@ final class CemTargets {
                     renderer -> parts("head", ((WitherSkullRenderer)renderer).model.skull))),
             Map.entry("wolf", living(WolfEntity.class, model -> wolf((WolfModel)model))),
             // ZombieRenderer swaps its model per entity, so it holds the zombie model itself
-            Map.entry("zombie", entity(ZombieEntity.class, renderer -> biped(((ZombieRenderer)renderer).zombieModel))),
+            Map.entry("zombie", only(entity(ZombieEntity.class, renderer -> biped(((ZombieRenderer)renderer).zombieModel)),
+                    rendered -> !((ZombieEntity)rendered).isVillager())),
+            Map.entry("zombie_villager", only(entity(ZombieEntity.class, renderer -> biped(((ZombieRenderer)renderer).zombieVillagerModel)),
+                    rendered -> ((ZombieEntity)rendered).isVillager())),
+            Map.entry("giant", living(GiantEntity.class, model -> biped((HumanoidModel)model))),
             Map.entry("zombie_pigman", living(ZombiePigmanEntity.class, model -> biped((HumanoidModel)model))),
             Map.entry("banner", block(BannerBlockEntity.class, renderer -> banner(((BannerRenderer)renderer).model))),
             Map.entry("book", block(EnchantingTableBlockEntity.class, renderer -> book(((EnchantingTableRenderer)renderer).bookModel))),
@@ -171,7 +192,42 @@ final class CemTargets {
             Map.entry("sign", block(SignBlockEntity.class, renderer -> sign(((SignRenderer)renderer).model)))
     );
 
+    static final Map<String, List<Variant>> VARIANTS = Map.of(
+            "skeleton", List.of(new Variant("wither_skeleton", rendered -> ((SkeletonEntity)rendered).getType() == 1)),
+            "guardian", List.of(new Variant("elder_guardian", rendered -> ((GuardianEntity)rendered).isElder())),
+            "ocelot", List.of(new Variant("cat", rendered -> ((OcelotEntity)rendered).isTamed())),
+            "minecart", List.of(new Variant("chest_minecart", rendered -> rendered instanceof ChestMinecartEntity),
+                    new Variant("furnace_minecart", rendered -> rendered instanceof FurnaceMinecartEntity),
+                    new Variant("hopper_minecart", rendered -> rendered instanceof HopperMinecartEntity),
+                    new Variant("command_block_minecart", rendered -> rendered instanceof CommandBlockMinecartEntity)),
+            "chest", List.of(new Variant("trapped_chest", rendered -> ((ChestBlockEntity)rendered).getChestType() == 1)),
+            "sign", List.of(new Variant("wall_sign", rendered -> ((SignBlockEntity)rendered).getBlock() == Blocks.WALL_SIGN)),
+            "book", List.of(new Variant("enchanting_book", ALWAYS)),
+            "zombie_pigman", List.of(new Variant("zombified_piglin", ALWAYS))
+    );
+
     private CemTargets() {
+    }
+
+    private static Target only(Target target, Predicate<Object> when) {
+        return new Target() {
+            @Override
+            public Binding bind(Dispatchers dispatchers) {
+                return target.bind(dispatchers);
+            }
+
+            @Override
+            public Predicate<Object> when() {
+                return when;
+            }
+        };
+    }
+
+    private static Target layer(Target target) {
+        return dispatchers -> {
+            Binding binding = target.bind(dispatchers);
+            return binding == null ? null : new Binding(binding.renderer(), binding.parts(), false);
+        };
     }
 
     private static Target living(Class<? extends Entity> type, Function<Model, Map<String, ModelPart>> parts) {
@@ -182,14 +238,14 @@ final class CemTargets {
         return dispatchers -> {
             if (dispatchers.entities() == null) return null;
             EntityRenderer<?> renderer = dispatchers.entities().getRenderer(type);
-            return renderer == null ? null : new Binding(renderer, parts.apply(renderer));
+            return renderer == null ? null : new Binding(renderer, parts.apply(renderer), true);
         };
     }
 
     private static Target block(Class<? extends BlockEntity> type, Function<BlockEntityRenderer<?>, Map<String, ModelPart>> parts) {
         return dispatchers -> {
             BlockEntityRenderer<?> renderer = dispatchers.blocks().getRenderer(type);
-            return renderer == null ? null : new Binding(renderer, parts.apply(renderer));
+            return renderer == null ? null : new Binding(renderer, parts.apply(renderer), true);
         };
     }
 

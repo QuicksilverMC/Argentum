@@ -25,6 +25,7 @@ public final class AnimationContext {
     private float headYaw;
     private float headPitch;
     private float scale;
+    private int ruleIndex;
     long sequence;
 
     private long lastFrame;
@@ -62,6 +63,7 @@ public final class AnimationContext {
         this.tickDelta = tickDelta;
         this.limbSwing = this.limbSpeed = this.age = this.headYaw = this.headPitch = 0.0F;
         this.scale = 0.0625F;
+        this.ruleIndex = 0;
     }
 
     public void setModelParameters(float limbSwing, float limbSpeed, float age, float headYaw, float headPitch, float scale) {
@@ -71,6 +73,10 @@ public final class AnimationContext {
         this.headYaw = headYaw;
         this.headPitch = headPitch;
         this.scale = scale;
+    }
+
+    void setRuleIndex(int ruleIndex) {
+        this.ruleIndex = ruleIndex;
     }
 
     public void endRender() {
@@ -148,7 +154,7 @@ public final class AnimationContext {
             case "partial_ticks" -> (ExpressionParser.FloatExpr)() -> this.tickDelta;
             case "frame_time" -> (ExpressionParser.FloatExpr)() -> this.frameTime;
             case "frame_counter" -> (ExpressionParser.FloatExpr)() -> this.frameCounter;
-            case "rule_index" -> (ExpressionParser.FloatExpr)() -> 0.0F;
+            case "rule_index" -> (ExpressionParser.FloatExpr)() -> this.ruleIndex;
             case "day_time" -> (ExpressionParser.FloatExpr)() -> {
                 World world = Minecraft.getInstance().world;
                 return world == null ? 0.0F : world.getTimeOfDay() % 24000L;
