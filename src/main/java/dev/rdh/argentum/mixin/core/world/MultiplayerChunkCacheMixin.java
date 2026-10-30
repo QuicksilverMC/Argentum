@@ -5,6 +5,7 @@ import org.embeddedt.embeddium.impl.render.chunk.map.ChunkStatus;
 import org.embeddedt.embeddium.impl.render.chunk.map.ChunkTrackerHolder;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -18,6 +19,38 @@ import net.minecraft.world.chunk.WorldChunk;
 public class MultiplayerChunkCacheMixin {
     @Shadow
     private World world;
+
+    @Shadow
+    private WorldChunk empty;
+
+    @Unique
+    private WorldChunk argentum$lastChunk;
+
+    @Inject(method = "getChunk(II)Lnet/minecraft/world/chunk/WorldChunk;", at = @At("HEAD"), cancellable = true)
+    private void argentum$memoHit(int x, int z, CallbackInfoReturnable<WorldChunk> cir) {
+        WorldChunk last = this.argentum$lastChunk;
+        if (last != null && last.chunkX == x && last.chunkZ == z) {
+            cir.setReturnValue(last);
+        }
+    }
+
+    @Inject(method = "getChunk(II)Lnet/minecraft/world/chunk/WorldChunk;", at = @At("RETURN"))
+    private void argentum$memoStore(int x, int z, CallbackInfoReturnable<WorldChunk> cir) {
+        WorldChunk chunk = cir.getReturnValue();
+        if (chunk != this.empty) {
+            this.argentum$lastChunk = chunk;
+        }
+    }
+
+    @Inject(method = "loadChunk", at = @At("HEAD"))
+    private void argentum$clearMemoOnLoad(int x, int z, CallbackInfoReturnable<WorldChunk> cir) {
+        this.argentum$lastChunk = null;
+    }
+
+    @Inject(method = "unloadChunk", at = @At("HEAD"))
+    private void argentum$clearMemoOnUnload(int x, int z, CallbackInfo ci) {
+        this.argentum$lastChunk = null;
+    }
 
     @Inject(method = "loadChunk", at = @At("RETURN"))
     private void afterLoadChunkFromPacket(int x, int z, CallbackInfoReturnable<WorldChunk> cir) {
