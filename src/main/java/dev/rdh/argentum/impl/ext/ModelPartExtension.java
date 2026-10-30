@@ -1,8 +1,11 @@
 package dev.rdh.argentum.impl.ext;
 
+import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.resource.Identifier;
 
 import org.joml.Vector3f;
+
+import java.util.function.Consumer;
 
 public interface ModelPartExtension {
     default Vector3f argentum$getScale() {
@@ -22,6 +25,10 @@ public interface ModelPartExtension {
     }
 
     default void argentum$setBoxesVisible(boolean visible) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void argentum$setRenderListener(Consumer<ModelPart> listener) {
         throw new UnsupportedOperationException();
     }
 

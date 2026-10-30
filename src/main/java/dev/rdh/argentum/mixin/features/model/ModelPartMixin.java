@@ -19,6 +19,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import dev.rdh.argentum.impl.ext.ModelPartExtension;
 import dev.rdh.argentum.impl.render.entity.instancing.EntityCapture;
 
+import java.util.function.Consumer;
+
 @Mixin(ModelPart.class)
 public abstract class ModelPartMixin implements ModelPartExtension {
     @Shadow
@@ -39,8 +41,14 @@ public abstract class ModelPartMixin implements ModelPartExtension {
     @Unique
     private boolean argentum$boxesVisible = true;
 
+    @Unique
+    private Consumer<ModelPart> argentum$renderListener;
+
     @WrapMethod(method = "render")
     private void celeritas$recordModelPart(float scale, Operation<Void> original) {
+        if (this.argentum$renderListener != null) {
+            this.argentum$renderListener.accept((ModelPart)(Object)this);
+        }
         EntityCapture capture = EntityCapture.current();
         if (capture != null && capture.record((ModelPart)(Object)this, scale)) {
             return;
@@ -115,6 +123,11 @@ public abstract class ModelPartMixin implements ModelPartExtension {
     @Override
     public void argentum$setBoxesVisible(boolean visible) {
         this.argentum$boxesVisible = visible;
+    }
+
+    @Override
+    public void argentum$setRenderListener(Consumer<ModelPart> listener) {
+        this.argentum$renderListener = listener;
     }
 
     @Override
