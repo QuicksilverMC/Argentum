@@ -22,7 +22,7 @@ public class BlockEntityBakerMixin {
     @Inject(method = "bake", at = @At("HEAD"), cancellable = true)
     private void cera$skipCustomModels(BlockEntity blockEntity, BlockEntityRenderer<?> renderer, BlockState state, BlockPos pos,
             ChunkRenderContext world, ChunkBuildBuffers buffers, CallbackInfoReturnable<Boolean> cir) {
-        if (Minecraft.getInstance().cera$getCustomEntityModels().customizes(renderer)) {
+        if (Minecraft.getInstance().cera$getCustomEntityModels().customizes(renderer, blockEntity, state.getBlock())) {
             cir.setReturnValue(false);
         }
     }

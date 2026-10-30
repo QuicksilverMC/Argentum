@@ -14,6 +14,7 @@ import dev.rdh.cera.props.Props;
 import dev.rdh.cera.props.RandomRules;
 import dev.rdh.cera.props.Result;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
@@ -52,7 +53,7 @@ public final class CustomEntityModels implements ResourceReloadListener {
     private final List<Slot> selected = new ArrayList<>();
     private final IntArrayList renders = new IntArrayList();
     private final RandomChoices choices = new RandomChoices();
-    private volatile Set<Object> customized = Set.of();
+    private volatile Map<Object, List<Slot>> published = Map.of();
     private final AnimationContext animations = new AnimationContext();
 
     public AnimationContext animations() {
@@ -90,7 +91,6 @@ public final class CustomEntityModels implements ResourceReloadListener {
         this.slots.clear();
         this.selected.clear();
         this.renders.clear();
-        Set<Object> renderers = Collections.newSetFromMap(new IdentityHashMap<>());
         CemTargets.Dispatchers dispatchers = new CemTargets.Dispatchers(minecraft.getEntityRenderDispatcher(),
                 BlockEntityRenderDispatcher.INSTANCE);
         CemTargets.TARGETS.forEach((name, target) -> {
@@ -124,13 +124,23 @@ public final class CustomEntityModels implements ResourceReloadListener {
             this.undo.add(() -> vanilla.apply(binding));
             this.slots.computeIfAbsent(binding.renderer(), _ -> new ArrayList<>()).add(slot);
             if (!slot.isStatic()) this.dynamic.computeIfAbsent(binding.renderer(), _ -> new ArrayList<>()).add(slot);
-            renderers.add(binding.renderer());
         });
-        this.customized = Collections.unmodifiableSet(renderers);
+        Map<Object, List<Slot>> published = new IdentityHashMap<>();
+        this.slots.forEach((renderer, slots) -> published.put(renderer, List.copyOf(slots)));
+        this.published = Collections.unmodifiableMap(published);
     }
 
-    public boolean customizes(Object renderer) {
-        return this.customized.contains(renderer);
+    // called from chunk build threads, so it only reads what install published and the block from the chunk
+    public boolean customizes(Object renderer, BlockEntity blockEntity, Block block) {
+        List<Slot> slots = this.published.get(renderer);
+        if (slots == null) return false;
+        CemTargets.Placed placed = new CemTargets.Placed(blockEntity, block);
+        for (Slot slot : slots) {
+            for (Candidate candidate : slot.candidates()) {
+                if (candidate.when().test(placed)) return true;
+            }
+        }
+        return false;
     }
 
     public void beginEntity(Entity entity, float tickDelta) {
@@ -144,7 +154,7 @@ public final class CustomEntityModels implements ResourceReloadListener {
         this.renders.add(this.selected.size());
         // block entities drawn as items have no world to choose a variant from, so they keep the fallback
         if (!this.dynamic.isEmpty() && blockEntity.hasWorld()) {
-            this.select(BlockEntityRenderDispatcher.INSTANCE.getRenderer(blockEntity), blockEntity);
+            this.select(BlockEntityRenderDispatcher.INSTANCE.getRenderer(blockEntity), new CemTargets.Placed(blockEntity, blockEntity.getBlock()));
         }
     }
 

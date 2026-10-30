@@ -1,5 +1,6 @@
 package dev.rdh.cera.modules.cem;
 
+import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BannerBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
@@ -134,6 +135,9 @@ final class CemTargets {
     record Variant(String name, Predicate<Object> when) {
     }
 
+    record Placed(BlockEntity blockEntity, Block block) {
+    }
+
     static final Map<String, Target> TARGETS = Map.ofEntries(
             Map.entry("armor_stand", living(ArmorStandEntity.class, model -> armorStand((ArmorStandModel)model))),
             Map.entry("bat", living(BatEntity.class, model -> bat((BatModel)model))),
@@ -200,8 +204,8 @@ final class CemTargets {
                     new Variant("furnace_minecart", rendered -> rendered instanceof FurnaceMinecartEntity),
                     new Variant("hopper_minecart", rendered -> rendered instanceof HopperMinecartEntity),
                     new Variant("command_block_minecart", rendered -> rendered instanceof CommandBlockMinecartEntity)),
-            "chest", List.of(new Variant("trapped_chest", rendered -> ((ChestBlockEntity)rendered).getChestType() == 1)),
-            "sign", List.of(new Variant("wall_sign", rendered -> ((SignBlockEntity)rendered).getBlock() == Blocks.WALL_SIGN)),
+            "chest", List.of(new Variant("trapped_chest", rendered -> ((Placed)rendered).block() == Blocks.TRAPPED_CHEST)),
+            "sign", List.of(new Variant("wall_sign", rendered -> ((Placed)rendered).block() == Blocks.WALL_SIGN)),
             "book", List.of(new Variant("enchanting_book", ALWAYS)),
             "zombie_pigman", List.of(new Variant("zombified_piglin", ALWAYS))
     );
