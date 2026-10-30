@@ -10,10 +10,8 @@ import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import it.unimi.dsi.fastutil.objects.Reference2ObjectArrayMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resource.Identifier;
-import net.minecraft.world.World;
 import net.ornithemc.osl.resource.loader.api.resource.Resource;
 import net.ornithemc.osl.resource.loader.api.resource.manager.ResourceManager;
 import net.ornithemc.osl.resource.loader.api.resource.reload.ResourceReloadListener;
@@ -28,15 +26,14 @@ public final class RandomEntities implements ResourceReloadListener {
     private static final String[] DEPENDANT_SUFFIXES = {
             "_armor", "_eyes", "_exploding", "_shooting", "_fur", "_invulnerable", "_angry", "_tame", "_collar"
     };
-    private static final int CACHE_LIMIT = 4096;
 
     private volatile Map<String, Base> bases = Map.of();
-    private final Object2ObjectOpenHashMap<Object, Reference2ObjectArrayMap<Base, Entry>> cache = new Object2ObjectOpenHashMap<>();
+    private final RandomChoices choices = new RandomChoices();
     private final Set<String> unevaluated = new ObjectOpenHashSet<>();
 
     @Override
     public void resourcesReloaded(ResourceManager resources) {
-        this.cache.clear();
+        this.choices.clear();
         this.unevaluated.clear();
         Map<String, Base> loaded = new Object2ObjectOpenHashMap<>();
         scan(resources, ROOT_OPTIFINE, "textures/", loaded);
@@ -61,30 +58,13 @@ public final class RandomEntities implements ResourceReloadListener {
         if (base == null) return id;
         Subject subject = Subject.current();
         if (subject == null) return id;
-        int variant = select(subject, base);
+        int variant = this.choices.choose(subject, base, base.rules(), base.count()).variant();
         if (this.unevaluated.remove(path)) {
             Cera.LOGGER.info("[RandomEntities] {} -> variant {}/{}", path, variant, base.count());
         }
         if (variant <= 1) return id;
         Identifier file = base.variant(variant);
         return file == null ? id : file;
-    }
-
-    private int select(Subject subject, Base base) {
-        Reference2ObjectArrayMap<Base, Entry> entries = this.cache.get(subject.key());
-        Entry entry = entries == null ? null : entries.get(base);
-        World world = subject.world();
-        long now = world == null ? 0L : world.getTime();
-        if (entry != null && (base.rules() == null || now < entry.expiresAt())) return entry.variant();
-
-        int seed = subject.seed();
-        int variant = base.rules() == null
-                ? Math.floorMod(seed, base.count()) + 1
-                : base.rules().select(subject, seed);
-        if (entries == null) this.cache.put(subject.key(), entries = new Reference2ObjectArrayMap<>(2));
-        entries.put(base, new Entry(variant, base.rules() == null ? Long.MAX_VALUE : now + 20));
-        if (this.cache.size() > CACHE_LIMIT) this.cache.clear();
-        return variant;
     }
 
     private static void scan(ResourceManager resources, String root, String basePrefix, Map<String, Base> loaded) {
@@ -195,6 +175,4 @@ public final class RandomEntities implements ResourceReloadListener {
         }
     }
 
-    private record Entry(int variant, long expiresAt) {
-    }
 }

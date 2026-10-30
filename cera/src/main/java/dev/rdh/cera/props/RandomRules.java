@@ -21,10 +21,15 @@ public final class RandomRules<T> {
     }
 
     public int select(T subject, int seed) {
+        Rule<T> rule = this.match(subject);
+        return rule == null ? 1 : rule.pick(seed);
+    }
+
+    public Rule<T> match(T subject) {
         for (Rule<T> rule : this.rules) {
-            if (rule.condition.test(subject)) return rule.pick(seed);
+            if (rule.condition.test(subject)) return rule;
         }
-        return 1;
+        return null;
     }
 
     public boolean isEmpty() {
@@ -164,7 +169,7 @@ public final class RandomRules<T> {
             return values;
         }
 
-        private int pick(int seed) {
+        public int pick(int seed) {
             int ordinal = this.cumulativeWeights == null
                     ? Math.floorMod(seed, this.variantCount)
                     : pickWeighted(Math.floorMod(seed, this.totalWeight));
