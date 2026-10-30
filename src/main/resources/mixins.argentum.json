@@ -6,7 +6,7 @@
   "client": [
     "core.GameOptionsMixin", "core.MinecraftMixin", "core.render.BufferBuilderMixin", "core.render.DebugOverlayMixin",
     "core.render.FrustumCullerMixin", "core.render.WorldRendererMixin",
-    "core.world.ClientChunkCacheAccessor", "core.world.MultiplayerChunkCacheMixin", "features.cloud.WorldRendererMixin", "features.framebuffer.GameRendererMixin", "features.framebuffer.MinecraftMixin", "features.framebuffer.RenderTargetMixin", "features.framebuffer.ScreenshotMixin", "features.framebuffer.WorldRendererInvoker",
+    "core.world.ClientChunkCacheAccessor", "core.world.MultiplayerChunkCacheMixin", "features.cloud.WorldRendererMixin", "features.framebuffer.GameRendererMixin", "features.framebuffer.MinecraftMixin", "features.framebuffer.PostPassMixin", "features.framebuffer.RenderTargetMixin", "features.framebuffer.ScreenshotMixin", "features.framebuffer.WorldRendererInvoker",
     "features.entity.shadow.EntityRendererMixin", "features.entity.culling.EntityRendererMixin", "features.font.TextRendererMixin", "features.hud.ChatGuiMixin",
     "features.hud.CreativeInventoryScreenMixin", "features.hud.GameGuiMixin", "features.hud.GlStateManagerMixin", "features.hud.GuiElementMixin", "features.hud.GuiItemRendererMixin", "features.hud.ScreenMixin", "features.hud.GuiItemFlushMixin", "features.hud.PlayerTabOverlayMixin", "features.model.BufferBuilderAccessor",
     "features.model.ModelPartMixin", "features.model.PolygonMixin", "features.model.instancing.AbstractTextureMixin",
