@@ -207,8 +207,17 @@ final class CemTargets {
             "chest", List.of(new Variant("trapped_chest", rendered -> ((Placed)rendered).block() == Blocks.TRAPPED_CHEST)),
             "sign", List.of(new Variant("wall_sign", rendered -> ((Placed)rendered).block() == Blocks.WALL_SIGN)),
             "book", List.of(new Variant("enchanting_book", ALWAYS)),
-            "zombie_pigman", List.of(new Variant("zombified_piglin", ALWAYS))
+            "zombie_pigman", List.of(new Variant("zombified_piglin", ALWAYS)),
+            "head_skeleton", List.of(new Variant("head_wither_skeleton", rendered -> skullType(rendered) == 1),
+                    new Variant("head_creeper", rendered -> skullType(rendered) == 4)),
+            "head_humanoid", List.of(new Variant("head_player", rendered -> skullType(rendered) == 3),
+                    new Variant("head_zombie", rendered -> skullType(rendered) == 2))
     );
+
+    private static int skullType(Object rendered) {
+        if (rendered instanceof Integer type) return type;
+        return rendered instanceof Placed placed && placed.blockEntity() instanceof SkullBlockEntity skull ? skull.getType() : -1;
+    }
 
     private CemTargets() {
     }

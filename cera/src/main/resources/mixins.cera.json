@@ -24,6 +24,7 @@
     "AbstractArmorLayerMixin",
     "EntityMixin",
     "EntityRendererMixin",
+    "SkullRendererMixin",
     "FastBlockRendererMixin",
     "colors.MapColorAccessor",
     "colors.SpawnEggItemMixin",

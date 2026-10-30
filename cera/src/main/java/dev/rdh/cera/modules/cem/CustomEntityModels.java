@@ -158,8 +158,17 @@ public final class CustomEntityModels implements ResourceReloadListener {
         }
     }
 
+    public void beginSkull(Object renderer, int type) {
+        this.renders.add(this.selected.size());
+        if (!this.dynamic.isEmpty()) this.select(renderer, type);
+    }
+
     public void endRender() {
         this.animations.endRender();
+        this.endSkull();
+    }
+
+    public void endSkull() {
         if (this.renders.isEmpty()) return;
         int start = this.renders.popInt();
         for (int i = this.selected.size() - 1; i >= start; i--) {
