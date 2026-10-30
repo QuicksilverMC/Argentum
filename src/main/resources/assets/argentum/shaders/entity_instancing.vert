@@ -25,6 +25,7 @@ uniform mat4 uItemGlintMatrix1;
 uniform vec3 uLightDirection0;
 uniform vec3 uLightDirection1;
 uniform bool uEyeLight;
+uniform bool uFullBlockLight;
 
 out vec2 vTexCoord;
 out vec2 vGlintCoord;
@@ -99,7 +100,9 @@ void main() {
     } else {
         vTexCoord = (gl_TextureMatrix[0] * vec4(baseTexCoord, 0.0, 1.0)).xy;
     }
-    vLightCoord = (gl_TextureMatrix[1] * vec4(uEyeLight ? vec2(61680.0, 0.0) : aLightCoord.xy, 0.0, 1.0)).xy;
+    vec2 lightCoord = uEyeLight ? vec2(61680.0, 0.0) : aLightCoord.xy;
+    if (uFullBlockLight) lightCoord.x = 240.0;
+    vLightCoord = (gl_TextureMatrix[1] * vec4(lightCoord, 0.0, 1.0)).xy;
     vTextureLayer = aLightCoord.z;
     vLighting = (light0 + light1) * 0.6 + 0.4;
 #ifdef USE_FOG
