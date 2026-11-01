@@ -31,6 +31,11 @@ public class GameOptionsMixin {
         return Argentum.CONFIG.defaultClouds ? (this.fancyGraphics ? 2 : 1) : original;
     }
 
+    @Inject(method = "<clinit>", at = @At("RETURN"))
+    private static void argentum$raiseFramerateCap(CallbackInfo ci) {
+        GameOptions.Option.FRAMERATE_LIMIT.setMax(1500);
+    }
+
     @Inject(method = "<init>(Lnet/minecraft/client/Minecraft;Ljava/io/File;)V", at = @At("RETURN"))
     private void argentum$enableVbos(Minecraft minecraft, File directory, CallbackInfo ci) {
         this.useVbo = true;
