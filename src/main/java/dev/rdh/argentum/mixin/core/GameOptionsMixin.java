@@ -36,21 +36,12 @@ public class GameOptionsMixin {
         this.useVbo = true;
     }
 
-    @WrapWithCondition(
-            method = "load",
-            at = @At(value = "FIELD", target = "Lnet/minecraft/client/options/GameOptions;useVbo:Z", opcode = Opcodes.PUTFIELD)
-    )
+    @WrapWithCondition(method = "load", at = @At(value = "FIELD", target = "Lnet/minecraft/client/options/GameOptions;useVbo:Z", opcode = Opcodes.PUTFIELD))
     private boolean argentum$skipReadingVbo(GameOptions instance, boolean value) {
         return false;
     }
 
-    @WrapWithCondition(
-            method = "save",
-            at = @At(value = "INVOKE", target = "Ljava/io/PrintWriter;println(Ljava/lang/String;)V", ordinal = 0),
-            slice = @Slice(
-                    from = @At(value = "CONSTANT", args = "stringValue=useVbo:")
-            )
-    )
+    @WrapWithCondition(method = "save", at = @At(value = "INVOKE", target = "Ljava/io/PrintWriter;println(Ljava/lang/String;)V", ordinal = 0), slice = @Slice(from = @At(value = "CONSTANT", args = "stringValue=useVbo:")))
     private boolean argentum$skipWritingVbo(PrintWriter instance, String x) {
         return false;
     }

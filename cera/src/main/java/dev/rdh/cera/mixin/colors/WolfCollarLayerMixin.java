@@ -10,8 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(WolfCollarLayer.class)
 public class WolfCollarLayerMixin {
-    @WrapOperation(method = "render(Lnet/minecraft/entity/living/mob/passive/animal/tameable/WolfEntity;FFFFFFF)V", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/entity/living/mob/passive/animal/SheepEntity;getColorRgb(Lnet/minecraft/item/DyeColor;)[F"))
+    @WrapOperation(method = "render(Lnet/minecraft/entity/living/mob/passive/animal/tameable/WolfEntity;FFFFFFF)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/living/mob/passive/animal/SheepEntity;getColorRgb(Lnet/minecraft/item/DyeColor;)[F"))
     private float[] cera$collarColor(DyeColor dye, Operation<float[]> original) {
         return Minecraft.getInstance().cera$getCustomColors().getCollarColor(dye, original.call(dye));
     }

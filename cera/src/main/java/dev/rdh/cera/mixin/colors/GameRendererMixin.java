@@ -34,7 +34,7 @@ public abstract class GameRendererMixin {
     @Shadow private float lightMapFlicker;
 
     @Shadow
-    protected abstract float getNightVisionScale(LivingEntity player, float tickDelta);
+	public abstract float getNightVisionScale(LivingEntity player, float tickDelta);
 
     @Inject(method = "updateLightMap", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/texture/DynamicTexture;upload()V"))
     private void cera$customLightmap(float tickDelta, CallbackInfo ci) {
@@ -52,15 +52,7 @@ public abstract class GameRendererMixin {
         return b;
     }
 
-    @Inject(
-            method = "setupClearColor",
-            at = @At(
-                    value = "FIELD",
-                    target = "Lnet/minecraft/client/render/GameRenderer;lastFogBrightness:F",
-                    opcode = Opcodes.GETFIELD,
-                    ordinal = 0
-            )
-    )
+    @Inject(method = "setupClearColor", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/GameRenderer;lastFogBrightness:F", opcode = Opcodes.GETFIELD, ordinal = 0))
     private void cera$submergedFog(float tickDelta, CallbackInfo ci, @Local Entity entity, @Share("block") LocalRef<Block> block) {
         if (this.thiccFog) return;
         Material material = block.get().getMaterial();

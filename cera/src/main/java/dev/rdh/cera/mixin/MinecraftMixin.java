@@ -10,6 +10,7 @@ import dev.rdh.cera.modules.DynamicLights;
 import dev.rdh.cera.modules.OptifineCosmetics;
 import dev.rdh.cera.modules.cem.CustomEntityModels;
 import dev.rdh.cera.modules.cit.CustomItems;
+import dev.rdh.cera.modules.shaders.CeraShaderEngine;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -38,6 +39,8 @@ public class MinecraftMixin implements CeraMinecraftExtension {
     private final CustomPanorama cera$customPanorama = new CustomPanorama();
     @Unique
     private final CustomEntityModels cera$customEntityModels = new CustomEntityModels();
+    @Unique
+    private final CeraShaderEngine cera$shaderEngine = new CeraShaderEngine();
 
     @Override
     public DynamicLights.Rules cera$getDynamicLightRules() {
@@ -82,6 +85,11 @@ public class MinecraftMixin implements CeraMinecraftExtension {
     @Override
     public CustomEntityModels cera$getCustomEntityModels() {
         return this.cera$customEntityModels;
+    }
+
+    @Override
+    public CeraShaderEngine cera$getShaderEngine() {
+        return this.cera$shaderEngine;
     }
 
     @Inject(method = "init", at = @At("TAIL"))

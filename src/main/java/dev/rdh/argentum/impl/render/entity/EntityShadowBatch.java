@@ -27,6 +27,7 @@ import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkFogMode;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderComponent;
 import org.embeddedt.embeddium.impl.render.shader.ShaderLoader;
 import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL;
 
 import dev.rdh.argentum.api.render.instancing.InstanceDataBuffer;
@@ -123,7 +124,7 @@ public final class EntityShadowBatch {
 
         GlStateManager.activeTexture(GLX.GL_TEXTURE0);
         GlStateManager.enableBlend();
-        GlStateManager.blendFunc(770, 771);
+        GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         Minecraft.getInstance().getTextureManager().bind(SHADOW_TEXTURE);
         GlStateManager.depthMask(false);
         program.bind();

@@ -25,12 +25,7 @@ public class TitleScreenMixin {
     @Final
     private static Identifier[] PANORAMA_LOCATIONS;
 
-    @ModifyArg(
-            method = "drawBackgroundBase",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/render/texture/TextureManager;bind(Lnet/minecraft/resource/Identifier;)V"),
-            index = 0
-    )
+    @ModifyArg(method = "drawBackgroundBase", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/texture/TextureManager;bind(Lnet/minecraft/resource/Identifier;)V"), index = 0)
     private Identifier cera$panoramaFace(Identifier original) {
         Panorama panorama = Minecraft.getInstance().cera$getCustomPanorama().active();
         if (panorama == null) return original;
@@ -56,11 +51,7 @@ public class TitleScreenMixin {
         return panorama == null ? i : panorama.blur2();
     }
 
-    @WrapOperation(
-            method = "drawBackground",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/TitleScreen;drawBackgroundImage(F)V", ordinal = 1)
-    )
+    @WrapOperation(method = "drawBackground", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/TitleScreen;drawBackgroundImage(F)V", ordinal = 1))
     private void cera$blur3(TitleScreen screen, float tickDelta, Operation<Void> original) {
         Panorama panorama = Minecraft.getInstance().cera$getCustomPanorama().active();
         if (panorama == null) {
@@ -72,25 +63,12 @@ public class TitleScreenMixin {
         }
     }
 
-    @WrapWithCondition(
-            method = "drawBackground",
-            at = {
-                    @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/TitleScreen;drawBackgroundImage(F)V", ordinal = 2),
-                    @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/TitleScreen;drawBackgroundImage(F)V", ordinal = 3),
-                    @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/TitleScreen;drawBackgroundImage(F)V", ordinal = 4),
-                    @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/TitleScreen;drawBackgroundImage(F)V", ordinal = 5),
-                    @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/TitleScreen;drawBackgroundImage(F)V", ordinal = 6)
-            }
-    )
+    @WrapWithCondition(method = "drawBackground", at = { @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/TitleScreen;drawBackgroundImage(F)V", ordinal = 2), @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/TitleScreen;drawBackgroundImage(F)V", ordinal = 3), @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/TitleScreen;drawBackgroundImage(F)V", ordinal = 4), @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/TitleScreen;drawBackgroundImage(F)V", ordinal = 5), @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/TitleScreen;drawBackgroundImage(F)V", ordinal = 6) })
     private boolean cera$skipVanillaBlur(TitleScreen screen, float tickDelta) {
         return Minecraft.getInstance().cera$getCustomPanorama().active() == null;
     }
 
-    @WrapOperation(
-            method = "render",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/TitleScreen;fillGradient(IIIIII)V", ordinal = 0)
-    )
+    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/TitleScreen;fillGradient(IIIIII)V", ordinal = 0))
     private void cera$overlay1(TitleScreen screen, int x1, int y1, int x2, int y2, int top, int bottom, Operation<Void> original) {
         Panorama panorama = Minecraft.getInstance().cera$getCustomPanorama().active();
         if (panorama == null) {
@@ -100,11 +78,7 @@ public class TitleScreenMixin {
         }
     }
 
-    @WrapOperation(
-            method = "render",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screen/TitleScreen;fillGradient(IIIIII)V", ordinal = 1)
-    )
+    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/TitleScreen;fillGradient(IIIIII)V", ordinal = 1))
     private void cera$overlay2(TitleScreen screen, int x1, int y1, int x2, int y2, int top, int bottom, Operation<Void> original) {
         Panorama panorama = Minecraft.getInstance().cera$getCustomPanorama().active();
         if (panorama == null) {

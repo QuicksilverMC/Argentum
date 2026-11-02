@@ -28,10 +28,7 @@ public class LivingEntityRendererMixin<T extends LivingEntity> {
                 .setModelParameters(limbSwing, limbSpeed, age, headYaw, headPitch, scale);
     }
 
-    @WrapOperation(
-            method = "renderLayers",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/layer/EntityRenderLayer;render(Lnet/minecraft/entity/living/LivingEntity;FFFFFFF)V")
-    )
+    @WrapOperation(method = "renderLayers", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/layer/EntityRenderLayer;render(Lnet/minecraft/entity/living/LivingEntity;FFFFFFF)V"))
     private void cera$renderLayer(EntityRenderLayer<LivingEntity> layer, LivingEntity entity, float limbSwing,
             float limbSpeed, float tickDelta, float age, float headYaw, float headPitch, float scale, Operation<Void> original) {
         Runnable render = () -> Minecraft.getInstance().getTextureManager().cera$getEmissiveTextures().render(
@@ -51,10 +48,7 @@ public class LivingEntityRendererMixin<T extends LivingEntity> {
         }
     }
 
-    @WrapOperation(
-            method = "render(Lnet/minecraft/entity/living/LivingEntity;DDDFF)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/LivingEntityRenderer;renderModel(Lnet/minecraft/entity/living/LivingEntity;FFFFFF)V")
-    )
+    @WrapOperation(method = "render(Lnet/minecraft/entity/living/LivingEntity;DDDFF)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/LivingEntityRenderer;renderModel(Lnet/minecraft/entity/living/LivingEntity;FFFFFF)V"))
     private void cera$emissivePass(LivingEntityRenderer<T> self, LivingEntity entity, float limbAngle, float limbDistance,
             float tickDelta, float headYaw, float headPitch, float scale, Operation<Void> original) {
         Minecraft.getInstance().getTextureManager().cera$getEmissiveTextures().render(this.solidRender || EntityCapture.current() != null,

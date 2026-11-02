@@ -110,22 +110,27 @@ public class ArgentumChunkBuildContext extends ChunkBuildContext {
     }
 
     public void finishSection(ChunkBuildBuffers buffers) {
-        for (int i = 0; i < this.layerBuffers.length; i++) {
-            if (!this.usedLayerBuffers[i]) {
-                continue;
-            }
+        for (BlockLayer layer : LAYERS) {
+            this.finishLayer(layer, buffers);
+        }
+    }
 
-            BufferBuilder buffer = this.layerBuffers[i];
-            buffer.end();
-            this.usedLayerBuffers[i] = false;
-            try {
-                this.copyRawBuffer(buffer.getBuffer().asIntBuffer(), buffer.getVertexCount(), buffers,
-                        buffers.getRenderPassConfiguration().getMaterialForRenderType(LAYERS[i])
-                );
-            } finally {
-                buffer.clear();
-                buffer.offset(0, 0, 0);
-            }
+    public void finishLayer(BlockLayer layer, ChunkBuildBuffers buffers) {
+        int index = layer.ordinal();
+        if (!this.usedLayerBuffers[index]) {
+            return;
+        }
+
+        BufferBuilder buffer = this.layerBuffers[index];
+        buffer.end();
+        this.usedLayerBuffers[index] = false;
+        try {
+            this.copyRawBuffer(buffer.getBuffer().asIntBuffer(), buffer.getVertexCount(), buffers,
+                    buffers.getRenderPassConfiguration().getMaterialForRenderType(layer)
+            );
+        } finally {
+            buffer.clear();
+            buffer.offset(0, 0, 0);
         }
     }
 

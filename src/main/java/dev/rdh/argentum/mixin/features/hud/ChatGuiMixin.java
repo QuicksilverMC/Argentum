@@ -8,6 +8,7 @@ import net.minecraft.client.render.platform.GlStateManager;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -34,18 +35,12 @@ public abstract class ChatGuiMixin extends GuiElement {
         this.argentum$textBatch = HudBatch.text(() -> this.minecraft.textRenderer, this::argentum$prepareTextBatch);
     }
 
-    @Inject(
-            method = "render",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;scalef(FFF)V", shift = At.Shift.AFTER)
-    )
+    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;scalef(FFF)V", shift = At.Shift.AFTER))
     private void argentum$beginTextBatch(int ticks, CallbackInfo ci) {
         this.argentum$textBatch.begin();
     }
 
-    @WrapOperation(
-            method = "render",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/chat/ChatGui;fill(IIIII)V")
-    )
+    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/chat/ChatGui;fill(IIIII)V"))
     private void argentum$captureBackground(int left, int top, int right, int bottom, int color, Operation<Void> original) {
         if (this.argentum$textBatch.isDrawing()) {
             this.argentum$backgroundBatch.fill(left, top, right, bottom, color);
@@ -54,18 +49,12 @@ public abstract class ChatGuiMixin extends GuiElement {
         }
     }
 
-    @Inject(
-            method = "render",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;translatef(FFF)V", ordinal = 1)
-    )
+    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;translatef(FFF)V", ordinal = 1))
     private void argentum$drawTextBeforeScrollbar(int ticks, CallbackInfo ci) {
         this.argentum$drawTextBatch();
     }
 
-    @Inject(
-            method = "render",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;popMatrix()V")
-    )
+    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;popMatrix()V"))
     private void argentum$drawTextBatch(int ticks, CallbackInfo ci) {
         this.argentum$drawTextBatch();
     }
@@ -85,6 +74,6 @@ public abstract class ChatGuiMixin extends GuiElement {
         this.argentum$backgroundBatch.draw();
         GlStateManager.enableBlend();
         GlStateManager.enableAlphaTest();
-        GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+        GlStateManager.blendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
     }
 }

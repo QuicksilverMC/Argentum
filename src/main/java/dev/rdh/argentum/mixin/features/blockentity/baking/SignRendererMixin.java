@@ -10,10 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(SignRenderer.class)
 public abstract class SignRendererMixin {
-    @WrapWithCondition(
-            method = "render(Lnet/minecraft/block/entity/SignBlockEntity;DDDFI)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/model/block/entity/SignModel;render()V")
-    )
+    @WrapWithCondition(method = "render(Lnet/minecraft/block/entity/SignBlockEntity;DDDFI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/model/block/entity/SignModel;render()V"))
     private boolean argentum$skipBakedBoard(SignModel model) {
         return ((Object) this).getClass() != SignRenderer.class || !BakedBlockEntities.bakesSigns();
     }

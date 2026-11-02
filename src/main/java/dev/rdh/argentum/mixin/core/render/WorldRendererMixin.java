@@ -2,8 +2,8 @@ package dev.rdh.argentum.mixin.core.render;
 
 import dev.rdh.argentum.impl.ext.WorldExtension;
 import com.llamalad7.mixinextras.sugar.Local;
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import org.embeddedt.embeddium.impl.gl.device.RenderDevice;
+import org.embeddedt.embeddium.impl.render.viewport.Viewport;
 import org.embeddedt.embeddium.impl.render.viewport.ViewportProvider;
 import org.objectweb.asm.*;
 import org.spongepowered.asm.mixin.Final;
@@ -153,6 +153,20 @@ public abstract class WorldRendererMixin implements WorldRendererExtension {
         }
     }
 
+    @Override
+    public void argentum$setupShadowTerrain(Culler camera, Viewport shadowViewport, float tick) {
+        RenderDevice.enterManagedCode();
+
+        try {
+            this.renderer.setupShadowTerrain(((ViewportProvider)camera).sodium$createViewport(), shadowViewport,
+                    ArgentumWorldRenderer.captureCameraState(tick),
+                    this.frame++, this.minecraft.player.noClip
+            );
+        } finally {
+            RenderDevice.exitManagedCode();
+        }
+    }
+
     /**
      * @reason Redirect chunk updates to our renderer
      * @author JellySquid
@@ -179,10 +193,7 @@ public abstract class WorldRendererMixin implements WorldRendererExtension {
         }
     }
 
-    @Redirect(
-            method = "reload()V",
-            at = @At(value = "NEW", target = "(Lnet/minecraft/world/World;ILnet/minecraft/client/render/world/WorldRenderer;Lnet/minecraft/client/render/world/RenderChunkFactory;)Lnet/minecraft/client/render/world/RenderChunkStorage;")
-    )
+    @Redirect(method = "reload()V", at = @At(value = "NEW", target = "(Lnet/minecraft/world/World;ILnet/minecraft/client/render/world/WorldRenderer;Lnet/minecraft/client/render/world/RenderChunkFactory;)Lnet/minecraft/client/render/world/RenderChunkStorage;"))
     private RenderChunkStorage celeritas$skipVanillaChunkStorage(World world, int viewDistance, WorldRenderer renderer, RenderChunkFactory factory) {
         return new NoopRenderChunkStorage(world, viewDistance, renderer, factory);
     }

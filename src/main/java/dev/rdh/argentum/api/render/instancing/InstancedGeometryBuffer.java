@@ -15,7 +15,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 public final class InstancedGeometryBuffer {
-    private FloatBuffer vertices;
+    private final FloatBuffer vertices;
     private final GlVertexFormat vertexFormat;
     private final GlVertexFormat instanceFormat;
     private GlMutableBuffer vertexBuffer;
@@ -26,6 +26,10 @@ public final class InstancedGeometryBuffer {
         this.vertices = vertices;
         this.vertexFormat = vertexFormat;
         this.instanceFormat = instanceFormat;
+    }
+
+    public FloatBuffer vertices() {
+        return this.vertices;
     }
 
     public void initialize(CommandList commandList) {
@@ -43,7 +47,6 @@ public final class InstancedGeometryBuffer {
                             this.vertexFormat.getAttributes().size(), 1)
             });
             this.tessellation.init(commandList);
-            this.vertices = null;
         } catch (RuntimeException exception) {
             this.delete(commandList);
             throw exception;

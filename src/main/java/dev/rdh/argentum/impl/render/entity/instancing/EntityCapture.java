@@ -36,6 +36,8 @@ public final class EntityCapture implements AutoCloseable {
     private Identifier entityTexture;
     private Identifier boundTexture;
     private InstanceRenderPass pass;
+    private InstanceKind kind;
+    private int id;
     private boolean item;
     private boolean modelActive;
     private boolean recorded;
@@ -73,7 +75,9 @@ public final class EntityCapture implements AutoCloseable {
 
     void beginEntity(Model model, Identifier texture, boolean player, boolean preserveFixedFunction,
             int packedLight, float effectTime, float overlayRed, float overlayGreen, float overlayBlue,
-            float overlayAlpha) {
+            float overlayAlpha, int id) {
+        this.kind = InstanceKind.ENTITY;
+        this.id = id;
         this.item = false;
         this.model = this.owner.backend().model(model);
         this.entityTexture = texture;
@@ -87,7 +91,9 @@ public final class EntityCapture implements AutoCloseable {
         this.resetState();
     }
 
-    void beginBlockEntity(InstanceRenderPass pass, int packedLight) {
+    void beginBlockEntity(InstanceRenderPass pass, int packedLight, int id) {
+        this.kind = InstanceKind.BLOCK_ENTITY;
+        this.id = id;
         this.item = false;
         this.model = null;
         this.entityTexture = null;
@@ -102,7 +108,9 @@ public final class EntityCapture implements AutoCloseable {
         this.modelActive = true;
     }
 
-    void beginItem(ItemEntity entity, int packedLight) {
+    void beginItem(ItemEntity entity, int packedLight, int id) {
+        this.kind = InstanceKind.ITEM;
+        this.id = id;
         this.item = true;
         this.model = null;
         this.entityTexture = null;
@@ -368,8 +376,12 @@ public final class EntityCapture implements AutoCloseable {
         return !this.item && this.player;
     }
 
-    boolean isModelActive() {
+    public boolean isModelActive() {
         return this.modelActive;
+    }
+
+    public boolean capturesGlint() {
+        return this.modelActive && (this.armorLayer || this.itemInstanced);
     }
 
     void markFinished() {
@@ -393,7 +405,7 @@ public final class EntityCapture implements AutoCloseable {
 
     private boolean submit(InstanceGeometry geometry, Matrix4f matrix, BoxTemplate box) {
         boolean submitted = this.owner.backend().submit(geometry, this.boundTexture, this.pass, matrix,
-                this.packedLight, this.color, this.effectTime, this.currentOverlayColor, box
+                this.packedLight, this.color, this.effectTime, this.currentOverlayColor, box, this.kind, this.id
         );
         this.recorded |= submitted;
         return submitted;

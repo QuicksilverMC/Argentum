@@ -68,7 +68,27 @@ final class CeraOptionPages {
                 .add(toggle("custom_panorama", (config, value) -> config.customPanorama = value, config -> config.customPanorama, REQUIRES_ASSET_RELOAD))
                 .add(toggle("custom_loading_screens", (config, value) -> config.customLoadingScreens = value, config -> config.customLoadingScreens)));
 
-        return List.of(world, colors, entities, interfaces);
+        OptionPage shaders = page("shader_options", OptionGroup.createBuilder()
+                .add(percent("render_quality", (config, value) -> {
+                    config.renderQuality = value / 100F;
+                    Minecraft.getInstance().cera$getShaderEngine().scheduleShaderPackReload();
+                }, config -> Math.round(config.renderQuality * 100F)))
+                .add(percent("shadow_quality", (config, value) -> {
+                    config.shadowQuality = value / 100F;
+                    Minecraft.getInstance().cera$getShaderEngine().scheduleShaderPackReload();
+                }, config -> Math.round(config.shadowQuality * 100F)))
+                .add(percent("hand_depth", (config, value) -> config.handDepth = value / 100F,
+                        config -> Math.round(config.handDepth * 100F)))
+                .add(toggle("depth_of_field", (config, value) -> {
+                    config.depthOfField = value;
+                    Minecraft.getInstance().cera$getShaderEngine().scheduleShaderPackReload();
+                }, config -> config.depthOfField))
+                .add(toggle("reference_shader_pack", (config, value) -> config.referenceShaderPack = value,
+                        config -> config.referenceShaderPack))
+                .add(toggle("shader_error_reports", (config, value) -> config.shaderErrorReports = value,
+                        config -> config.shaderErrorReports)));
+
+        return List.of(world, colors, entities, interfaces, shaders);
     }
 
     private static OptionPage page(String name, OptionGroup.Builder options) {
@@ -82,6 +102,15 @@ final class CeraOptionPages {
                 .setControl(TickBoxControl::new)
                 .setBinding(setter, getter)
                 .setFlags(flags)
+                .build();
+    }
+
+    private static OptionImpl<CeraConfig, Integer> percent(String id, BiConsumer<CeraConfig, Integer> setter,
+                                                           Function<CeraConfig, Integer> getter) {
+        return OptionImpl.createBuilder(int.class, Cera.CONFIG_STORAGE)
+                .setId(id(id))
+                .setControl(option -> new SliderControl(option, 50, 200, 10, value -> TextComponent.literal(value + "%")))
+                .setBinding(setter, getter)
                 .build();
     }
 

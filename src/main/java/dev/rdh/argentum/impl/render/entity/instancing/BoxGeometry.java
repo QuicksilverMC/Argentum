@@ -70,6 +70,11 @@ final class BoxGeometry extends InstanceGeometry {
     }
 
     @Override
+    InstancedGeometryBuffer buffers() {
+        return this.buffers;
+    }
+
+    @Override
     public void delete(CommandList commandList) {
         this.buffers.delete(commandList);
     }

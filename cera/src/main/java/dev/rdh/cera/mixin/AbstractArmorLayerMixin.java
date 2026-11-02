@@ -14,11 +14,11 @@ import net.minecraft.resource.Identifier;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(AbstractArmorLayer.class)
 public class AbstractArmorLayerMixin<T extends Model> {
@@ -48,10 +48,10 @@ public class AbstractArmorLayerMixin<T extends Model> {
             return;
         }
         GlStateManager.enableBlend();
-        GlStateManager.depthFunc(514);
+        GlStateManager.depthFunc(GL11.GL_EQUAL);
         GlStateManager.depthMask(false);
         GlStateManager.disableLighting();
-        GlStateManager.matrixMode(5890);
+        GlStateManager.matrixMode(GL11.GL_TEXTURE);
         for (CustomItems.Effect effect : effects) {
             Minecraft.getInstance().getTextureManager().bind(effect.texture());
             effect.blend().apply(1.0F);
@@ -60,15 +60,15 @@ public class AbstractArmorLayerMixin<T extends Model> {
             GlStateManager.rotatef(effect.rotation(), 0.0F, 0.0F, 1.0F);
             GlStateManager.scalef(textureScale, textureScale / 2.0F, textureScale);
             GlStateManager.translatef(0.0F, effect.speed() * (Minecraft.getTime() % 3000L) / 24000.0F, 0.0F);
-            GlStateManager.matrixMode(5888);
+            GlStateManager.matrixMode(GL11.GL_MODELVIEW);
             model.render(entity, walkAnimationProgress, walkAnimationSpeed, bob, yaw, pitch, scale);
-            GlStateManager.matrixMode(5890);
+            GlStateManager.matrixMode(GL11.GL_TEXTURE);
             GlStateManager.popMatrix();
         }
-        GlStateManager.matrixMode(5888);
+        GlStateManager.matrixMode(GL11.GL_MODELVIEW);
         GlStateManager.enableLighting();
         GlStateManager.depthMask(true);
-        GlStateManager.depthFunc(515);
+        GlStateManager.depthFunc(GL11.GL_LEQUAL);
         GlStateManager.disableBlend();
     }
 }

@@ -52,18 +52,12 @@ public class DebugOverlayMixin {
         this.argentum$textBatch.begin();
     }
 
-    @Inject(
-            method = "render",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;popMatrix()V")
-    )
+    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;popMatrix()V"))
     private void argentum$drawTextBatch(Window window, CallbackInfo ci) {
         this.argentum$textBatch.draw();
     }
 
-    @Redirect(
-            method = {"drawGameInfo", "drawSystemInfo"},
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/overlay/DebugOverlay;fill(IIIII)V")
-    )
+    @Redirect(method = {"drawGameInfo", "drawSystemInfo"}, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/overlay/DebugOverlay;fill(IIIII)V"))
     private void argentum$captureBackground(int left, int top, int right, int bottom, int color) {
         this.argentum$backgroundBatch.fill(left, top, right, bottom, color);
     }

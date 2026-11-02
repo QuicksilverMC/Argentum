@@ -12,8 +12,7 @@ import java.nio.IntBuffer;
 
 @Mixin(TextureUtil.class)
 public class TextureUtilMixin {
-    @WrapWithCondition(method = "upload(I[IIIIIZZZ)V", at = @At(value = "INVOKE",
-            target = "Lorg/lwjgl/opengl/GL11;glTexSubImage2D(IIIIIIIILjava/nio/IntBuffer;)V", remap = false))
+    @WrapWithCondition(method = "upload(I[IIIIIZZZ)V", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glTexSubImage2D(IIIIIIIILjava/nio/IntBuffer;)V", remap = false))
     private static boolean argentum$deferAnimatedUpload(int target, int level, int x, int y, int width, int height,
                                                          int format, int type, IntBuffer pixels) {
         return !AtlasUploads.collect(target, level, x, y, width, height, format, type, pixels);

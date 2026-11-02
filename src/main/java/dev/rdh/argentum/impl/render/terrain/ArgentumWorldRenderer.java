@@ -9,7 +9,9 @@ import org.embeddedt.embeddium.impl.render.chunk.map.ChunkTrackerHolder;
 import org.embeddedt.embeddium.impl.render.terrain.SimpleWorldRenderer;
 import org.joml.Matrix4f;
 
+import dev.rdh.argentum.api.render.terrain.TerrainDrawTarget;
 import dev.rdh.argentum.impl.Argentum;
+import dev.rdh.argentum.impl.ext.MinecraftExtension;
 import dev.rdh.argentum.impl.render.blockentity.BakedBlockEntities;
 import dev.rdh.argentum.impl.render.blockentity.BakedItemFrames;
 import dev.rdh.argentum.impl.render.entity.EntityOcclusionCuller;
@@ -212,8 +214,12 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     @Override
     protected ArgentumRenderSectionManager createRenderSectionManager(CommandList commandList) {
         ChunkTrackerHolder.get(this.world).setRequiredNeighborRadius(Argentum.CONFIG.safeChunkEdges ? 1 : 0);
-        ChunkVertexType vertexType = Argentum.CONFIG.compactVertexFormat ? ChunkMeshFormats.COMPACT : ChunkMeshFormats.VANILLA_LIKE;
-        return ArgentumRenderSectionManager.create(vertexType, this.world, this.renderDistance, commandList);
+        TerrainDrawTarget target = ((MinecraftExtension)Minecraft.getInstance()).argentum$getTerrainDrawTarget();
+        ChunkVertexType targetType = target == null ? null : target.vertexType();
+        ChunkVertexType vertexType = targetType != null ? targetType
+                : Argentum.CONFIG.compactVertexFormat ? ChunkMeshFormats.COMPACT : ChunkMeshFormats.VANILLA_LIKE;
+        return ArgentumRenderSectionManager.create(vertexType, targetType != null, targetType != null && target.hasShadowPass(),
+                this.world, this.renderDistance, commandList);
     }
 
     public void captureMatrices(float[] projection, float[] modelView) {
@@ -221,7 +227,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     }
 
     public boolean isEntityVisible(Entity entity) {
-        if (!Argentum.CONFIG.entityCulling) {
+        if (!Argentum.CONFIG.entityCulling || this.entityInstancing.isShadowPass()) {
             return true;
         }
 
@@ -248,7 +254,9 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
         boolean batching = this.entityInstancing.isBatchActive();
         List<Entity> entities = this.entityGatherer.getLoadedEntityList((ClientWorld)this.world,
                 MathHelper.floor(cameraX) >> 4, MathHelper.floor(cameraZ) >> 4, this.getEffectiveRenderDistance() + 1);
-        this.entityOcclusionCuller.prepare(entities, camera, tickDelta, this.matrices, cameraX, cameraY, cameraZ);
+        if (!this.entityInstancing.isShadowPass()) {
+            this.entityOcclusionCuller.prepare(entities, camera, tickDelta, this.matrices, cameraX, cameraY, cameraZ);
+        }
 
         int rendered = 0;
         boolean isSelfSleeping = minecraft.getCamera() instanceof LivingEntity living && living.isSleeping();

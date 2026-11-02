@@ -66,6 +66,11 @@ final class PartGeometry extends InstanceGeometry {
     }
 
     @Override
+    InstancedGeometryBuffer buffers() {
+        return this.buffers;
+    }
+
+    @Override
     public void delete(CommandList commandList) {
         this.buffers.delete(commandList);
     }
@@ -73,7 +78,7 @@ final class PartGeometry extends InstanceGeometry {
 }
 
 final class Instances extends InstanceDataBuffer {
-    private static final int INTS = 19;
+    static final int INTS = 19;
     private static final int TRANSLATION_OFFSET = 9;
 
     Instances() {
@@ -110,6 +115,10 @@ final class Instances extends InstanceDataBuffer {
             data[i] = box.sizeX() & 0xFF | (box.sizeY() & 0xFF) << 8 | (box.sizeZ() & 0xFF) << 16;
         }
         this.finishInstance();
+    }
+
+    int[] raw() {
+        return this.data();
     }
 
     private static int pack(Vector4fc color) {

@@ -29,10 +29,7 @@ public abstract class CreativeInventoryScreenMixin extends GuiElement {
     @Unique
     private boolean argentum$batchingTabs;
 
-    @WrapWithCondition(
-            method = "renderTabIcon",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/inventory/menu/CreativeInventoryScreen;drawTexture(IIIIII)V")
-    )
+    @WrapWithCondition(method = "renderTabIcon", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/inventory/menu/CreativeInventoryScreen;drawTexture(IIIIII)V"))
     private boolean argentum$batchTabIcon(CreativeInventoryScreen screen, int x, int y, int u, int v, int width, int height) {
         if (!this.argentum$batchingTabs) {
             return true;

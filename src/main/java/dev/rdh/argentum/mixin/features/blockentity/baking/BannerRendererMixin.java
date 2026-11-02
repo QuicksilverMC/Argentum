@@ -11,10 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(BannerRenderer.class)
 public abstract class BannerRendererMixin {
-    @WrapOperation(
-            method = "render(Lnet/minecraft/block/entity/BannerBlockEntity;DDDFI)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/model/block/entity/BannerModel;render()V")
-    )
+    @WrapOperation(method = "render(Lnet/minecraft/block/entity/BannerBlockEntity;DDDFI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/model/block/entity/BannerModel;render()V"))
     private void argentum$skipBakedPole(BannerModel model, Operation<Void> original) {
         if (((Object) this).getClass() != BannerRenderer.class || !BakedBlockEntities.bakesBanners()) {
             original.call(model);

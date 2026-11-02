@@ -3,6 +3,7 @@ package dev.rdh.cera;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
+import net.ornithemc.osl.lifecycle.api.client.MinecraftClientEvents;
 import net.ornithemc.osl.resource.loader.api.client.ClientResourceLoaderEvents;
 import net.ornithemc.osl.resource.loader.api.resource.repository.ResourcePackRepository;
 import dev.rdh.argentum.api.config.JsonOptionStorage;
@@ -26,6 +27,7 @@ public class Cera implements ClientModInitializer {
         CONFIG_STORAGE = JsonOptionStorage.load(FabricLoader.getInstance().getConfigDir().resolve("cera.json"), CeraConfig.class, CeraConfig::new, CeraConfig::validate);
         CONFIG = CONFIG_STORAGE.getData();
         OptionGUIConstructionEvent.BUS.addListener(event -> CeraOptionPages.create().forEach(event::addPage));
+        MinecraftClientEvents.READY.register(minecraft -> minecraft.cera$getShaderEngine().start());
         ClientResourceLoaderEvents.INIT_RESOURCE_MANAGER.register(resources -> {
             Minecraft minecraft = Minecraft.getInstance();
             resources.addReloader(minecraft.getTextureManager().cera$getAnimatedTextures());

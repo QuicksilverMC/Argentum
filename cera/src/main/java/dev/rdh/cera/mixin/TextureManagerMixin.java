@@ -78,10 +78,7 @@ public class TextureManagerMixin implements CeraTextureManagerExtension {
         return cera$emissiveTextures.resolveBound(texture);
     }
 
-    @ModifyExpressionValue(
-        method = "bind",
-        at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;")
-    )
+    @ModifyExpressionValue(method = "bind", at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;"))
     private Object cera$redirectAnimatedTexture(Object bound, Identifier texture) {
         Texture tex = cera$animatedTextures.overrideFor(texture);
         return tex != null ? tex : bound;

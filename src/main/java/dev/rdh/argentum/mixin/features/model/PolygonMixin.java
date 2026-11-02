@@ -15,18 +15,12 @@ public abstract class PolygonMixin {
     @Unique
     private boolean celeritas$drawOnSelf;
 
-    @WrapWithCondition(
-            method = "compile",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/vertex/BufferBuilder;begin(ILnet/minecraft/client/render/vertex/VertexFormat;)V")
-    )
+    @WrapWithCondition(method = "compile", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/vertex/BufferBuilder;begin(ILnet/minecraft/client/render/vertex/VertexFormat;)V"))
     private boolean celeritas$beginIfNeeded(BufferBuilder buffer, int mode, VertexFormat format) {
         return this.celeritas$drawOnSelf = !((BufferBuilderAccessor) buffer).celeritas$isBuilding();
     }
 
-    @WrapWithCondition(
-            method = "compile",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/vertex/Tesselator;end()V")
-    )
+    @WrapWithCondition(method = "compile", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/vertex/Tesselator;end()V"))
     private boolean celeritas$endIfNeeded(Tesselator tesselator) {
         return this.celeritas$drawOnSelf;
     }

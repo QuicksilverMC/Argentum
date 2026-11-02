@@ -12,11 +12,7 @@ import dev.rdh.argentum.impl.render.terrain.ArgentumWorldRenderer;
 
 @Mixin(ParticleManager.class)
 public abstract class ParticleManagerMixin {
-    @WrapWithCondition(
-            method = {"render", "renderLit"},
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/entity/particle/Particle;render(Lnet/minecraft/client/render/vertex/BufferBuilder;Lnet/minecraft/entity/Entity;FFFFFF)V"),
-            require = 2
-    )
+    @WrapWithCondition(method = {"render", "renderLit"}, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/entity/particle/Particle;render(Lnet/minecraft/client/render/vertex/BufferBuilder;Lnet/minecraft/entity/Entity;FFFFFF)V"), require = 2)
     private boolean celeritas$renderVisibleParticle(Particle particle, BufferBuilder buffer, Entity camera,
             float tickDelta, float rotationX, float rotationZ, float rotationYZ, float rotationXY, float rotationXZ) {
         if (!particle.argentum$isVisible()) return false;

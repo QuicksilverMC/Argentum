@@ -21,8 +21,7 @@ public abstract class WorldChunkMixin implements WorldChunkExtension {
         this.argentum$entityCount++;
     }
 
-    @ModifyExpressionValue(method = "removeEntity(Lnet/minecraft/entity/Entity;I)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/util/TypeInstanceMultiMap;remove(Ljava/lang/Object;)Z"))
+    @ModifyExpressionValue(method = "removeEntity(Lnet/minecraft/entity/Entity;I)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/TypeInstanceMultiMap;remove(Ljava/lang/Object;)Z"))
     private boolean argentum$countRemovedEntity(boolean removed) {
         if (removed) {
             this.argentum$entityCount--;

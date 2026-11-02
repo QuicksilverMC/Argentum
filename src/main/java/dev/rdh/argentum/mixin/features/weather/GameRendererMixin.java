@@ -6,6 +6,7 @@ import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.vertex.BufferBuilder;
 
 import com.llamalad7.mixinextras.sugar.Local;
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -47,7 +48,7 @@ public abstract class GameRendererMixin {
         bufferBuilder.offset(0.0, 0.0, 0.0);
         GlStateManager.enableCull();
         GlStateManager.disableBlend();
-        GlStateManager.alphaFunc(516, 0.1F);
+        GlStateManager.alphaFunc(GL11.GL_GREATER, 0.1F);
         this.disableLightMap();
         ci.cancel();
     }

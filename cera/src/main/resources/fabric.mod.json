@@ -21,6 +21,7 @@
   "depends": {
     "argentum": "*",
     "osl-core": "*",
+    "osl-lifecycle-events": "*",
     "osl-resource-loader": "*"
   }
 }

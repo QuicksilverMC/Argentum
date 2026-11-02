@@ -53,16 +53,12 @@ public class BlockEntityRenderDispatcherMixin {
             original.call(blockEntity, x, y, z, tickDelta, blockMiningProgress);
             return;
         }
-        try (EntityCapture _ = instancing.beginBlockEntity(pass, light)) {
+        try (EntityCapture _ = instancing.beginBlockEntity(blockEntity, pass, light)) {
             original.call(blockEntity, x, y, z, tickDelta, blockMiningProgress);
         }
     }
 
-    @WrapOperation(
-            method = "render(Lnet/minecraft/block/entity/BlockEntity;FI)V",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/world/World;getLightColor(Lnet/minecraft/util/math/BlockPos;I)I")
-    )
+    @WrapOperation(method = "render(Lnet/minecraft/block/entity/BlockEntity;FI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;getLightColor(Lnet/minecraft/util/math/BlockPos;I)I"))
     private int argentum$cacheLight(World world, BlockPos pos, int minLight, Operation<Integer> original,
             @Local(argsOnly = true) BlockEntity blockEntity) {
         int generation = ((WorldExtension)world).argentum$getBlockEntityLight().generation(pos);

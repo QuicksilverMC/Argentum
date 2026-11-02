@@ -33,22 +33,14 @@ public class SignRendererMixin {
         }
     }
 
-    @Inject(
-            method = "render(Lnet/minecraft/block/entity/SignBlockEntity;DDDFI)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;depthMask(Z)V",
-                    ordinal = 0, shift = At.Shift.AFTER)
-    )
+    @Inject(method = "render(Lnet/minecraft/block/entity/SignBlockEntity;DDDFI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;depthMask(Z)V", ordinal = 0, shift = At.Shift.AFTER))
     private void argentum$beginSignText(SignBlockEntity sign, double x, double y, double z, float tickDelta,
                                         int breakProgress, CallbackInfo ci, @Local TextRenderer textRenderer) {
         textRenderer.argentum$beginBatch(() -> {});
         this.argentum$signTextRenderer = textRenderer;
     }
 
-    @Inject(
-            method = "render(Lnet/minecraft/block/entity/SignBlockEntity;DDDFI)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;depthMask(Z)V",
-                    ordinal = 1)
-    )
+    @Inject(method = "render(Lnet/minecraft/block/entity/SignBlockEntity;DDDFI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;depthMask(Z)V", ordinal = 1))
     private void argentum$endSignText(SignBlockEntity sign, double x, double y, double z, float tickDelta, int breakProgress, CallbackInfo ci) {
         this.argentum$endBatch();
     }
@@ -61,11 +53,7 @@ public class SignRendererMixin {
         textRenderer.argentum$endBatch();
     }
 
-    @WrapOperation(
-            method = "render(Lnet/minecraft/block/entity/SignBlockEntity;DDDFI)V",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/render/TextRenderUtils;wrapText(Lnet/minecraft/text/Text;ILnet/minecraft/client/render/TextRenderer;ZZ)Ljava/util/List;")
-    )
+    @WrapOperation(method = "render(Lnet/minecraft/block/entity/SignBlockEntity;DDDFI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/TextRenderUtils;wrapText(Lnet/minecraft/text/Text;ILnet/minecraft/client/render/TextRenderer;ZZ)Ljava/util/List;"))
     private List<Text> argentum$cacheWrappedLine(Text line, int width, TextRenderer textRenderer,
             boolean stripLeadingSpaces, boolean allowFormatting, Operation<List<Text>> original,
             @Local(argsOnly = true) SignBlockEntity sign) {

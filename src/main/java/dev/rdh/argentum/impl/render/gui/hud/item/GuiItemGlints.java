@@ -57,9 +57,9 @@ final class GuiItemGlints {
 
         GlStateManager.disableLighting();
         GlStateManager.enableBlend();
-        GlStateManager.blendFuncSeparate(768, 1, 768, 1);
+        GlStateManager.blendFuncSeparate(GL11.GL_SRC_COLOR, GL11.GL_ONE, GL11.GL_SRC_COLOR, GL11.GL_ONE);
         GlStateManager.depthMask(false);
-        GlStateManager.depthFunc(514);
+        GlStateManager.depthFunc(GL11.GL_EQUAL);
         GlStateManager.color4f(0.5F, 0.25F, 0.8F, 1.0F);
 
         GlStateManager.activeTexture(GLX.GL_TEXTURE0);
@@ -85,8 +85,8 @@ final class GuiItemGlints {
             GL11.glTexEnvi(GL11.GL_TEXTURE_ENV, GL11.GL_TEXTURE_ENV_MODE, GL11.GL_MODULATE);
             GlStateManager.matrixMode(GL11.GL_MODELVIEW);
             GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-            GlStateManager.blendFuncSeparate(770, 771, 1, 0);
-            GlStateManager.depthFunc(515);
+            GlStateManager.blendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
+            GlStateManager.depthFunc(GL11.GL_LEQUAL);
             GlStateManager.depthMask(true);
             this.size = 0;
         }

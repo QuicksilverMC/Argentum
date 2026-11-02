@@ -12,6 +12,7 @@ import net.minecraft.resource.Identifier;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardObjective;
 
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -81,26 +82,17 @@ public abstract class PlayerTabOverlayMixin extends GuiElement {
         }
     }
 
-    @Redirect(
-            method = "render",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/overlay/PlayerTabOverlay;fill(IIIII)V")
-    )
+    @Redirect(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/overlay/PlayerTabOverlay;fill(IIIII)V"))
     private void argentum$captureBackground(int left, int top, int right, int bottom, int color) {
         this.argentum$backgroundBatch.fill(left, top, right, bottom, color);
     }
 
-    @Redirect(
-            method = "render",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/texture/TextureManager;bind(Lnet/minecraft/resource/Identifier;)V")
-    )
+    @Redirect(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/texture/TextureManager;bind(Lnet/minecraft/resource/Identifier;)V"))
     private void argentum$captureSkinTexture(TextureManager manager, Identifier texture) {
         this.argentum$skinTexture = texture;
     }
 
-    @Redirect(
-            method = "render",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiElement;drawTexture(IIFFIIIIFF)V")
-    )
+    @Redirect(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiElement;drawTexture(IIFFIIIIFF)V"))
     private void argentum$captureSkin(int x, int y, float u, float v, int sourceWidth, int sourceHeight, int width, int height, float textureWidth, float textureHeight) {
         int index = this.argentum$skinQuadCount++;
         if (index == this.argentum$skinTextures.length) {
@@ -122,10 +114,7 @@ public abstract class PlayerTabOverlayMixin extends GuiElement {
         quads[offset + 9] = textureHeight;
     }
 
-    @Redirect(
-            method = "renderPing",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/overlay/PlayerTabOverlay;drawTexture(IIIIII)V")
-    )
+    @Redirect(method = "renderPing", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/overlay/PlayerTabOverlay;drawTexture(IIIIII)V"))
     private void argentum$capturePing(PlayerTabOverlay overlay, int x, int y, int u, int v, int width, int height) {
         if (!this.argentum$textBatch.isDrawing()) {
             overlay.drawTexture(x, y, u, v, width, height);
@@ -134,10 +123,7 @@ public abstract class PlayerTabOverlayMixin extends GuiElement {
         this.argentum$iconBatch.quad(x, y, u, v, width, height, width, height, 256, 256, this.drawOffset);
     }
 
-    @Redirect(
-            method = "renderDisplayScore",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/overlay/PlayerTabOverlay;drawTexture(FFIIII)V")
-    )
+    @Redirect(method = "renderDisplayScore", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/overlay/PlayerTabOverlay;drawTexture(FFIIII)V"))
     private void argentum$captureHeart(PlayerTabOverlay overlay, float x, float y, int u, int v, int width, int height) {
         if (!this.argentum$textBatch.isDrawing()) {
             overlay.drawTexture(x, y, u, v, width, height);
@@ -150,7 +136,7 @@ public abstract class PlayerTabOverlayMixin extends GuiElement {
     private void argentum$prepareTextBatch() {
         this.argentum$backgroundBatch.draw();
         GlStateManager.enableBlend();
-        GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+        GlStateManager.blendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
         GlStateManager.color4f(1, 1, 1, 1);
         this.argentum$drawSkins();
     }

@@ -11,10 +11,7 @@ import dev.rdh.argentum.impl.render.entity.instancing.EntityCapture;
 
 @Mixin(BlockModelRenderer.class)
 public abstract class BlockModelRendererMixin {
-    @WrapOperation(
-            method = "render(Lnet/minecraft/client/resource/model/BakedModel;Lnet/minecraft/block/state/BlockState;FZ)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/block/BlockModelRenderer;render(Lnet/minecraft/client/resource/model/BakedModel;FFFF)V")
-    )
+    @WrapOperation(method = "render(Lnet/minecraft/client/resource/model/BakedModel;Lnet/minecraft/block/state/BlockState;FZ)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/block/BlockModelRenderer;render(Lnet/minecraft/client/resource/model/BakedModel;FFFF)V"))
     private void celeritas$instanceEntityBlock(BlockModelRenderer renderer, BakedModel model,
             float brightness, float red, float green, float blue, Operation<Void> original) {
         EntityCapture capture = EntityCapture.current();

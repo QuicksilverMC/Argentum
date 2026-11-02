@@ -122,7 +122,7 @@ loom {
 }
 
 dependencies {
-    include(api("org.joml:joml:1.10.5")!!)
+    include(api("org.joml:joml:1.10.8")!!)
     include(api("org.embeddedt.celeritas:celeritas-common:${property("celeritas_version")}")!!)
 
     "allRuntimeOnly"(project(path = ":extras", configuration = "namedElements"))

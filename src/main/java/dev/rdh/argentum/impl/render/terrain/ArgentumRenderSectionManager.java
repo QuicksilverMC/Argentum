@@ -21,8 +21,10 @@ import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkVertexType;
 import org.embeddedt.embeddium.impl.render.viewport.Viewport;
 import org.embeddedt.embeddium.impl.util.position.SectionPos;
 import org.jetbrains.annotations.Nullable;
+import dev.rdh.argentum.api.render.terrain.TerrainDrawTarget;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.ext.ItemFrameEntityExtension;
+import dev.rdh.argentum.impl.ext.MinecraftExtension;
 import dev.rdh.argentum.impl.render.blockentity.BakedItemFrames;
 import dev.rdh.argentum.impl.render.blockentity.SlotSheet;
 import dev.rdh.argentum.impl.render.terrain.compile.ArgentumChunkBuildContext;
@@ -45,19 +47,31 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
     private final ClonedChunkSectionCache sectionCache;
     private boolean deferringRebuild;
 
-    public ArgentumRenderSectionManager(RenderPassConfiguration<?> configuration, World world, int renderDistance, CommandList commandList, int minSection, int maxSection, int requestedThreads) {
-        super(configuration, () -> new ArgentumChunkBuildContext(configuration), ChunkRenderer::new, renderDistance, commandList, minSection, maxSection, requestedThreads, false);
+    public ArgentumRenderSectionManager(RenderPassConfiguration<?> configuration, World world, int renderDistance, CommandList commandList, int minSection, int maxSection, int requestedThreads, boolean hasShadowPass) {
+        super(configuration, () -> new ArgentumChunkBuildContext(configuration), ArgentumRenderSectionManager::createChunkRenderer, renderDistance, commandList, minSection, maxSection, requestedThreads, hasShadowPass);
         this.world = world;
         this.sectionCache = new ClonedChunkSectionCache(world);
     }
 
-    public static ArgentumRenderSectionManager create(ChunkVertexType vertexType, World world, int renderDistance, CommandList commandList) {
+    private static DefaultChunkRenderer createChunkRenderer(RenderDevice device, RenderPassConfiguration<?> configuration) {
+        TerrainDrawTarget target = ((MinecraftExtension)Minecraft.getInstance()).argentum$getTerrainDrawTarget();
+        return target != null && target.vertexType() != null
+                ? new TargetChunkRenderer(device, configuration, target)
+                : new ChunkRenderer(device, configuration);
+    }
+
+    public static ArgentumRenderSectionManager create(ChunkVertexType vertexType, boolean separateCutout, boolean hasShadowPass, World world, int renderDistance, CommandList commandList) {
         int maxSection = world.getHeight() / 16;
         return new ArgentumRenderSectionManager(RenderPassConfigurationBuilder.build(vertexType,
-                Argentum.CONFIG.translucencySorting, Argentum.CONFIG.chunkFadeInDuration), world, renderDistance, commandList,
+                Argentum.CONFIG.translucencySorting, Argentum.CONFIG.chunkFadeInDuration, separateCutout), world, renderDistance, commandList,
                 0, maxSection,
-                Argentum.CONFIG.chunkBuilderThreads
+                Argentum.CONFIG.chunkBuilderThreads, hasShadowPass
         );
+    }
+
+    @Override
+    public boolean isInShadowPass() {
+        return this.hasShadowPass() && ((MinecraftExtension)Minecraft.getInstance()).argentum$getTerrainDrawTarget().isShadowPass();
     }
 
     @Override

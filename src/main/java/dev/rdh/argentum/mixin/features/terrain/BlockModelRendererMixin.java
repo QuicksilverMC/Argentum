@@ -14,10 +14,7 @@ import dev.rdh.argentum.impl.render.terrain.compile.pipeline.FastBlockRenderer;
 
 @Mixin(BlockModelRenderer.class)
 public abstract class BlockModelRendererMixin {
-    @WrapOperation(
-            method = "tesselateFaceWithAmbientOcclusion",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/util/math/MathHelper;hashCode(Lnet/minecraft/util/math/Vec3i;)J")
-    )
+    @WrapOperation(method = "tesselateFaceWithAmbientOcclusion", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/math/MathHelper;hashCode(Lnet/minecraft/util/math/Vec3i;)J"))
     private long argentum$doublePlantOffset(Vec3i vec, Operation<Long> original, @Local(argsOnly = true) WorldView world, @Local(argsOnly = true) BlockPos pos) {
         return original.call(FastBlockRenderer.offsetPos(world.getBlockState(pos), pos));
     }

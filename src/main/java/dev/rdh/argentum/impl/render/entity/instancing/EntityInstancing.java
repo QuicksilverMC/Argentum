@@ -3,6 +3,8 @@ package dev.rdh.argentum.impl.render.entity.instancing;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.terrain.ArgentumWorldRenderer;
 
+import net.minecraft.block.Block;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.render.block.entity.BannerRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.ChestRenderer;
@@ -11,6 +13,7 @@ import net.minecraft.client.render.block.entity.EnderChestRenderer;
 import net.minecraft.client.render.block.entity.SkullRenderer;
 import net.minecraft.client.render.model.Model;
 import net.minecraft.client.resource.model.BakedModel;
+import net.minecraft.entity.Entities;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.projectile.ArrowEntity;
@@ -99,7 +102,23 @@ public final class EntityInstancing {
         return this.displayEntityDepth == 0 && this.backend.isBatchActive();
     }
 
-    public EntityCapture beginEntity(Model model, Identifier texture, boolean player, boolean preserveFixedFunction,
+    public boolean usesStandardAttributes() {
+        return this.backend.usesStandardAttributes();
+    }
+
+    public boolean isShadowPass() {
+        return this.backend.isShadowPass();
+    }
+
+    public void setShadowPass(boolean shadowPass) {
+        this.backend.setShadowPass(shadowPass);
+    }
+
+    private int idOf(Entity entity) {
+        return this.usesStandardAttributes() ? Entities.getId(entity) : 0;
+    }
+
+    public EntityCapture beginEntity(Entity entity, Model model, Identifier texture, boolean player, boolean preserveFixedFunction,
             int packedLight, float effectTime, float overlayRed, float overlayGreen, float overlayBlue,
             float overlayAlpha) {
         if (!this.isBatchActive() || model == null || texture == null || this.activeCapture != null) {
@@ -107,7 +126,7 @@ public final class EntityInstancing {
         }
         EntityCapture capture = this.acquire();
         capture.beginEntity(model, texture, player, preserveFixedFunction, packedLight, effectTime,
-                overlayRed, overlayGreen, overlayBlue, overlayAlpha
+                overlayRed, overlayGreen, overlayBlue, overlayAlpha, this.idOf(entity)
         );
         return capture;
     }
@@ -116,12 +135,13 @@ public final class EntityInstancing {
         return renderer == null ? null : bePass(renderer);
     }
 
-    public EntityCapture beginBlockEntity(InstanceRenderPass pass, int packedLight) {
+    public EntityCapture beginBlockEntity(BlockEntity blockEntity, InstanceRenderPass pass, int packedLight) {
         if (!this.isBatchActive()) {
             return null;
         }
         EntityCapture capture = this.acquire();
-        capture.beginBlockEntity(pass, packedLight);
+        capture.beginBlockEntity(pass, packedLight, this.usesStandardAttributes()
+                ? Block.getId(blockEntity.getBlock()) << 4 | blockEntity.getBlockMetadata() & 15 : 0);
         return capture;
     }
 
@@ -132,7 +152,7 @@ public final class EntityInstancing {
             return null;
         }
         EntityCapture capture = this.acquire();
-        capture.beginItem(entity, packedLight);
+        capture.beginItem(entity, packedLight, this.idOf(entity));
         return capture;
     }
 
@@ -168,7 +188,8 @@ public final class EntityInstancing {
         }
         this.transformArrow(this.arrowMatrix.identity(), arrow, x, y, z, tickDelta);
         if (!this.backend.submit(this.backend.arrow(), texture, InstanceRenderPass.CULL_BACK, this.arrowMatrix,
-                packedLight, this.arrowColor, arrow.ticks + tickDelta, this.arrowOverlayColor, null)) {
+                packedLight, this.arrowColor, arrow.ticks + tickDelta, this.arrowOverlayColor, null,
+                InstanceKind.ENTITY, this.idOf(arrow))) {
             return false;
         }
         this.entityCount++;

@@ -13,11 +13,7 @@ import dev.rdh.argentum.impl.render.entity.instancing.EntityCapture;
 
 @Mixin(ItemRenderer.class)
 public abstract class ItemRendererMixin {
-    @Inject(
-            method = "render(Lnet/minecraft/client/resource/model/BakedModel;ILnet/minecraft/item/ItemStack;)V",
-            at = @At("HEAD"),
-            cancellable = true
-    )
+    @Inject(method = "render(Lnet/minecraft/client/resource/model/BakedModel;ILnet/minecraft/item/ItemStack;)V", at = @At("HEAD"), cancellable = true)
     private void argentum$instanceHeldItem(BakedModel model, int color, ItemStack item, CallbackInfo ci) {
         EntityCapture capture = EntityCapture.current();
         if (capture != null && capture.recordItem(model, item, color)) {

@@ -1,5 +1,7 @@
 package dev.rdh.argentum.impl.render.entity.instancing;
 
+import dev.rdh.argentum.api.render.instancing.InstancedGeometryBuffer;
+
 import org.embeddedt.embeddium.impl.gl.device.CommandList;
 
 public abstract class InstanceGeometry {
@@ -15,6 +17,8 @@ public abstract class InstanceGeometry {
     }
 
     abstract void render(CommandList commandList, Instances instances);
+
+    abstract InstancedGeometryBuffer buffers();
 
     /** {@return whether this draws the shared unit cube} The shader rebuilds position and uv for those. */
     boolean usesBoxInstancing() {

@@ -38,10 +38,7 @@ public abstract class GameGuiMixin extends GuiElement {
         this.argentum$scoreboardTextBatch = HudBatch.text(this::getTextRenderer, this.argentum$scoreboardBackgroundBatch);
     }
 
-    @Redirect(
-            method = "renderStatusBars",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GameGui;drawTexture(IIIIII)V")
-    )
+    @Redirect(method = "renderStatusBars", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GameGui;drawTexture(IIIIII)V"))
     private void argentum$batchStatusIcon(GameGui gui, int x, int y, int u, int v, int width, int height) {
         this.argentum$statusBatch.quad(x, y, u, v, width, height, width, height, 256, 256, this.drawOffset);
     }
@@ -51,10 +48,7 @@ public abstract class GameGuiMixin extends GuiElement {
         this.argentum$statusBatch.draw();
     }
 
-    @WrapOperation(
-            method = "render",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GameGui;renderScoreboardObjective(Lnet/minecraft/scoreboard/ScoreboardObjective;Lnet/minecraft/client/render/Window;)V")
-    )
+    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GameGui;renderScoreboardObjective(Lnet/minecraft/scoreboard/ScoreboardObjective;Lnet/minecraft/client/render/Window;)V"))
     private void argentum$batchScoreboard(GameGui gui, ScoreboardObjective objective, Window window, Operation<Void> original) {
         this.argentum$scoreboardTextBatch.begin();
         try {
@@ -64,10 +58,7 @@ public abstract class GameGuiMixin extends GuiElement {
         }
     }
 
-    @Redirect(
-            method = "renderScoreboardObjective",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GameGui;fill(IIIII)V")
-    )
+    @Redirect(method = "renderScoreboardObjective", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GameGui;fill(IIIII)V"))
     private void argentum$captureScoreboardBackground(int left, int top, int right, int bottom, int color) {
         if (!this.argentum$scoreboardTextBatch.isDrawing()) {
             GameGui.fill(left, top, right, bottom, color);

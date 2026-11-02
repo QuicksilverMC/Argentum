@@ -18,10 +18,7 @@ public class ScreenMixin {
         GradientBatch.begin();
     }
 
-    @Inject(method = "renderTooltip(Ljava/util/List;II)V", at = {
-            @At(value = "INVOKE", target = "Lnet/minecraft/client/render/TextRenderer;drawWithShadow(Ljava/lang/String;FFI)I"),
-            @At("RETURN")
-    })
+    @Inject(method = "renderTooltip(Ljava/util/List;II)V", at = { @At(value = "INVOKE", target = "Lnet/minecraft/client/render/TextRenderer;drawWithShadow(Ljava/lang/String;FFI)I"), @At("RETURN") })
     private void argentum$drawTooltipBackground(List<String> lines, int x, int y, CallbackInfo ci) {
         GradientBatch.flush();
     }

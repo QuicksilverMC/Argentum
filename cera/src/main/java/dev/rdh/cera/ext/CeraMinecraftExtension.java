@@ -9,6 +9,7 @@ import dev.rdh.cera.modules.OptifineCosmetics;
 import dev.rdh.cera.modules.cem.CustomEntityModels;
 import dev.rdh.cera.modules.cit.CustomItems;
 import dev.rdh.cera.modules.colors.LightMaps;
+import dev.rdh.cera.modules.shaders.CeraShaderEngine;
 
 public interface CeraMinecraftExtension {
     default DynamicLights.Rules cera$getDynamicLightRules() {
@@ -44,6 +45,10 @@ public interface CeraMinecraftExtension {
     }
 
     default CustomEntityModels cera$getCustomEntityModels() {
+        throw new UnsupportedOperationException();
+    }
+
+    default CeraShaderEngine cera$getShaderEngine() {
         throw new UnsupportedOperationException();
     }
 }

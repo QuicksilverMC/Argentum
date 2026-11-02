@@ -18,6 +18,7 @@ import org.joml.Vector3f;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15C;
+import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL33C;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.blockentity.BakedItemFrames;
@@ -40,6 +41,7 @@ public class EntityOcclusionCuller {
     private final Vector3f eye = new Vector3f();
     private long frame;
     private int queryMode = 0;
+    private int previousProgram;
 
     public EntityOcclusionCuller(ArgentumWorldRenderer renderer) {
         this.renderer = renderer;
@@ -200,14 +202,17 @@ public class EntityOcclusionCuller {
         query.pending = true;
     }
 
-    private static void beginQueryPass() {
+    private void beginQueryPass() {
+        this.previousProgram = GL11.glGetInteger(GL20C.GL_CURRENT_PROGRAM);
+        GL20C.glUseProgram(0);
         GlStateManager.disableAlphaTest();
         GlStateManager.disableCull();
         GlStateManager.depthMask(false);
         GlStateManager.colorMask(false, false, false, false);
     }
 
-    private static void endQueryPass() {
+    private void endQueryPass() {
+        GL20C.glUseProgram(this.previousProgram);
         GlStateManager.depthMask(true);
         GlStateManager.colorMask(true, true, true, true);
         GlStateManager.enableAlphaTest();

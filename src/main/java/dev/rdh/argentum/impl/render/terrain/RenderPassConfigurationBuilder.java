@@ -9,8 +9,11 @@ import org.embeddedt.embeddium.impl.render.chunk.terrain.material.Material;
 import org.embeddedt.embeddium.impl.render.chunk.terrain.material.parameters.AlphaCutoffParameter;
 import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkVertexType;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.block.BlockLayer;
 import net.minecraft.client.render.platform.GlStateManager;
+import net.minecraft.client.render.texture.TextureAtlas;
+import net.minecraft.client.render.texture.TextureManager;
 
 import java.util.Collection;
 import java.util.List;
@@ -47,6 +50,22 @@ public class RenderPassConfigurationBuilder {
         }
     };
 
+    private static final TerrainRenderPass.PipelineState UNMIPPED_PIPELINE_STATE = new PipelineState() {
+        @Override
+        public void setup() {
+            GlStateManager.disableAlphaTest();
+            TextureManager textureManager = Minecraft.getInstance().getTextureManager();
+            textureManager.bind(TextureAtlas.BLOCKS_LOCATION);
+            textureManager.get(TextureAtlas.BLOCKS_LOCATION).pushFilter(false, false);
+        }
+
+        @Override
+        public void clear() {
+            Minecraft.getInstance().getTextureManager().get(TextureAtlas.BLOCKS_LOCATION).popFilter();
+            GlStateManager.enableAlphaTest();
+        }
+    };
+
     private static TerrainRenderPass.TerrainRenderPassBuilder builderForRenderType(boolean disableBlend, ChunkVertexType vertexType, Map<String, String> extraDefines) {
         var builder = TerrainRenderPass.builder();
         builder.pipelineState(disableBlend ? DISABLE_BLEND_PIPELINE_STATE : TerrainRenderPass.PipelineState.DEFAULT);
@@ -54,7 +73,7 @@ public class RenderPassConfigurationBuilder {
         return builder;
     }
 
-    public static RenderPassConfiguration<?> build(ChunkVertexType vertexType, boolean translucencySorting, int chunkFadeInDuration) {
+    public static RenderPassConfiguration<?> build(ChunkVertexType vertexType, boolean translucencySorting, int chunkFadeInDuration, boolean separateCutout) {
         Map<String, String> extraDefines = chunkFadeInDuration > 0
                 ? Map.of("CHUNK_FADE_IN_DURATION_MS", Integer.toString(chunkFadeInDuration))
                 : Map.of();
@@ -65,6 +84,12 @@ public class RenderPassConfigurationBuilder {
                 .build();
         TerrainRenderPass cutoutMippedPass = builderForRenderType(true, vertexType, extraDefines)
                 .name("cutout_mipped")
+                .fragmentDiscard(true)
+                .useReverseOrder(false)
+                .build();
+        TerrainRenderPass cutoutPass = !separateCutout ? cutoutMippedPass : builderForRenderType(true, vertexType, extraDefines)
+                .pipelineState(UNMIPPED_PIPELINE_STATE)
+                .name("cutout")
                 .fragmentDiscard(true)
                 .useReverseOrder(false)
                 .build();
@@ -83,11 +108,13 @@ public class RenderPassConfigurationBuilder {
         Material translucentMaterial = new Material(translucentPass, AlphaCutoffParameter.ZERO, true);
         Material solidMaterial = new Material(solidPass, AlphaCutoffParameter.ZERO, true);
         Material cutoutMippedMaterial = new Material(cutoutMippedPass, AlphaCutoffParameter.ONE_TENTH, true);
-        Material cutoutMaterial = new Material(cutoutMippedPass, AlphaCutoffParameter.ONE_TENTH, false);
+        Material cutoutMaterial = new Material(cutoutPass, AlphaCutoffParameter.ONE_TENTH, false);
         Material decalMaterial = new Material(decalPass, AlphaCutoffParameter.ONE_TENTH, false);
 
         Map<Object, Collection<TerrainRenderPass>> vanillaRenderStages = new Reference2ReferenceOpenHashMap<>();
-        vanillaRenderStages.put(BlockLayer.SOLID, List.of(solidPass, cutoutMippedPass, decalPass));
+        vanillaRenderStages.put(BlockLayer.SOLID, separateCutout
+                ? List.of(solidPass, cutoutMippedPass, cutoutPass, decalPass)
+                : List.of(solidPass, cutoutMippedPass, decalPass));
         vanillaRenderStages.put(BlockLayer.TRANSLUCENT, List.of(translucentPass));
 
         Map<Object, Material> renderTypeToMaterialMap = new Reference2ReferenceOpenHashMap<>();

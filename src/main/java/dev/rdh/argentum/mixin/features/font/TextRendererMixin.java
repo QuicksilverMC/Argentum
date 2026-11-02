@@ -125,10 +125,7 @@ public abstract class TextRendererMixin implements TextRendererExtension {
         this.italic = (style & TextBatcher.ITALIC) != 0;
     }
 
-    @WrapWithCondition(
-            method = "drawLayer(Ljava/lang/String;FFIZ)I",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;color4f(FFFF)V")
-    )
+    @WrapWithCondition(method = "drawLayer(Ljava/lang/String;FFIZ)I", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;color4f(FFFF)V"))
     private boolean argentum$captureColor(float red, float green, float blue, float alpha) {
         this.argentum$batcher.setColor(red, green, blue, alpha);
         return true;

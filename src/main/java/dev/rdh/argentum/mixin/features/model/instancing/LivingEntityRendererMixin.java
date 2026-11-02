@@ -38,6 +38,9 @@ public abstract class LivingEntityRendererMixin {
     @Shadow
     protected FloatBuffer tintBuffer;
 
+    @Shadow
+    protected abstract int getOverlayColor(LivingEntity entity, float brightness, float tickDelta);
+
     @WrapMethod(method = "render(Lnet/minecraft/entity/living/LivingEntity;DDDFF)V")
     private void celeritas$captureEntity(LivingEntity entity, double x, double y, double z, float yaw,
             float tickDelta, Operation<Void> original) {
@@ -47,10 +50,11 @@ public abstract class LivingEntityRendererMixin {
                 && !this.solidRender
                 && !entity.isInvisible()
                 && !entity.shouldRenderOnFire()
-                && !(instancing.overlayPassDetected() && celeritas$isTinted(entity));
+                && !(instancing.overlayPassDetected() && celeritas$isTinted(entity))
+                && !(instancing.usesStandardAttributes() && argentum$hasOverlay(entity, tickDelta));
         Identifier texture = eligible ? ((EntityRendererAccessor)this).celeritas$getTextureLocation(entity) : null;
         try (EntityCapture _ = eligible ? instancing.beginEntity(
-                this.model, texture, player, true,
+                entity, this.model, texture, player, true,
                 EntityInstancing.packedLight(entity, tickDelta), entity.ticks + tickDelta,
                 0.0F, 0.0F, 0.0F, 0.0F) : null) {
             original.call(entity, x, y, z, yaw, tickDelta);
@@ -60,6 +64,11 @@ public abstract class LivingEntityRendererMixin {
     @Unique
     private static boolean celeritas$isTinted(LivingEntity entity) {
         return entity.damagedTimer > 0 || entity.deathTicks > 0;
+    }
+
+    @Unique
+    private boolean argentum$hasOverlay(LivingEntity entity, float tickDelta) {
+        return celeritas$isTinted(entity) || this.getOverlayColor(entity, entity.getBrightness(tickDelta), tickDelta) >>> 24 != 0;
     }
 
     // this can't be TAIL because javac did something weird to the code flow in this method
@@ -77,6 +86,11 @@ public abstract class LivingEntityRendererMixin {
 
     @Inject(method = "renderNameTag(Lnet/minecraft/entity/living/LivingEntity;DDD)V", at = @At("HEAD"), cancellable = true)
     private void celeritas$deferNameTag(LivingEntity entity, double x, double y, double z, CallbackInfo ci) {
+        EntityInstancing instancing = EntityInstancing.current();
+        if (instancing != null && instancing.isShadowPass()) {
+            ci.cancel();
+            return;
+        }
         EntityCapture capture = EntityCapture.current();
         if (capture != null && capture.deferNameTag((LivingEntityRenderer<?>)(Object)this, entity, x, y, z)) {
             ci.cancel();
@@ -104,10 +118,7 @@ public abstract class LivingEntityRendererMixin {
         }
     }
 
-    @WrapOperation(
-            method = "renderLayers",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/layer/EntityRenderLayer;render(Lnet/minecraft/entity/living/LivingEntity;FFFFFFF)V")
-    )
+    @WrapOperation(method = "renderLayers", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/layer/EntityRenderLayer;render(Lnet/minecraft/entity/living/LivingEntity;FFFFFFF)V"))
     private void celeritas$captureLayer(EntityRenderLayer<LivingEntity> layer, LivingEntity entity,
             float walkAnimationProgress, float walkAnimationSpeed, float tickDelta, float bob,
             float yaw, float pitch, float scale, Operation<Void> original) {

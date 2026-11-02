@@ -138,7 +138,7 @@ public final class HudRecorder {
             }
         } finally {
             GlStateManager.enableTexture();
-            GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+            GlStateManager.blendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
             GlStateManager.disableBlend();
         }
     }
@@ -149,9 +149,9 @@ public final class HudRecorder {
 
     private void draw(int from, int to, int texture, int material) {
         switch (material) {
-            case MATERIAL_PREMULTIPLIED -> GlStateManager.blendFuncSeparate(1, 771, 1, 771);
-            case MATERIAL_OPAQUE -> GlStateManager.blendFuncSeparate(1, 0, 1, 0);
-            default -> GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+            case MATERIAL_PREMULTIPLIED -> GlStateManager.blendFuncSeparate(GL11.GL_ONE, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            case MATERIAL_OPAQUE -> GlStateManager.blendFuncSeparate(GL11.GL_ONE, GL11.GL_ZERO, GL11.GL_ONE, GL11.GL_ZERO);
+            default -> GlStateManager.blendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
         }
 
         if (texture == UNTEXTURED) {

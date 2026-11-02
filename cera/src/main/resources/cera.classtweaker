@@ -136,3 +136,12 @@ accessible field net/minecraft/client/render/block/entity/EnchantingTableRendere
 accessible field net/minecraft/client/render/block/entity/SkullRenderer model Lnet/minecraft/client/render/model/block/entity/SkullModel;
 accessible field net/minecraft/client/render/block/entity/SkullRenderer humanoidModel Lnet/minecraft/client/render/model/block/entity/SkullModel;
 accessible field net/minecraft/client/render/model/Box faces [Lnet/minecraft/client/render/model/Polygon;
+accessible method net/minecraft/client/render/GameRenderer getFov (FZ)F
+accessible method net/minecraft/client/render/GameRenderer setupCamera (FI)V
+accessible method net/minecraft/client/render/GameRenderer applyHurtCam (F)V
+accessible method net/minecraft/client/render/GameRenderer applyViewBobbing (F)V
+accessible method net/minecraft/client/render/GameRenderer getNightVisionScale (Lnet/minecraft/entity/living/LivingEntity;F)F
+accessible field net/minecraft/client/render/GameRenderer renderDistance F
+accessible class net/minecraft/client/render/platform/GlStateManager$Texture
+accessible field net/minecraft/client/render/platform/GlStateManager TEXTURES [Lnet/minecraft/client/render/platform/GlStateManager$Texture;
+accessible field net/minecraft/client/render/platform/GlStateManager texture I

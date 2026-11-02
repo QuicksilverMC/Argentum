@@ -27,10 +27,7 @@ public abstract class TextureManagerMixin {
         }
     }
 
-    @Inject(
-            method = "close",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/texture/TextureUtil;deleteTextures(I)V")
-    )
+    @Inject(method = "close", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/texture/TextureUtil;deleteTextures(I)V"))
     private void celeritas$removeClosedTexture(Identifier identifier, CallbackInfo ci) {
         this.textures.remove(identifier);
     }

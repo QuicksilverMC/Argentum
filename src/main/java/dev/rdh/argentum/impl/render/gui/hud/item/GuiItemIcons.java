@@ -282,7 +282,7 @@ public final class GuiItemIcons {
         try {
             GlStateManager.disableLighting();
             GlStateManager.enableAlphaTest();
-            GlStateManager.alphaFunc(516, 0.1F);
+            GlStateManager.alphaFunc(GL11.GL_GREATER, 0.1F);
             RECORDER.flush();
             if (glints) {
                 GLINTS.flush(glintAtlas.getTexture());

@@ -19,6 +19,7 @@ import net.minecraft.item.ItemStack;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import org.embeddedt.embeddium.impl.model.quad.BakedQuadView;
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Shadow;
@@ -38,14 +39,12 @@ public abstract class ItemRendererMixin {
     @Shadow
 	protected abstract void render(BakedModel model, int color);
 
-    @ModifyExpressionValue(method = "renderItemInHand(Lnet/minecraft/item/ItemStack;Lnet/minecraft/entity/living/LivingEntity;Lnet/minecraft/client/render/model/block/ModelTransformations$Type;)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/resource/model/ModelManager;getModel(Lnet/minecraft/client/resource/ModelIdentifier;)Lnet/minecraft/client/resource/model/BakedModel;"))
+    @ModifyExpressionValue(method = "renderItemInHand(Lnet/minecraft/item/ItemStack;Lnet/minecraft/entity/living/LivingEntity;Lnet/minecraft/client/render/model/block/ModelTransformations$Type;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/resource/model/ModelManager;getModel(Lnet/minecraft/client/resource/ModelIdentifier;)Lnet/minecraft/client/resource/model/BakedModel;"))
     private BakedModel cera$resolveCustomItemVariant(BakedModel original, @Local(argsOnly = true) ItemStack stack, @Local ModelIdentifier location) {
         return Minecraft.getInstance().cera$getCustomItems().resolve(stack, original, location);
     }
 
-    @WrapOperation(method = "renderItem(Lnet/minecraft/item/ItemStack;Lnet/minecraft/client/resource/model/BakedModel;)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/ItemRenderer;renderEnchantmentGlint(Lnet/minecraft/client/resource/model/BakedModel;)V"))
+    @WrapOperation(method = "renderItem(Lnet/minecraft/item/ItemStack;Lnet/minecraft/client/resource/model/BakedModel;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/ItemRenderer;renderEnchantmentGlint(Lnet/minecraft/client/resource/model/BakedModel;)V"))
     private void cera$renderCustomGlint(ItemRenderer instance, BakedModel model, Operation<Void> original, @Local(argsOnly = true) ItemStack stack) {
         var effects = Minecraft.getInstance().cera$getCustomItems().effects(stack);
         if (effects.isEmpty()) {
@@ -53,9 +52,9 @@ public abstract class ItemRendererMixin {
             return;
         }
         GlStateManager.depthMask(false);
-        GlStateManager.depthFunc(514);
+        GlStateManager.depthFunc(GL11.GL_EQUAL);
         GlStateManager.disableLighting();
-        GlStateManager.matrixMode(5890);
+        GlStateManager.matrixMode(GL11.GL_TEXTURE);
         for (CustomItems.Effect effect : effects) {
             this.textureManager.bind(effect.texture());
             effect.blend().apply(1.0F);
@@ -67,16 +66,15 @@ public abstract class ItemRendererMixin {
             this.render(model, -1);
             GlStateManager.popMatrix();
         }
-        GlStateManager.matrixMode(5888);
-        GlStateManager.blendFunc(770, 771);
+        GlStateManager.matrixMode(GL11.GL_MODELVIEW);
+        GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         GlStateManager.enableLighting();
-        GlStateManager.depthFunc(515);
+        GlStateManager.depthFunc(GL11.GL_LEQUAL);
         GlStateManager.depthMask(true);
         this.textureManager.bind(TextureAtlas.BLOCKS_LOCATION);
     }
 
-    @WrapOperation(method = "renderItem(Lnet/minecraft/item/ItemStack;Lnet/minecraft/client/resource/model/BakedModel;)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/ItemRenderer;render(Lnet/minecraft/client/resource/model/BakedModel;Lnet/minecraft/item/ItemStack;)V"))
+    @WrapOperation(method = "renderItem(Lnet/minecraft/item/ItemStack;Lnet/minecraft/client/resource/model/BakedModel;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/ItemRenderer;render(Lnet/minecraft/client/resource/model/BakedModel;Lnet/minecraft/item/ItemStack;)V"))
     private void cera$itemEmissivePass(ItemRenderer self, BakedModel model, ItemStack stack, Operation<Void> original) {
         EmissiveTextures emissive = Minecraft.getInstance().getTextureManager().cera$getEmissiveTextures();
         if (!emissive.active()) {
@@ -97,8 +95,7 @@ public abstract class ItemRendererMixin {
         }
     }
 
-    @WrapOperation(method = "renderQuads(Lnet/minecraft/client/render/vertex/BufferBuilder;Ljava/util/List;ILnet/minecraft/item/ItemStack;)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/ItemRenderer;renderQuad(Lnet/minecraft/client/render/vertex/BufferBuilder;Lnet/minecraft/client/resource/model/BakedQuad;I)V"))
+    @WrapOperation(method = "renderQuads(Lnet/minecraft/client/render/vertex/BufferBuilder;Ljava/util/List;ILnet/minecraft/item/ItemStack;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/ItemRenderer;renderQuad(Lnet/minecraft/client/render/vertex/BufferBuilder;Lnet/minecraft/client/resource/model/BakedQuad;I)V"))
     private void cera$emissiveQuad(ItemRenderer self, BufferBuilder buffer, BakedQuad quad, int color, Operation<Void> original) {
         var base = (TextureAtlasSprite) BakedQuadView.of(quad).celeritas$getSprite();
         TextureAtlasSprite twin = Minecraft.getInstance().getTextureManager().cera$getEmissiveTextures().emissiveSprite(base);

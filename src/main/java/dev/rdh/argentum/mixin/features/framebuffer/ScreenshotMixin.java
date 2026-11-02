@@ -10,8 +10,7 @@ import net.minecraft.client.Screenshot;
 
 @Mixin(Screenshot.class)
 public abstract class ScreenshotMixin {
-    @ModifyExpressionValue(method = "take(Ljava/io/File;Ljava/lang/String;IILnet/minecraft/client/render/pipeline/RenderTarget;)Lnet/minecraft/text/Text;",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GLX;useFbo()Z"))
+    @ModifyExpressionValue(method = "take(Ljava/io/File;Ljava/lang/String;IILnet/minecraft/client/render/pipeline/RenderTarget;)Lnet/minecraft/text/Text;", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GLX;useFbo()Z"))
     private static boolean argentum$readWindowWhenDirect(boolean useFbo) {
         return useFbo && !((MinecraftExtension) Minecraft.getInstance()).argentum$isRenderingDirect();
     }

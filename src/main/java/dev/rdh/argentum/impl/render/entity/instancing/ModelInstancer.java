@@ -3,10 +3,13 @@ package dev.rdh.argentum.impl.render.entity.instancing;
 import net.minecraft.client.render.model.ModelPart;
 
 import dev.rdh.argentum.api.render.instancing.BoxTemplate;
+import dev.rdh.argentum.api.render.instancing.InstanceDrawTarget;
 import dev.rdh.argentum.api.render.instancing.TextureArrayManager;
 import dev.rdh.argentum.impl.Argentum;
+import dev.rdh.argentum.impl.ext.MinecraftExtension;
 import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.model.Model;
 import net.minecraft.client.render.platform.GLX;
 import net.minecraft.client.render.platform.GlStateManager;
@@ -33,6 +36,7 @@ public final class ModelInstancer {
     private final InstanceBatcher batcher = new InstanceBatcher();
     private final BakedItemGeometryCache itemGeometry = new BakedItemGeometryCache();
     private final TextureArrayManager textureArrays = new TextureArrayManager();
+    private final StandardVertexStream standardVertices = new StandardVertexStream();
     private final Reference2ReferenceOpenHashMap<ChunkShaderComponent.Factory<?>, GlProgram<InstanceShader>> programs =
             new Reference2ReferenceOpenHashMap<>();
 
@@ -40,9 +44,14 @@ public final class ModelInstancer {
     private boolean supported;
     private boolean textureArraysSupported;
     private boolean batchActive;
+    private InstanceDrawTarget drawTarget;
+    private boolean standardAttributes;
+    private boolean shadowPass;
     private int frame;
     private int selectedFrame = -1;
     private int selectedTextureLayer;
+    private InstanceKind selectedKind;
+    private int selectedId;
     private int instanceCount;
     private Identifier selectedTexture;
     private InstanceRenderPass selectedPass;
@@ -57,7 +66,21 @@ public final class ModelInstancer {
         this.instanceCount = 0;
         this.frame++;
         this.batchActive = true;
+        this.drawTarget = ((MinecraftExtension)Minecraft.getInstance()).argentum$getInstanceDrawTarget();
+        this.standardAttributes = this.drawTarget != null && this.drawTarget.active();
         return true;
+    }
+
+    public boolean usesStandardAttributes() {
+        return this.standardAttributes;
+    }
+
+    public boolean isShadowPass() {
+        return this.shadowPass;
+    }
+
+    public void setShadowPass(boolean shadowPass) {
+        this.shadowPass = shadowPass;
     }
 
     public boolean isBatchActive() {
@@ -134,12 +157,15 @@ public final class ModelInstancer {
 
     public boolean submit(InstanceGeometry geometry, Identifier texture, InstanceRenderPass pass, Matrix4f matrix,
                           int packedLight, Vector4fc color, float effectTime, Vector4fc overlayColor,
-                          BoxTemplate box) {
+                          BoxTemplate box, InstanceKind kind, int id) {
         if (!this.batchActive || geometry == null || texture == null) {
             return false;
         }
+        if (this.shadowPass && !pass.isBase()) {
+            return true;
+        }
 
-        InstanceBatcher.TextureBatch textureBatch = this.selectTexture(texture, pass);
+        InstanceBatcher.TextureBatch textureBatch = this.selectTexture(texture, pass, kind, id);
         textureBatch.add(geometry, matrix, packedLight & 0xFFFF, packedLight >>> 16,
                 this.selectedTextureLayer, color, effectTime, overlayColor, box
         );
@@ -157,6 +183,10 @@ public final class ModelInstancer {
         if (this.instanceCount == 0) {
             this.batcher.clear();
             return BatchStats.EMPTY;
+        }
+
+        if (this.standardAttributes) {
+            return this.flushStandard(commandList);
         }
 
         GlProgram<InstanceShader> program;
@@ -201,6 +231,33 @@ public final class ModelInstancer {
         return new BatchStats(this.instanceCount, stats.draws(), stats.textures());
     }
 
+    private BatchStats flushStandard(CommandList commandList) {
+        GlStateManager.activeTexture(GLX.GL_TEXTURE0);
+        GlStateManager.enableCull();
+        GlStateManager.cullFace(GL11.GL_BACK);
+        GlStateManager.enableAlphaTest();
+        GlStateManager.alphaFunc(GL11.GL_GREATER, 0.1F);
+        InstanceBatcher.Stats stats;
+        try {
+            stats = this.batcher.renderStandard(commandList, this.drawTarget, this.standardVertices);
+        } catch (RuntimeException exception) {
+            this.supported = false;
+            Argentum.LOGGER.error("Model instancing disabled after a geometry failure", exception);
+            stats = InstanceBatcher.Stats.EMPTY;
+            GlStateManager.depthMask(true);
+            GlStateManager.depthFunc(GL11.GL_LEQUAL);
+            GlStateManager.disableBlend();
+            GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        } finally {
+            this.standardVertices.end(commandList);
+            GlStateManager.enableCull();
+            GlStateManager.COLOR.r = -1.0F;
+            GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+            this.batcher.clear();
+        }
+        return new BatchStats(this.instanceCount, stats.draws(), stats.textures());
+    }
+
     public void discardBatch() {
         this.batchActive = false;
         this.batcher.clear();
@@ -213,6 +270,7 @@ public final class ModelInstancer {
     public void close(CommandList commandList) {
         this.discardBatch();
         this.batcher.delete(commandList);
+        this.standardVertices.delete(commandList);
         this.itemGeometry.delete(commandList);
         for (int i = 0; i < this.boxGeometries.length; i++) {
             if (this.boxGeometries[i] != null) {
@@ -241,13 +299,18 @@ public final class ModelInstancer {
         return this.initialized;
     }
 
-    private InstanceBatcher.TextureBatch selectTexture(Identifier texture, InstanceRenderPass pass) {
-        if (this.selectedFrame == this.frame && this.selectedPass == pass && texture.equals(this.selectedTexture)) {
+    private InstanceBatcher.TextureBatch selectTexture(Identifier texture, InstanceRenderPass pass, InstanceKind kind, int id) {
+        if (!this.standardAttributes) {
+            kind = InstanceKind.ENTITY;
+            id = 0;
+        }
+        if (this.selectedFrame == this.frame && this.selectedPass == pass && this.selectedKind == kind
+                && this.selectedId == id && texture.equals(this.selectedTexture)) {
             return this.selectedTextureBatch;
         }
 
         TextureArrayManager.Selection selection = null;
-        if (this.textureArraysSupported && !TextureAtlas.BLOCKS_LOCATION.equals(texture)) {
+        if (this.textureArraysSupported && !this.standardAttributes && !TextureAtlas.BLOCKS_LOCATION.equals(texture)) {
             try {
                 selection = this.textureArrays.select(texture, this.frame);
             } catch (RuntimeException exception) {
@@ -260,11 +323,13 @@ public final class ModelInstancer {
             this.selectedTextureBatch = this.batcher.texture(selection.pool(), pass);
         } else {
             this.selectedTextureLayer = 0;
-            this.selectedTextureBatch = this.batcher.texture(texture, pass);
+            this.selectedTextureBatch = this.batcher.texture(texture, kind, id, pass);
         }
         this.selectedFrame = this.frame;
         this.selectedTexture = texture;
         this.selectedPass = pass;
+        this.selectedKind = kind;
+        this.selectedId = id;
         return this.selectedTextureBatch;
     }
 

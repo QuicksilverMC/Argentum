@@ -35,12 +35,7 @@ public abstract class GlStateManagerMixin {
         if (capture != null) capture.texGenParam(coordinate, parameter, values);
     }
 
-    @Inject(method = {"disableBlend", "enableAlphaTest", "disableAlphaTest", "alphaFunc",
-            "enableLighting", "enableFog", "disableFog", "fogMode", "fogDensity", "fogStart", "fogEnd",
-            "enableDepthTest", "disableDepthTest", "depthFunc", "depthMask", "enableCull", "disableCull", "cullFace",
-            "enablePolygonOffset", "disablePolygonOffset", "polygonOffset", "colorMask", "enableColorLogicOp",
-            "disableColorLogicOp", "logicOp", "clear", "callList", "viewport", "shadeModel",
-            "activeTexture", "enableTexture", "disableTexture"}, at = @At("HEAD"))
+    @Inject(method = {"disableBlend", "enableAlphaTest", "disableAlphaTest", "alphaFunc", "enableLighting", "enableFog", "disableFog", "fogMode", "fogDensity", "fogStart", "fogEnd", "enableDepthTest", "disableDepthTest", "depthFunc", "depthMask", "enableCull", "disableCull", "cullFace", "enablePolygonOffset", "disablePolygonOffset", "polygonOffset", "colorMask", "enableColorLogicOp", "disableColorLogicOp", "logicOp", "clear", "callList", "viewport", "shadeModel", "activeTexture", "enableTexture", "disableTexture"}, at = @At("HEAD"))
     private static void argentum$flushPortal(CallbackInfo ci) {
         EndPortalRenderer capture = EndPortalRenderer.capturing();
         if (capture != null) capture.flush();

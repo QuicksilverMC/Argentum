@@ -27,18 +27,12 @@ public class EntityRendererMixin implements CeraEntityRendererExtension {
         this.cera$customTexture = texture;
     }
 
-    @ModifyExpressionValue(
-            method = "bindTexture(Lnet/minecraft/entity/Entity;)Z",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/EntityRenderer;getTextureLocation(Lnet/minecraft/entity/Entity;)Lnet/minecraft/resource/Identifier;")
-    )
+    @ModifyExpressionValue(method = "bindTexture(Lnet/minecraft/entity/Entity;)Z", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/EntityRenderer;getTextureLocation(Lnet/minecraft/entity/Entity;)Lnet/minecraft/resource/Identifier;"))
     private Identifier cera$customModelTexture(Identifier texture) {
         return this.cera$customTexture != null ? this.cera$customTexture : texture;
     }
 
-    @WrapOperation(
-            method = "postRender",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/EntityRenderer;renderShadow(Lnet/minecraft/entity/Entity;DDDFF)V")
-    )
+    @WrapOperation(method = "postRender", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/EntityRenderer;renderShadow(Lnet/minecraft/entity/Entity;DDDFF)V"))
     private void cera$offsetShadow(EntityRenderer<?> renderer, Entity entity, double x, double y, double z, float opacity,
             float tickDelta, Operation<Void> original) {
         var animations = Minecraft.getInstance().cera$getCustomEntityModels().animations();

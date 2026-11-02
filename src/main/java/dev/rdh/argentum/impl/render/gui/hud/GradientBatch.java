@@ -57,7 +57,7 @@ public final class GradientBatch {
         GlStateManager.disableTexture();
         GlStateManager.enableBlend();
         GlStateManager.disableAlphaTest();
-        GlStateManager.blendFuncSeparate(770, 771, 1, 0);
+        GlStateManager.blendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
         GlStateManager.shadeModel(GL11.GL_SMOOTH);
         UPLOADER.end(BUFFER);
         GlStateManager.shadeModel(GL11.GL_FLAT);

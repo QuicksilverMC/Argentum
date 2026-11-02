@@ -17,6 +17,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.client.resource.manager.ResourceManager;
 
 
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -37,14 +38,11 @@ public abstract class GuiItemRendererMixin {
     @Final
     private TextureManager textureManager;
 
-    @WrapOperation(
-            method = "renderGuiItemModel",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;blendFunc(II)V")
-    )
+    @WrapOperation(method = "renderGuiItemModel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;blendFunc(II)V"))
     private void argentum$keepAlphaWhileBaking(int source, int destination, Operation<Void> original) {
         // blendFunc sets the alpha factors too, which would leave a*a in the atlas
         if (GuiItemIcons.baking()) {
-            GlStateManager.blendFuncSeparate(source, destination, 1, 771);
+            GlStateManager.blendFuncSeparate(source, destination, GL11.GL_ONE, GL11.GL_ONE_MINUS_SRC_ALPHA);
         } else {
             original.call(source, destination);
         }
@@ -80,10 +78,10 @@ public abstract class GuiItemRendererMixin {
         GuiItemIcons.draw(slot, x, y, this.zOffset);
         if (item.hasEnchantmentGlint()) GuiItemIcons.drawGlint(slot, x, y, this.zOffset, model);
         this.textureManager.bind(TextureAtlas.BLOCKS_LOCATION);
-        GlStateManager.alphaFunc(516, 0.1F);
+        GlStateManager.alphaFunc(GL11.GL_GREATER, 0.1F);
         GlStateManager.disableAlphaTest();
         GlStateManager.enableBlend();
-        GlStateManager.blendFunc(770, 771);
+        GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
         GlStateManager.disableLighting();
     }

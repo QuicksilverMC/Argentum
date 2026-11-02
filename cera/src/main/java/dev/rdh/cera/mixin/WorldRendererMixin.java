@@ -98,7 +98,7 @@ public abstract class WorldRendererMixin implements CeraWorldRendererExtension {
 
     @Unique
     private void cera$restoreCelestialState() {
-        GlStateManager.blendFuncSeparate(770, 1, 1, 0);
+        GlStateManager.blendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE, GL11.GL_ZERO);
         GlStateManager.color4f(1.0F, 1.0F, 1.0F, this.cera$celestialAlpha);
     }
 }

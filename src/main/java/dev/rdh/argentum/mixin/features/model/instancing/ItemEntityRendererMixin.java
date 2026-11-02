@@ -32,10 +32,7 @@ public abstract class ItemEntityRendererMixin {
         }
     }
 
-    @WrapOperation(
-            method = "render(Lnet/minecraft/entity/ItemEntity;DDDFF)V",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/EntityRenderer;render(Lnet/minecraft/entity/Entity;DDDFF)V")
-    )
+    @WrapOperation(method = "render(Lnet/minecraft/entity/ItemEntity;DDDFF)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/EntityRenderer;render(Lnet/minecraft/entity/Entity;DDDFF)V"))
     private void celeritas$finishItemCapture(ItemEntityRenderer renderer, Entity entity, double x, double y,
             double z, float yaw, float tickDelta, Operation<Void> original) {
         EntityCapture capture = EntityCapture.current();

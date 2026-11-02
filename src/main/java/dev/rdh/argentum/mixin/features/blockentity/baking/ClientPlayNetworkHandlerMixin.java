@@ -12,10 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(ClientPlayNetworkHandler.class)
 public abstract class ClientPlayNetworkHandlerMixin {
-    @WrapOperation(
-            method = "handleSignBlockEntityUpdate",
-            at = @At(value = "INVOKE", target = "Ljava/lang/System;arraycopy(Ljava/lang/Object;ILjava/lang/Object;II)V")
-    )
+    @WrapOperation(method = "handleSignBlockEntityUpdate", at = @At(value = "INVOKE", target = "Ljava/lang/System;arraycopy(Ljava/lang/Object;ILjava/lang/Object;II)V"))
     private void argentum$rebuildSign(Object source, int sourceIndex, Object destination, int destinationIndex, int length,
             Operation<Void> original, @Local SignBlockEntity sign) {
         original.call(source, sourceIndex, destination, destinationIndex, length);
