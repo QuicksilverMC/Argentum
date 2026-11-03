@@ -1,6 +1,8 @@
 package dev.rdh.cera.mixin.shaders;
 
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.ventooth.swansong.shader.StateGraph.Node;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.GameRenderer;
@@ -47,6 +49,16 @@ public abstract class GameRendererMixin {
     @Inject(method = "render(IFJ)V", at = @At(value = "INVOKE_STRING", target = "Lnet/minecraft/util/profiler/Profiler;swap(Ljava/lang/String;)V", args = "ldc=clear"), require = 1)
     private void cera$renderBegin(CallbackInfo ci) {
         cera$moveTo(Node.RenderBegin);
+    }
+
+    @WrapOperation(method = "render(IFJ)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;viewport(IIII)V"), require = 1)
+    private void cera$scaleViewport(int x, int y, int width, int height, Operation<Void> original) {
+        if (cera$active()) {
+            var size = Minecraft.getInstance().cera$getShaderEngine().state().viewSize();
+            width = size.x();
+            height = size.y();
+        }
+        original.call(x, y, width, height);
     }
 
     @Inject(method = "render(IFJ)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/GameRenderer;setupCamera(FI)V", shift = At.Shift.AFTER), require = 1)

@@ -13,14 +13,20 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.function.DoubleConsumer;
+import java.util.function.DoubleSupplier;
 
 public final class ShaderPacksScreen extends Screen {
     private static final int BUTTON_ID_FOLDER = 201;
     private static final int BUTTON_ID_DONE = 202;
+    private static final int BUTTON_ID_OPTIONS = 203;
+    private static final float[] QUALITIES = {0.5F, 0.7F, 1F, 1.5F, 2F};
+    private static final float[] HAND_DEPTHS = {0.5F, 1F, 2F};
 
     private final Screen parent;
     private int updateTimer = -1;
     private PackList packs;
+    private ButtonWidget optionsButton;
 
     public ShaderPacksScreen(Screen parent) {
         this.parent = parent;
@@ -28,15 +34,43 @@ public final class ShaderPacksScreen extends Screen {
 
     @Override
     public void init() {
-        packs = new PackList(width);
-        var buttonWidth = Math.min(150, width / 2 - 10);
+        var config = Cera.CONFIG;
+        var btnWidth = 120;
+        var btnX = width - btnWidth - 10;
+        var listWidth = width - btnWidth - 20;
+        packs = new PackList(listWidth);
+
+        buttons.add(new OptionButton(0, btnX, 30, btnWidth, "render_quality", QUALITIES,
+                () -> config.renderQuality, value -> config.renderQuality = (float) value));
+        buttons.add(new OptionButton(1, btnX, 50, btnWidth, "shadow_quality", QUALITIES,
+                () -> config.shadowQuality, value -> {
+                    config.shadowQuality = (float) value;
+                    Minecraft.getInstance().cera$getShaderEngine().scheduleShaderPackReload();
+                }));
+        buttons.add(new OptionButton(2, btnX, 70, btnWidth, "hand_depth", HAND_DEPTHS,
+                () -> config.handDepth, value -> config.handDepth = (float) value));
+
+        var folderWidth = Math.min(150, listWidth / 2 - 10);
         buttons.add(new ButtonWidget(BUTTON_ID_FOLDER,
-                                     width / 2 - buttonWidth - 5,
+                                     listWidth / 4 - folderWidth / 2,
                                      height - 25,
-                                     buttonWidth,
+                                     folderWidth,
                                      20,
                                      I18n.translate("cera.shaders.folder")));
-        buttons.add(new ButtonWidget(BUTTON_ID_DONE, width / 2 + 5, height - 25, buttonWidth, 20, I18n.translate("gui.done")));
+        buttons.add(new ButtonWidget(BUTTON_ID_DONE,
+                                     listWidth / 4 * 3 - folderWidth / 2,
+                                     height - 25,
+                                     folderWidth,
+                                     20,
+                                     I18n.translate("gui.done")));
+        optionsButton = new ButtonWidget(BUTTON_ID_OPTIONS,
+                                         btnX,
+                                         height - 25,
+                                         btnWidth,
+                                         20,
+                                         I18n.translate("cera.shaders.options"));
+        optionsButton.active = Minecraft.getInstance().cera$getShaderEngine().configScreen() != null;
+        buttons.add(optionsButton);
     }
 
     @Override
@@ -44,9 +78,19 @@ public final class ShaderPacksScreen extends Screen {
         if (!button.active) {
             return;
         }
+        if (button instanceof OptionButton option) {
+            option.cycle();
+            return;
+        }
         switch (button.id) {
             case BUTTON_ID_FOLDER -> openShaderPacksDir();
             case BUTTON_ID_DONE -> minecraft.openScreen(parent);
+            case BUTTON_ID_OPTIONS -> {
+                var configScreen = Minecraft.getInstance().cera$getShaderEngine().configScreen();
+                if (configScreen != null) {
+                    minecraft.openScreen(new ShaderOptionsScreen(this, configScreen));
+                }
+            }
             default -> packs.buttonClicked(button);
         }
     }
@@ -74,6 +118,7 @@ public final class ShaderPacksScreen extends Screen {
 
     @Override
     public void tick() {
+        optionsButton.active = Minecraft.getInstance().cera$getShaderEngine().configScreen() != null;
         if (--updateTimer <= 0) {
             packs.update();
             updateTimer += 20;
@@ -93,6 +138,38 @@ public final class ShaderPacksScreen extends Screen {
             new ProcessBuilder(command).start();
         } catch (IOException e) {
             Cera.LOGGER.error("Failed to open shaderpacks directory", e);
+        }
+    }
+
+    private static final class OptionButton extends ButtonWidget {
+        private final String key;
+        private final float[] values;
+        private final DoubleSupplier getter;
+        private final DoubleConsumer setter;
+
+        OptionButton(int id, int x, int y, int width, String key, float[] values, DoubleSupplier getter, DoubleConsumer setter) {
+            super(id, x, y, width, 20, "");
+            this.key = key;
+            this.values = values;
+            this.getter = getter;
+            this.setter = setter;
+            updateMessage();
+        }
+
+        void cycle() {
+            var next = values[0];
+            for (int i = 0; i < values.length; i++) {
+                if (values[i] == getter.getAsDouble()) {
+                    next = values[(i + 1) % values.length];
+                }
+            }
+            setter.accept(next);
+            Cera.CONFIG_STORAGE.save();
+            updateMessage();
+        }
+
+        private void updateMessage() {
+            message = I18n.translate("cera.options." + key + ".name") + ": " + (float) getter.getAsDouble() + "x";
         }
     }
 
