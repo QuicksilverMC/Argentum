@@ -74,6 +74,7 @@
     "ItemModelShaperMixin",
     "ItemRendererMixin", "ItemStackMixin",
     "MinecraftMixin",
+    "ItemInHandLayerMixin",
     "ModelBakeryMixin",
     "ModelManagerMixin",
     "ClientPlayerEntityMixin",

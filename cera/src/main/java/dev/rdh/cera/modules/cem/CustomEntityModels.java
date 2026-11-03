@@ -19,6 +19,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.entity.EntityRenderer;
+import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.model.Model;
 import net.minecraft.client.render.model.ModelPart;
 import net.minecraft.entity.Entity;
@@ -26,6 +27,7 @@ import net.minecraft.resource.Identifier;
 import net.ornithemc.osl.resource.loader.api.resource.Resource;
 import net.ornithemc.osl.resource.loader.api.resource.manager.ResourceManager;
 import net.ornithemc.osl.resource.loader.api.resource.reload.ResourceReloadListener;
+import org.joml.Vector3f;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -107,7 +110,7 @@ public final class CustomEntityModels implements ResourceReloadListener {
             }
             if (binding == null) return;
 
-            State vanilla = State.capture(binding, null);
+            State vanilla = State.capture(binding, null, null);
             List<Candidate> candidates = new ArrayList<>();
             for (CemTargets.Variant variant : variants) {
                 Group group = this.loaded.get(variant.name());
@@ -227,7 +230,7 @@ public final class CustomEntityModels implements ResourceReloadListener {
         List<Runnable> undo = new ArrayList<>();
         try {
             if (!apply(model, binding, undo)) return null;
-            return State.capture(binding, this.animate(model, binding, undo));
+            return State.capture(binding, this.animate(model, binding, undo), binding.main() ? hand(model, binding) : null);
         } catch (RuntimeException e) {
             Cera.LOGGER.warn("[CustomEntityModels] Failed to apply {}: {}", model.name(), e.toString());
             return null;
@@ -275,6 +278,53 @@ public final class CustomEntityModels implements ResourceReloadListener {
             if (model.shadowSize() >= 0.0F) renderer.shadowSize = model.shadowSize();
         }
         return true;
+    }
+
+    private static Hand hand(Loaded model, CemTargets.Binding binding) {
+        for (Map.Entry<ModelPart, float[]> entry : model.hands().entrySet()) {
+            List<ModelPart> longest = null;
+            for (ModelPart part : binding.parts().values()) {
+                List<ModelPart> path = path(part, entry.getKey());
+                if (path != null && (longest == null || path.size() > longest.size())) longest = path;
+            }
+            if (longest != null) return new Hand(longest.toArray(new ModelPart[0]), entry.getValue());
+        }
+        return null;
+    }
+
+    private static List<ModelPart> path(ModelPart from, ModelPart to) {
+        if (from == to) return new ArrayList<>(List.of(from));
+        if (from.children == null) return null;
+        for (ModelPart child : from.children) {
+            List<ModelPart> path = path(child, to);
+            if (path != null) {
+                path.addFirst(from);
+                return path;
+            }
+        }
+        return null;
+    }
+
+    // stands in for the arm transform the held item layer applies, following the parts down to the attachment
+    public boolean transformRightHand(Object renderer, float scale) {
+        List<Slot> slots = this.slots.get(renderer);
+        if (slots == null) return false;
+        for (Slot slot : slots) {
+            Hand hand = slot.current.hand();
+            if (hand == null) continue;
+            for (ModelPart part : hand.path()) {
+                GlStateManager.translatef(part.translateX, part.translateY, part.translateZ);
+                GlStateManager.translatef(part.x * scale, part.y * scale, part.z * scale);
+                GlStateManager.rotatef(part.rotationZ * (180.0F / (float)Math.PI), 0.0F, 0.0F, 1.0F);
+                GlStateManager.rotatef(part.rotationY * (180.0F / (float)Math.PI), 0.0F, 1.0F, 0.0F);
+                GlStateManager.rotatef(part.rotationX * (180.0F / (float)Math.PI), 1.0F, 0.0F, 0.0F);
+                Vector3f partScale = ((ModelPartExtension)part).argentum$getScale();
+                GlStateManager.scalef(partScale.x, partScale.y, partScale.z);
+            }
+            GlStateManager.translatef(hand.offset()[0] * scale, hand.offset()[1] * scale, hand.offset()[2] * scale);
+            return true;
+        }
+        return false;
     }
 
     private Animation animate(Loaded model, CemTargets.Binding binding, List<Runnable> undo) {
@@ -377,6 +427,7 @@ public final class CustomEntityModels implements ResourceReloadListener {
 
         Map<String, JsonObject> byId = new HashMap<>();
         List<Attachment> attachments = new ArrayList<>();
+        Map<ModelPart, float[]> hands = new LinkedHashMap<>();
         for (JsonObject element : Json.objects(json, "models")) {
             String baseId = Json.string(element, "baseId");
             if (baseId != null) {
@@ -403,11 +454,11 @@ public final class CustomEntityModels implements ResourceReloadListener {
                 }
             }
             attachments.add(new Attachment(part, Json.bool(element, "attach", false),
-                    PartParser.parse(element, owner, textureSize, basePath), List.copyOf(animations)));
+                    PartParser.parse(element, owner, textureSize, basePath, hands), List.copyOf(animations)));
         }
         if (!json.has("models")) throw new JsonParseException("Missing models");
         return new Loaded(name, texture == null ? null : PartParser.resource(basePath, texture, ".png"),
-                Json.number(json, "shadowSize", -1.0F), List.copyOf(attachments));
+                Json.number(json, "shadowSize", -1.0F), List.copyOf(attachments), hands);
     }
 
     private static JsonObject json(Resource resource) throws IOException {
@@ -421,10 +472,13 @@ public final class CustomEntityModels implements ResourceReloadListener {
     private record Group(List<Loaded> models, RandomRules<Subject> rules) {
     }
 
-    private record Loaded(String name, Identifier texture, float shadowSize, List<Attachment> attachments) {
+    private record Loaded(String name, Identifier texture, float shadowSize, List<Attachment> attachments, Map<ModelPart, float[]> hands) {
     }
 
     private record Attachment(String part, boolean attach, ModelPart model, List<Map.Entry<String, String>> animations) {
+    }
+
+    private record Hand(ModelPart[] path, float[] offset) {
     }
 
     private record Candidate(Predicate<Object> when, State[] states, RandomRules<Subject> rules) {
@@ -475,9 +529,9 @@ public final class CustomEntityModels implements ResourceReloadListener {
     }
 
     private record State(ModelPart[] parts, List<ModelPart>[] children, boolean[] boxesVisible, Animation animation,
-                         Identifier texture, float shadowSize, List<ModelPart> textured) {
+                         Identifier texture, float shadowSize, List<ModelPart> textured, Hand hand) {
         @SuppressWarnings("unchecked")
-        static State capture(CemTargets.Binding binding, Animation animation) {
+        static State capture(CemTargets.Binding binding, Animation animation, Hand hand) {
             ModelPart[] parts = binding.parts().values().toArray(new ModelPart[0]);
             List<ModelPart>[] children = new List[parts.length];
             boolean[] boxesVisible = new boolean[parts.length];
@@ -492,7 +546,7 @@ public final class CustomEntityModels implements ResourceReloadListener {
             for (ModelPart part : parts) textured(part, named, textured);
             return new State(parts, children, boxesVisible, animation,
                     renderer == null ? null : renderer.cera$getCustomTexture(), renderer == null ? 0.0F : renderer.shadowSize,
-                    List.copyOf(textured));
+                    List.copyOf(textured), hand);
         }
 
         private static void textured(ModelPart part, Set<ModelPart> named, List<ModelPart> textured) {

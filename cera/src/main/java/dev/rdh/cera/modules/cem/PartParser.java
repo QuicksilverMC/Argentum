@@ -21,7 +21,8 @@ public final class PartParser {
     private PartParser() {
     }
 
-    public static ModelPart parse(JsonObject json, Model owner, int[] inheritedTextureSize, String basePath) {
+    // hands collects right_handheld_item attachments, the only one 1.8.9 has a layer for
+    public static ModelPart parse(JsonObject json, Model owner, int[] inheritedTextureSize, String basePath, Map<ModelPart, float[]> hands) {
         ModelPart part = new ModelPart(owner, Json.string(json, "id"));
         ModelPartExtension extension = (ModelPartExtension)part;
         extension.argentum$getScale().set(Json.number(json, "scale", 1.0F));
@@ -44,6 +45,14 @@ public final class PartParser {
             }
         }
         part.setPos(translate[0], translate[1], translate[2]);
+        JsonObject attachments = Json.object(json.get("attachments"));
+        float[] hand = attachments == null ? null : Json.floats(attachments.get("right_handheld_item"), 3);
+        if (hand != null && hands != null) {
+            for (int axis = 0; axis < 3; axis++) {
+                if (invert.indexOf("xyz".charAt(axis)) >= 0) hand[axis] = -hand[axis];
+            }
+            hands.put(part, hand);
+        }
         part.rotationX = rotate[0];
         part.rotationY = rotate[1];
         part.rotationZ = rotate[2];
@@ -76,9 +85,9 @@ public final class PartParser {
         }
 
         JsonObject submodel = Json.object(json.get("submodel"));
-        if (submodel != null) part.addChild(parse(submodel, owner, textureSize, basePath));
+        if (submodel != null) part.addChild(parse(submodel, owner, textureSize, basePath, hands));
         for (JsonObject child : Json.objects(json, "submodels")) {
-            part.addChild(parse(child, owner, textureSize, basePath));
+            part.addChild(parse(child, owner, textureSize, basePath, hands));
         }
         return part;
     }

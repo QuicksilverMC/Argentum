@@ -120,7 +120,7 @@ public final class OptifineCosmetics {
             String id = Json.string(part, "id");
             if (id != null) definitions.putIfAbsent(id, part);
             if (!"ModelBox".equals(Json.string(part, "type"))) continue;
-            parts.add(new Part(PartParser.parse(part, owner, textureSize, basePath), Json.string(part, "attachTo")));
+            parts.add(new Part(PartParser.parse(part, owner, textureSize, basePath, null), Json.string(part, "attachTo")));
         }
         return parts.isEmpty() ? null : new Cosmetic(parts, playerTexture, image, index);
     }
