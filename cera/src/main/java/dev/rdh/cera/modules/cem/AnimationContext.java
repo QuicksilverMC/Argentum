@@ -8,8 +8,10 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.living.LivingEntity;
+import net.minecraft.entity.living.attribute.EntityAttributes;
 import net.minecraft.entity.living.mob.monster.EndermanEntity;
 import net.minecraft.entity.living.mob.monster.GhastEntity;
+import net.minecraft.entity.living.mob.monster.ZombiePigmanEntity;
 import net.minecraft.entity.living.mob.passive.animal.tameable.WolfEntity;
 import net.minecraft.entity.living.mob.passive.animal.tameable.TameableEntity;
 import net.minecraft.world.World;
@@ -242,7 +244,10 @@ public final class AnimationContext {
             case "anger_time", "anger_time_start" -> (ExpressionParser.FloatExpr)() -> 0.0F;
             case "is_aggressive" -> (ExpressionParser.BoolExpr)() -> this.entity instanceof WolfEntity wolf && wolf.isAngry()
                     || this.entity instanceof EndermanEntity enderman && enderman.isAngry()
-                    || this.entity instanceof GhastEntity ghast && ghast.isCharging();
+                    || this.entity instanceof GhastEntity ghast && ghast.isCharging()
+                    // the anger counter stays on the server, but the speed boost it grants is synced
+                    || this.entity instanceof ZombiePigmanEntity pigman
+                    && pigman.getAttribute(EntityAttributes.MOVEMENT_SPEED).hasModifier(ZombiePigmanEntity.ATTACKING_SPEED_BOOST);
             case "is_in_gui" -> (ExpressionParser.BoolExpr)() -> this.inGui;
             case "is_on_head" -> (ExpressionParser.BoolExpr)() -> this.onHead;
             case "is_in_hand", "is_in_item_frame", "is_on_shoulder", "is_in_ground" -> (ExpressionParser.BoolExpr)() -> false;

@@ -145,3 +145,4 @@ accessible field net/minecraft/client/render/GameRenderer renderDistance F
 accessible class net/minecraft/client/render/platform/GlStateManager$Texture
 accessible field net/minecraft/client/render/platform/GlStateManager TEXTURES [Lnet/minecraft/client/render/platform/GlStateManager$Texture;
 accessible field net/minecraft/client/render/platform/GlStateManager texture I
+accessible field net/minecraft/entity/living/mob/monster/ZombiePigmanEntity ATTACKING_SPEED_BOOST Lnet/minecraft/entity/living/attribute/AttributeModifier;
