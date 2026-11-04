@@ -1,5 +1,6 @@
 package dev.rdh.argentum.impl.render.environment;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.util.math.MathHelper;
 
@@ -8,6 +9,7 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import org.embeddedt.embeddium.impl.gl.array.GlVertexArray;
 import org.embeddedt.embeddium.impl.gl.attribute.GlVertexAttributeFormat;
 import org.embeddedt.embeddium.impl.gl.attribute.GlVertexFormat;
+import org.embeddedt.embeddium.impl.gl.buffer.GlBufferTarget;
 import org.embeddedt.embeddium.impl.gl.buffer.GlBufferUsage;
 import org.embeddedt.embeddium.impl.gl.buffer.GlMutableBuffer;
 import org.embeddedt.embeddium.impl.gl.device.CommandList;
@@ -28,7 +30,9 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 
+import dev.rdh.argentum.api.render.instancing.InstanceDrawTarget;
 import dev.rdh.argentum.impl.Argentum;
+import dev.rdh.argentum.impl.ext.MinecraftExtension;
 import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
 
 import java.nio.ByteBuffer;
@@ -48,6 +52,9 @@ public final class CloudRenderer {
     private static final int TEXTURE_SIZE = 256;
     // the least alpha that survives vanilla's 0.1 alpha test at the 0.8 cloud alpha
     private static final int MIN_ALPHA = 32;
+    // bottoms, the four wall directions, then tops, in mesh order
+    private static final float[] FACE_SHADES = {0.7F, 0.9F, 0.9F, 0.8F, 0.8F, 1.0F};
+    private static final float[] FACE_NORMALS = {0, -1, 0, -1, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 1, 0, 1, 0};
 
     private final Map<ChunkShaderComponent.Factory<?>, GlProgram<CloudShader>> programs = new Object2ObjectOpenHashMap<>();
     private final float[] frame0 = new float[4];
@@ -62,8 +69,11 @@ public final class CloudRenderer {
     private int sidesStart;
     private int topStart;
     private int vertexCount;
+    private final int[] faceStarts = new int[7];
     private int meshTexelX;
     private int meshTexelZ;
+    private float texelOffsetU;
+    private float texelOffsetV;
     private int textureWidth;
     private int textureHeight;
     private float scaleX;
@@ -103,17 +113,6 @@ public final class CloudRenderer {
                 }
             }
 
-            GlProgram<CloudShader> program;
-            try {
-                program = this.program();
-            } catch (RuntimeException exception) {
-                this.supported = false;
-                Argentum.LOGGER.error("Faster clouds failed to initialize", exception);
-                return false;
-            }
-
-            this.frame0[0] = texelX / this.scaleX;
-            this.frame0[1] = texelZ / this.scaleZ;
             this.frame0[2] = (float)(cloudX - texelX / this.scaleX);
             this.frame0[3] = (float)(cloudZ - texelZ / this.scaleZ);
             this.frame1[0] = red;
@@ -122,6 +121,21 @@ public final class CloudRenderer {
             this.frame1[3] = cloudY;
             int first = cloudY > -5.0F ? 0 : this.sidesStart;
             int last = cloudY <= 5.0F ? this.vertexCount : this.topStart;
+
+            InstanceDrawTarget target = ((MinecraftExtension)Minecraft.getInstance()).argentum$getInstanceDrawTarget();
+            if (target != null && target.active()) {
+                this.renderWithBoundProgram(commandList, first, last, pass);
+                return true;
+            }
+
+            GlProgram<CloudShader> program;
+            try {
+                program = this.program();
+            } catch (RuntimeException exception) {
+                this.supported = false;
+                Argentum.LOGGER.error("Faster clouds failed to initialize", exception);
+                return false;
+            }
 
             program.bind();
             try {
@@ -151,6 +165,45 @@ public final class CloudRenderer {
             return true;
         } finally {
             RenderDevice.exitManagedCode();
+        }
+    }
+
+    // a shader pack's program is bound, so feed it the ffp inputs it reads in place of our uniforms
+    private void renderWithBoundProgram(CommandList commandList, int first, int last, int pass) {
+        GlStateManager.pushMatrix();
+        GlStateManager.translatef(-this.frame0[2], this.frame1[3], -this.frame0[3]);
+        commandList.bindBuffer(GlBufferTarget.ARRAY_BUFFER, this.vertexBuffer);
+        GL11.glEnableClientState(GL11.GL_VERTEX_ARRAY);
+        GL11.glEnableClientState(GL11.GL_TEXTURE_COORD_ARRAY);
+        GL11.glVertexPointer(3, GL11.GL_FLOAT, VERTEX_FORMAT.getStride(), 0L);
+        GL11.glTexCoordPointer(2, GL11.GL_FLOAT, VERTEX_FORMAT.getStride(), 3L * Float.BYTES);
+        try {
+            GlStateManager.colorMask(false, false, false, false);
+            this.drawFaces(first, last);
+            switch (pass) {
+                case 0 -> GlStateManager.colorMask(false, true, true, true);
+                case 1 -> GlStateManager.colorMask(true, false, false, true);
+                case 2 -> GlStateManager.colorMask(true, true, true, true);
+            }
+            this.drawFaces(first, last);
+        } finally {
+            GL11.glDisableClientState(GL11.GL_TEXTURE_COORD_ARRAY);
+            GL11.glDisableClientState(GL11.GL_VERTEX_ARRAY);
+            GlStateManager.popMatrix();
+        }
+    }
+
+    private void drawFaces(int first, int last) {
+        for (int face = 0; face < FACE_SHADES.length; face++) {
+            int from = Math.max(first, this.faceStarts[face]);
+            int to = Math.min(last, this.faceStarts[face + 1]);
+            if (from >= to) {
+                continue;
+            }
+            float shade = FACE_SHADES[face];
+            GlStateManager.color4f(this.frame1[0] * shade, this.frame1[1] * shade, this.frame1[2] * shade, 0.8F);
+            GL11.glNormal3f(FACE_NORMALS[face * 3], FACE_NORMALS[face * 3 + 1], FACE_NORMALS[face * 3 + 2]);
+            GL11.glDrawArrays(GL11.GL_QUADS, from, to - from);
         }
     }
 
@@ -242,6 +295,8 @@ public final class CloudRenderer {
             }
         }
         IntArrayList plates = plates(solid, width, depth);
+        this.texelOffsetU = texelX / this.scaleX;
+        this.texelOffsetV = texelZ / this.scaleZ;
 
         if (this.meshBytes == null) {
             this.meshBytes = BufferUtils.createByteBuffer(4096 * 4 * VERTEX_FLOATS * Float.BYTES);
@@ -253,16 +308,22 @@ public final class CloudRenderer {
         }
 
         this.sidesStart = this.meshVertices.position() / VERTEX_FLOATS;
+        this.faceStarts[1] = this.sidesStart;
         this.walls(solid, width, depth, originX, originZ, true, -1);
+        this.faceStarts[2] = this.meshVertices.position() / VERTEX_FLOATS;
         this.walls(solid, width, depth, originX, originZ, true, 1);
+        this.faceStarts[3] = this.meshVertices.position() / VERTEX_FLOATS;
         this.walls(solid, width, depth, originX, originZ, false, -1);
+        this.faceStarts[4] = this.meshVertices.position() / VERTEX_FLOATS;
         this.walls(solid, width, depth, originX, originZ, false, 1);
 
         this.topStart = this.meshVertices.position() / VERTEX_FLOATS;
+        this.faceStarts[5] = this.topStart;
         for (int i = 0; i < plates.size(); i += 4) {
             this.horizontal(originX + plates.getInt(i), originZ + plates.getInt(i + 1), plates.getInt(i + 2), plates.getInt(i + 3), 4.0F - INSET, 1.0F);
         }
         this.vertexCount = this.meshVertices.position() / VERTEX_FLOATS;
+        this.faceStarts[6] = this.vertexCount;
         this.meshFirstCell = firstCell;
         this.meshLastCell = lastCell;
         this.meshTexelX = texelX;
@@ -389,10 +450,18 @@ public final class CloudRenderer {
             this.meshVertices = this.meshBytes.asFloatBuffer().put(vertices.flip());
             vertices = this.meshVertices;
         }
-        vertices.put(x0 / this.scaleX).put(y0).put(z0 / this.scaleZ).put(u0 / this.scaleX).put(v0 / this.scaleZ).put(shade);
-        vertices.put(x1 / this.scaleX).put(y1).put(z1 / this.scaleZ).put(u1 / this.scaleX).put(v1 / this.scaleZ).put(shade);
-        vertices.put(x2 / this.scaleX).put(y2).put(z2 / this.scaleZ).put(u2 / this.scaleX).put(v2 / this.scaleZ).put(shade);
-        vertices.put(x3 / this.scaleX).put(y3).put(z3 / this.scaleZ).put(u3 / this.scaleX).put(v3 / this.scaleZ).put(shade);
+        vertices.put(x0 / this.scaleX).put(y0).put(z0 / this.scaleZ).put(this.textureU(u0)).put(this.textureV(v0)).put(shade);
+        vertices.put(x1 / this.scaleX).put(y1).put(z1 / this.scaleZ).put(this.textureU(u1)).put(this.textureV(v1)).put(shade);
+        vertices.put(x2 / this.scaleX).put(y2).put(z2 / this.scaleZ).put(this.textureU(u2)).put(this.textureV(v2)).put(shade);
+        vertices.put(x3 / this.scaleX).put(y3).put(z3 / this.scaleZ).put(this.textureU(u3)).put(this.textureV(v3)).put(shade);
+    }
+
+    private float textureU(float u) {
+        return (u / this.scaleX + this.texelOffsetU) / TEXTURE_SIZE;
+    }
+
+    private float textureV(float v) {
+        return (v / this.scaleZ + this.texelOffsetV) / TEXTURE_SIZE;
     }
 
     private static GlProgram<CloudShader> createProgram(ChunkShaderComponent.Factory<?> fogFactory) {
