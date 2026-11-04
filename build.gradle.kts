@@ -118,6 +118,20 @@ loom {
             systemProperties.put("argentum.portalBenchmarkWarmupSeconds", findProperty("portalBenchmarkWarmupSeconds")?.toString() ?: "15")
             systemProperties.put("argentum.portalBenchmarkMeasureSeconds", findProperty("portalBenchmarkMeasureSeconds")?.toString() ?: "20")
         }
+        create("lobbyBenchmarkClient") {
+            inherit(getByName("client"))
+            sourceSet = testmod.name
+            displayName = "Lobby Benchmark"
+            jvmArguments.add("-XstartOnFirstThread")
+            programArgs("--width", "1280", "--height", "720")
+            systemProperties.put("argentum.lobbyBenchmarkScene", findProperty("lobbyBenchmarkScene")?.toString() ?: "holograms")
+            systemProperties.put("argentum.lobbyBenchmarkVariants", findProperty("lobbyBenchmarkVariants")?.toString() ?: "baseline")
+            systemProperties.put("argentum.lobbyBenchmarkOutput", findProperty("lobbyBenchmarkOutput")?.toString() ?: "/tmp/argentum-lobby-benchmark")
+            systemProperties.put("argentum.lobbyBenchmarkRounds", findProperty("lobbyBenchmarkRounds")?.toString() ?: "3")
+            systemProperties.put("argentum.lobbyBenchmarkPlainText", findProperty("lobbyBenchmarkPlainText")?.toString() ?: "false")
+            systemProperties.put("argentum.lobbyBenchmarkViewDistance", findProperty("lobbyBenchmarkViewDistance")?.toString() ?: "6")
+            systemProperties.put("argentum.lobbyBenchmarkTime", findProperty("lobbyBenchmarkTime")?.toString() ?: "6000")
+        }
     }
 }
 

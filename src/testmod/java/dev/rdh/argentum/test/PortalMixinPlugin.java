@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 public final class PortalMixinPlugin implements IMixinConfigPlugin {
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        if (mixinClassName.contains(".Lobby")) return System.getProperty("argentum.lobbyBenchmarkScene") != null;
         return !mixinClassName.endsWith("EffectsMixin") || !"none".equals(System.getProperty("argentum.portalBenchmarkEffect", "none"));
     }
 

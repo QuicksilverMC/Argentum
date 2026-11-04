@@ -8,6 +8,12 @@
     "EndPortalRendererTimeMixin",
     "ArgentumEndPortalRendererTimeMixin",
     "PortalEffectsMixin",
-    "PortalDispatcherEffectsMixin"
+    "PortalDispatcherEffectsMixin",
+    "LobbyBenchmarkFrameMixin",
+    "LobbyEntityTimingMixin",
+    "LobbyParticleMixin",
+    "LobbyNameTagTextMixin",
+    "LobbyFastHologramMixin",
+    "ParticleAccessor"
   ]
 }
