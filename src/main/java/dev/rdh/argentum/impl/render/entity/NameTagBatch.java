@@ -13,6 +13,8 @@ import net.minecraft.client.render.vertex.BufferUploader;
 import net.minecraft.client.render.vertex.DefaultVertexFormat;
 import net.minecraft.client.render.vertex.VertexFormat;
 import net.minecraft.resource.Identifier;
+import org.embeddedt.embeddium.impl.gl.device.CommandList;
+import org.embeddedt.embeddium.impl.gl.device.RenderDevice;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Matrix4fc;
@@ -23,6 +25,7 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
@@ -45,6 +48,7 @@ public final class NameTagBatch {
     private int lastTexture;
     private final List<Pass> passes = new ArrayList<>();
     private final BufferUploader uploader = new BufferUploader();
+    private final NameTagInstancing instancing = new NameTagInstancing();
     private Matrix4fc camera;
     private boolean active;
     private int depth;
@@ -71,6 +75,7 @@ public final class NameTagBatch {
         this.camera = camera;
         this.lastLocation = null;
         this.active = Argentum.CONFIG.nameTagBatching && Argentum.CONFIG.fontBatching;
+        this.instancing.beginFrame();
     }
 
     public void end() {
@@ -83,7 +88,9 @@ public final class NameTagBatch {
             BufferBuilder buffer = this.passes.get(i).buffer;
             buffer.end();
             buffer.clear();
+            this.passes.get(i).refCount = 0;
         }
+        this.instancing.discardTags();
         this.passCount = 0;
         this.depth = 0;
         this.active = false;
@@ -190,6 +197,21 @@ public final class NameTagBatch {
         pass.buffer.argentum$appendVertices(out, count * STRIDE);
     }
 
+    public void text(Identifier location, int[] vertices, int length, float x, float y, int alpha, CachedQuads cached) {
+        if (location != null && this.instancing.available()) {
+            Pass pass = this.pass(this.texture(location));
+            if (pass.instanceable()) {
+                int base = this.instancing.quads(cached, vertices, length);
+                int tag = base < 0 ? -1 : this.instancing.tag(this.matrices, x, y, (int)this.lightU & 0xFFFF, (int)this.lightV & 0xFFFF, alpha);
+                if (tag >= 0) {
+                    pass.refs(base, length / TEXT_STRIDE / 4, tag);
+                    return;
+                }
+            }
+        }
+        this.text(location, vertices, length, x, y, alpha);
+    }
+
     public void text(Identifier location, IntBuffer vertices, int alpha) {
         int length = vertices.remaining();
         if (this.source.length < length) this.source = new int[length];
@@ -249,11 +271,19 @@ public final class NameTagBatch {
         GL11.glLoadIdentity();
         GlStateManager.disableLighting();
         this.passes.subList(0, this.passCount).sort(ORDER);
-        for (int i = 0; i < this.passCount; i++) {
-            Pass pass = this.passes.get(i);
-            pass.apply();
-            pass.buffer.end();
-            this.uploader.end(pass.buffer);
+        boolean instanced = this.instancing.hasTags() && this.beginInstancing();
+        try {
+            for (int i = 0; i < this.passCount; i++) {
+                Pass pass = this.passes.get(i);
+                pass.apply();
+                pass.buffer.end();
+                this.uploader.end(pass.buffer);
+                if (instanced && pass.refCount > 0) this.drawInstances(pass);
+                pass.refCount = 0;
+            }
+        } finally {
+            if (instanced) this.instancing.end();
+            this.instancing.discardTags();
         }
         this.passCount = 0;
         GL11.glPopMatrix();
@@ -270,6 +300,29 @@ public final class NameTagBatch {
         GlStateManager.activeTexture(GLX.GL_TEXTURE0 + unit);
         GLX.multiTexCoord2f(GLX.GL_TEXTURE1, this.lightU, this.lightV);
         GlStateManager.color4f(red, green, blue, opacity);
+    }
+
+    private boolean beginInstancing() {
+        RenderDevice.enterManagedCode();
+        try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
+            return this.instancing.begin(commandList);
+        } finally {
+            RenderDevice.exitManagedCode();
+        }
+    }
+
+    private void drawInstances(Pass pass) {
+        RenderDevice.enterManagedCode();
+        try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
+            this.instancing.draw(commandList, pass.refs, pass.refCount, pass.alphaTest ? pass.alphaRef : -1.0F);
+        } finally {
+            RenderDevice.exitManagedCode();
+        }
+    }
+
+    public void close(CommandList commandList) {
+        this.discard();
+        this.instancing.close(commandList);
     }
 
     private boolean tracks() {
@@ -341,8 +394,16 @@ public final class NameTagBatch {
         return pass;
     }
 
+    public static final class CachedQuads {
+        int generation;
+        int base;
+        boolean rejected;
+    }
+
     private static final class Pass {
         private final BufferBuilder buffer = new BufferBuilder(16 * 1024);
+        private int[] refs = new int[1024];
+        private int refCount;
         private int texture;
         private boolean depthTest;
         private boolean depthMask;
@@ -387,6 +448,23 @@ public final class NameTagBatch {
                     && this.alphaFunc == GlStateManager.ALPHA_TEST.func
                     && this.alphaRef == GlStateManager.ALPHA_TEST.ref
                     && this.cull == GlStateManager.CULL.state.enabled;
+        }
+
+        private boolean instanceable() {
+            return !this.alphaTest || this.alphaFunc == GL11.GL_GREATER;
+        }
+
+        private void refs(int base, int quads, int tag) {
+            if (this.refs.length < (this.refCount + quads) * 2) {
+                this.refs = Arrays.copyOf(this.refs, Math.max(this.refs.length * 2, (this.refCount + quads) * 2));
+            }
+            int tagBits = Float.floatToRawIntBits(tag);
+            for (int quad = 0; quad < quads; quad++) {
+                int offset = (this.refCount + quad) * 2;
+                this.refs[offset] = Float.floatToRawIntBits(base + quad);
+                this.refs[offset + 1] = tagBits;
+            }
+            this.refCount += quads;
         }
 
         private int order() {

@@ -257,7 +257,7 @@ public final class TextBatcher {
             for (Segment segment : geometry.segments()) {
                 if (this.appendable) {
                     if (this.nameTags == null) segment.setAlpha(alpha);
-                    this.append(segment.texture, segment.vertices, x, y);
+                    this.append(segment, x, y);
                 } else {
                     textureManager.bind(segment.texture);
                     this.drawCached(segment, alpha, x, y);
@@ -481,9 +481,10 @@ public final class TextBatcher {
             IntBuffer source = this.buffer.getBuffer().asIntBuffer();
             int[] vertices = new int[source.remaining()];
             source.get(vertices);
-            this.pendingSegments.add(new Segment(this.texture, vertices, this.alphaByte()));
+            Segment segment = new Segment(this.texture, vertices, this.alphaByte());
+            this.pendingSegments.add(segment);
             if (this.appendable) {
-                this.append(this.texture, vertices, this.originX, this.originY);
+                this.append(segment, this.originX, this.originY);
             } else {
                 GlStateManager.pushMatrix();
                 GlStateManager.translatef(this.originX, this.originY, 0.0F);
@@ -603,9 +604,11 @@ public final class TextBatcher {
         this.popBlend(pushed);
     }
 
-    private void append(Identifier texture, int[] vertices, float x, float y) {
+    private void append(Segment segment, float x, float y) {
+        Identifier texture = segment.texture;
+        int[] vertices = segment.vertices;
         if (this.nameTags != null) {
-            this.nameTags.text(texture, vertices, vertices.length, x, y, this.alphaByte());
+            this.nameTags.text(texture, vertices, vertices.length, x, y, this.alphaByte(), segment.quads);
             return;
         }
         BufferBuilder buffer = this.elementBuffers.get(texture);
@@ -682,6 +685,7 @@ public final class TextBatcher {
         private final Identifier texture;
         private final VertexFormat format;
         private final int[] vertices;
+        private final NameTagBatch.CachedQuads quads = new NameTagBatch.CachedQuads();
         private int verticesAlpha;
         private int lastAlpha;
         private VertexBuffer buffer;

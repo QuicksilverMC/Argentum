@@ -14,6 +14,7 @@
     "LobbyParticleMixin",
     "LobbyNameTagTextMixin",
     "LobbyFastHologramMixin",
+    "LobbyNameTagInstancingMixin",
     "ParticleAccessor"
   ]
 }

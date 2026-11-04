@@ -109,6 +109,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
             this.modelInstancer.close(commandList);
             this.weatherRenderer.close(commandList);
             this.endPortalRenderer.close();
+            this.nameTagBatch.close(commandList);
         }
         BakedBlockEntities.clearSlotSheets();
         super.unloadWorld();
@@ -127,6 +128,9 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
                 this.weatherRenderer.close(commandList);
                 this.endPortalRenderer.close();
             }
+        }
+        try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
+            this.nameTagBatch.close(commandList);
         }
         BakedBlockEntities.clearSlotSheets();
         BakedItemFrames.forget(this.world);
