@@ -221,6 +221,7 @@ public final class LobbyBenchmark {
         this.phaseIndex++;
         this.variant = this.variants.get(this.phaseIndex % this.variants.size());
         Argentum.CONFIG.fastParticles = !this.variant.equals("cpuParticles");
+        Argentum.CONFIG.particleCulling = !this.variant.equals("noCulling");
         this.phases.add(new Phase(this.variant, this.phaseIndex / this.variants.size()));
         this.phaseStart = now;
     }
@@ -304,12 +305,12 @@ public final class LobbyBenchmark {
     }
 
     private void holdParticles() {
-        if (!this.scene.contains("particles") && !this.scene.contains("mixedParticles")) return;
+        if (!this.scene.contains("particles") && !this.scene.contains("mixedParticles") && !this.scene.contains("particlesAround")) return;
         this.particles.removeIf(particle -> particle.removed);
         while (this.particles.size() < PARTICLES) {
             double x = this.random.nextDouble() * 40.0 - 20.0;
             double y = GROUND_Y + 1.0 + this.random.nextDouble() * 6.0;
-            double z = this.random.nextDouble() * 36.0 + 2.0;
+            double z = this.scene.contains("particlesAround") ? this.random.nextDouble() * 76.0 - 44.0 : this.random.nextDouble() * 36.0 + 2.0;
             int type = PARTICLE_TYPES[this.particles.size() % PARTICLE_TYPES.length];
             Particle particle;
             if (this.scene.contains("mixedParticles") && this.particles.size() % 8 == 0) {
