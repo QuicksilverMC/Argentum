@@ -36,6 +36,22 @@ public class GameOptionsMixin {
         GameOptions.Option.FRAMERATE_LIMIT.setMax(1500);
     }
 
+    @ModifyExpressionValue(method = "save", at = @At(value = "FIELD", target = "Lnet/minecraft/client/options/GameOptions;fpsLimit:I", opcode = Opcodes.GETFIELD))
+    private int argentum$saveUnlimitedFramerateAsVanillaMax(int fpsLimit) {
+        return fpsLimit >= 1500 ? 260 : fpsLimit;
+    }
+
+    @ModifyExpressionValue(
+            method = "load",
+            at = @At(value = "INVOKE", target = "Ljava/lang/Integer;parseInt(Ljava/lang/String;)I", ordinal = 0),
+            slice = @Slice(
+                    from = @At(value = "CONSTANT", args = "stringValue=maxFps")
+            )
+    )
+    private int argentum$loadVanillaMaxFramerateAsUnlimited(int fpsLimit) {
+        return fpsLimit == 260 ? 1500 : fpsLimit;
+    }
+
     @Inject(method = "<init>(Lnet/minecraft/client/Minecraft;Ljava/io/File;)V", at = @At("RETURN"))
     private void argentum$enableVbos(Minecraft minecraft, File directory, CallbackInfo ci) {
         this.useVbo = true;
