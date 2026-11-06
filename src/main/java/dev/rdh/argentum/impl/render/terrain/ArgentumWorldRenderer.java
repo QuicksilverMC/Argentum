@@ -18,6 +18,7 @@ import dev.rdh.argentum.impl.render.entity.EntityOcclusionCuller;
 import dev.rdh.argentum.impl.render.entity.EntityGatherer;
 import dev.rdh.argentum.impl.render.entity.EntityShadowBatch;
 import dev.rdh.argentum.impl.render.entity.NameTagBatch;
+import dev.rdh.argentum.impl.render.particle.ParticleCapture;
 import dev.rdh.argentum.impl.render.entity.instancing.EntityInstancing;
 import dev.rdh.argentum.impl.render.entity.instancing.ModelInstancer;
 import dev.rdh.argentum.impl.render.environment.WeatherRenderer;
@@ -54,6 +55,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     private final EntityOcclusionCuller entityOcclusionCuller = new EntityOcclusionCuller(this);
     private final EntityShadowBatch entityShadowBatch = new EntityShadowBatch();
     private final NameTagBatch nameTagBatch = new NameTagBatch();
+    private final ParticleCapture particleCapture = new ParticleCapture();
     private final ModelInstancer modelInstancer = new ModelInstancer();
     private final EntityInstancing entityInstancing = new EntityInstancing(this.modelInstancer);
     private final WeatherRenderer weatherRenderer = new WeatherRenderer();
@@ -143,6 +145,10 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
 
     public EntityInstancing getEntityInstancing() {
         return this.entityInstancing;
+    }
+
+    public ParticleCapture getParticleCapture() {
+        return this.particleCapture;
     }
 
     public NameTagBatch getNameTagBatch() {

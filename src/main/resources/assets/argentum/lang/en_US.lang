@@ -70,6 +70,8 @@ argentum.direct_rendering.name=Direct Rendering
 argentum.direct_rendering.tooltip=Draws straight to the window instead of to an offscreen image that is then copied to it, which can greatly improve performance on integrated graphics. The offscreen image is still used while effects need it, such as spectator mob views and outlines. Some mods that draw their own screen effects may not work with this enabled.
 argentum.particle_culling.name=Particle Culling
 argentum.particle_culling.tooltip=If enabled particles outside the camera frustum or hidden behind terrain will be skipped during rendering. This can improve performance in particle-heavy scenes, but may cause particles to disappear unexpectedly with some mods.
+argentum.fast_particles.name=Fast Particles
+argentum.fast_particles.tooltip=If enabled particles are prepared for drawing more efficiently, improving performance when lots of particles are on screen. Particles from mods that draw themselves differently are detected and drawn normally.
 
 argentum.entity_instancing.name=Entity Instancing
 argentum.entity_instancing.tooltip=If enabled compatible entity models will be batched into instanced draw calls. This can significantly improve performance when many similar entities are visible, but may cause rendering issues with mods that use unusual entity renderers.

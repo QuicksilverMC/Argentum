@@ -13,4 +13,16 @@ public interface BufferBuilderAccessor {
 
     @Accessor("intBuffer")
     IntBuffer argentum$getIntBuffer();
+
+    @Accessor("uncolored")
+    boolean argentum$isUncolored();
+
+    @Accessor("offsetX")
+    double argentum$getOffsetX();
+
+    @Accessor("offsetY")
+    double argentum$getOffsetY();
+
+    @Accessor("offsetZ")
+    double argentum$getOffsetZ();
 }
