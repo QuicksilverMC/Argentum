@@ -10,6 +10,8 @@ import net.minecraft.client.render.vertex.BufferBuilder;
 import net.minecraft.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ParticleManager.class)
 abstract class LobbyParticleMixin {
@@ -24,5 +26,10 @@ abstract class LobbyParticleMixin {
     private boolean lobbyBenchmark$skipGeometry(Particle particle, BufferBuilder buffer, Entity camera,
             float tickDelta, float rotationX, float rotationZ, float rotationYZ, float rotationXY, float rotationXZ) {
         return !LobbyBenchmark.variant("noParticleGeometry");
+    }
+
+    @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
+    private void lobbyBenchmark$freeze(CallbackInfo ci) {
+        ci.cancel();
     }
 }

@@ -9,6 +9,9 @@ public interface ParticleAccessor {
     @Accessor("lifetime")
     void lobbyBenchmark$setLifetime(int lifetime);
 
+    @Accessor("age")
+    void lobbyBenchmark$setAge(int age);
+
     @Accessor("gravity")
     void lobbyBenchmark$setGravity(float gravity);
 }

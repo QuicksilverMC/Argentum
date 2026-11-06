@@ -1,5 +1,6 @@
 package dev.rdh.argentum.test;
 
+import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.test.mixin.ParticleAccessor;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -219,6 +220,7 @@ public final class LobbyBenchmark {
         }
         this.phaseIndex++;
         this.variant = this.variants.get(this.phaseIndex % this.variants.size());
+        Argentum.CONFIG.fastParticles = !this.variant.equals("cpuParticles");
         this.phases.add(new Phase(this.variant, this.phaseIndex / this.variants.size()));
         this.phaseStart = now;
     }
@@ -302,16 +304,24 @@ public final class LobbyBenchmark {
     }
 
     private void holdParticles() {
-        if (!this.scene.contains("particles")) return;
+        if (!this.scene.contains("particles") && !this.scene.contains("mixedParticles")) return;
         this.particles.removeIf(particle -> particle.removed);
         while (this.particles.size() < PARTICLES) {
             double x = this.random.nextDouble() * 40.0 - 20.0;
             double y = GROUND_Y + 1.0 + this.random.nextDouble() * 6.0;
             double z = this.random.nextDouble() * 36.0 + 2.0;
             int type = PARTICLE_TYPES[this.particles.size() % PARTICLE_TYPES.length];
-            Particle particle = this.minecraft.particleManager.addParticle(type, x, y, z, 0.0, 0.0, 0.0);
+            Particle particle;
+            if (this.scene.contains("mixedParticles") && this.particles.size() % 8 == 0) {
+                particle = new LobbyCustomParticle(this.minecraft.world, x, y, z);
+                this.minecraft.particleManager.add(particle);
+            } else {
+                particle = this.minecraft.particleManager.addParticle(type, x, y, z, 0.0, 0.0, 0.0);
+            }
             if (particle == null) throw new IllegalStateException("Particle type " + type + " was not created");
+            // past the size ramp most particles grow through over the first 1/32 of their life
             ((ParticleAccessor) particle).lobbyBenchmark$setLifetime(Integer.MAX_VALUE / 2);
+            ((ParticleAccessor) particle).lobbyBenchmark$setAge(Integer.MAX_VALUE / 64 + 1);
             this.particles.add(particle);
         }
         for (Particle particle : this.particles) {
