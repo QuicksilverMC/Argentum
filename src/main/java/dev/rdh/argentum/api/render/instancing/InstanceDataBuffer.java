@@ -9,6 +9,9 @@ public abstract class InstanceDataBuffer {
     private final int stride;
     private final int positionOffset;
     private int[] data;
+    private int[] scratch = new int[0];
+    private float[] keys = new float[0];
+    private int[] order = new int[0];
     private IntBuffer upload;
     private int size;
     private int count;
@@ -46,16 +49,35 @@ public abstract class InstanceDataBuffer {
     }
 
     public final void sortBackToFront() {
-        this.sort(0, this.count - 1);
+        int count = this.count;
+        if (count < 2) return;
+        if (this.keys.length < count) {
+            this.keys = new float[this.data.length / this.stride];
+            this.order = new int[this.keys.length];
+        }
+        for (int i = 0; i < count; i++) {
+            this.keys[i] = this.distance(i);
+            this.order[i] = i;
+        }
+        this.sort(0, count - 1);
+
+        if (this.scratch.length < this.data.length) this.scratch = new int[this.data.length];
+        for (int i = 0; i < count; i++) {
+            System.arraycopy(this.data, this.order[i] * this.stride, this.scratch, i * this.stride, this.stride);
+        }
+        int[] sorted = this.scratch;
+        this.scratch = this.data;
+        this.data = sorted;
     }
 
     private void sort(int low, int high) {
+        float[] keys = this.keys;
         int left = low;
         int right = high;
-        float pivot = this.distance((low + high) >>> 1);
+        float pivot = keys[(low + high) >>> 1];
         while (left <= right) {
-            while (this.distance(left) > pivot) left++;
-            while (this.distance(right) < pivot) right--;
+            while (keys[left] > pivot) left++;
+            while (keys[right] < pivot) right--;
             if (left <= right) {
                 this.swap(left++, right--);
             }
@@ -73,13 +95,12 @@ public abstract class InstanceDataBuffer {
     }
 
     private void swap(int first, int second) {
-        int a = first * this.stride;
-        int b = second * this.stride;
-        for (int i = 0; i < this.stride; i++) {
-            int value = this.data[a + i];
-            this.data[a + i] = this.data[b + i];
-            this.data[b + i] = value;
-        }
+        float key = this.keys[first];
+        this.keys[first] = this.keys[second];
+        this.keys[second] = key;
+        int index = this.order[first];
+        this.order[first] = this.order[second];
+        this.order[second] = index;
     }
 
     public final IntBuffer upload() {
