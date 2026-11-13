@@ -111,8 +111,13 @@ final class ShaderOptionsScreen extends Screen {
                 default -> {
                 }
             }
-            if (entry.entry instanceof ConfigEntry.Mutable) {
-                entry.message = label(entry.entry);
+            for (var other : buttons) {
+                if (other instanceof EntryButton shown && shown.entry instanceof ConfigEntry.Mutable) {
+                    shown.message = label(shown.entry);
+                    if (shown instanceof SliderButton slider) {
+                        slider.sliderPos = slider.draggable.getValue();
+                    }
+                }
             }
             applyButton.active = rootScreen.isModified();
             return;
