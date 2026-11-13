@@ -2,6 +2,7 @@ package dev.rdh.argentum.impl.render.terrain;
 
 import org.embeddedt.embeddium.impl.gl.device.CommandList;
 import org.embeddedt.embeddium.impl.gl.device.RenderDevice;
+import org.embeddedt.embeddium.impl.gl.shader.GlProgram;
 import org.embeddedt.embeddium.impl.render.chunk.DefaultChunkRenderer;
 import org.embeddedt.embeddium.impl.render.chunk.RenderPassConfiguration;
 import org.embeddedt.embeddium.impl.render.chunk.RenderSection;
@@ -47,25 +48,25 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
     private final ClonedChunkSectionCache sectionCache;
     private boolean deferringRebuild;
 
-    public ArgentumRenderSectionManager(RenderPassConfiguration<?> configuration, World world, int renderDistance, CommandList commandList, int minSection, int maxSection, int requestedThreads, boolean hasShadowPass) {
-        super(configuration, () -> new ArgentumChunkBuildContext(configuration), ArgentumRenderSectionManager::createChunkRenderer, renderDistance, commandList, minSection, maxSection, requestedThreads, hasShadowPass);
+    public ArgentumRenderSectionManager(RenderPassConfiguration<?> configuration, World world, int renderDistance, CommandList commandList, int minSection, int maxSection, int requestedThreads, boolean hasShadowPass, ChunkProgramCache programs) {
+        super(configuration, () -> new ArgentumChunkBuildContext(configuration), (device, config) -> createChunkRenderer(device, config, programs), renderDistance, commandList, minSection, maxSection, requestedThreads, hasShadowPass);
         this.world = world;
         this.sectionCache = new ClonedChunkSectionCache(world);
     }
 
-    private static DefaultChunkRenderer createChunkRenderer(RenderDevice device, RenderPassConfiguration<?> configuration) {
+    private static DefaultChunkRenderer createChunkRenderer(RenderDevice device, RenderPassConfiguration<?> configuration, ChunkProgramCache programs) {
         TerrainDrawTarget target = ((MinecraftExtension)Minecraft.getInstance()).argentum$getTerrainDrawTarget();
         return target != null && target.vertexType() != null
                 ? new TargetChunkRenderer(device, configuration, target)
-                : new ChunkRenderer(device, configuration);
+                : new ChunkRenderer(device, configuration, programs);
     }
 
-    public static ArgentumRenderSectionManager create(ChunkVertexType vertexType, boolean separateCutout, boolean hasShadowPass, World world, int renderDistance, CommandList commandList) {
+    public static ArgentumRenderSectionManager create(ChunkVertexType vertexType, boolean separateCutout, boolean hasShadowPass, World world, int renderDistance, CommandList commandList, ChunkProgramCache programs) {
         int maxSection = world.getHeight() / 16;
         return new ArgentumRenderSectionManager(RenderPassConfigurationBuilder.build(vertexType,
                 Argentum.CONFIG.translucencySorting, Argentum.CONFIG.chunkFadeInDuration, separateCutout), world, renderDistance, commandList,
                 0, maxSection,
-                Argentum.CONFIG.chunkBuilderThreads, hasShadowPass
+                Argentum.CONFIG.chunkBuilderThreads, hasShadowPass, programs
         );
     }
 
@@ -180,14 +181,25 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
     }
 
     private static class ChunkRenderer extends DefaultChunkRenderer {
+        private final ChunkProgramCache cache;
 
-        public ChunkRenderer(RenderDevice device, RenderPassConfiguration<?> renderPassConfiguration) {
+        public ChunkRenderer(RenderDevice device, RenderPassConfiguration<?> renderPassConfiguration, ChunkProgramCache cache) {
             super(device, renderPassConfiguration, ArgentumFogService.INSTANCE);
+            this.cache = cache;
             renderPassConfiguration.getAllKnownRenderPasses().forEach(pass -> {
                 for (ChunkFogMode fogMode : ChunkFogMode.values()) {
                     this.compileProgram(new ChunkShaderOptions(List.of(fogMode), pass));
                 }
             });
+        }
+
+        @Override
+        protected GlProgram<ChunkShaderInterface> createShader(String path, ChunkShaderOptions options) {
+            GlProgram<ChunkShaderInterface> shared = this.cache.get(options, o -> super.createShader(path, o));
+            return new GlProgram<>(shared.handle(), _ -> shared.getInterface()) {
+                @Override
+                protected void destroyInternal() {}
+            };
         }
 
         @Override

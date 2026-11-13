@@ -62,6 +62,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     private final EntityInstancing entityInstancing = new EntityInstancing(this.modelInstancer);
     private final WeatherRenderer weatherRenderer = new WeatherRenderer();
     private final EndPortalRenderer endPortalRenderer = new EndPortalRenderer();
+    private final ChunkProgramCache chunkPrograms = new ChunkProgramCache();
 
     private ChunkRenderMatrices matrices = null;
     private boolean renderingBlockEntities;
@@ -104,17 +105,27 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     }
 
     @Override
+    public void setWorld(World world) {
+        boolean leaving = world == null && this.world != null;
+        super.setWorld(world);
+        if (leaving) {
+            try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
+                this.entityShadowBatch.close(commandList);
+                this.modelInstancer.close(commandList);
+                this.weatherRenderer.close(commandList);
+                this.endPortalRenderer.close();
+                this.nameTagBatch.close(commandList);
+            }
+            this.chunkPrograms.delete();
+        }
+    }
+
+    @Override
     protected void unloadWorld() {
         this.entityGatherer.clear();
         this.entityOcclusionCuller.clear();
         this.entityInstancing.discardBatch();
-        try (CommandList commandList = RenderDevice.INSTANCE.createCommandList()) {
-            this.entityShadowBatch.close(commandList);
-            this.modelInstancer.close(commandList);
-            this.weatherRenderer.close(commandList);
-            this.endPortalRenderer.close();
-            this.nameTagBatch.close(commandList);
-        }
+        this.nameTagBatch.discard();
         BakedBlockEntities.clearSlotSheets();
         super.unloadWorld();
     }
@@ -138,6 +149,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
         }
         BakedBlockEntities.clearSlotSheets();
         BakedItemFrames.forget(this.world);
+        this.chunkPrograms.delete();
         super.reload();
     }
 
@@ -231,7 +243,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
         ChunkVertexType vertexType = targetType != null ? targetType
                 : Argentum.CONFIG.compactVertexFormat ? ChunkMeshFormats.COMPACT : ChunkMeshFormats.VANILLA_LIKE;
         return ArgentumRenderSectionManager.create(vertexType, targetType != null, targetType != null && target.hasShadowPass(),
-                this.world, this.renderDistance, commandList);
+                this.world, this.renderDistance, commandList, this.chunkPrograms);
     }
 
     public void captureMatrices(float[] projection, float[] modelView) {
