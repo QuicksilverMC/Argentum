@@ -7,7 +7,6 @@ import dev.rdh.cera.modules.shaders.CeraShaderEngine;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.world.WorldRenderer;
-import net.minecraft.client.world.ClientWorld;
 import org.lwjgl.input.Keyboard;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -61,13 +60,6 @@ public abstract class MinecraftMixin {
     private void cera$reloadKey(int key, boolean pressed, Operation<Void> original) {
         original.call(key, pressed);
         if (pressed && key == Keyboard.KEY_R && Keyboard.isKeyDown(Keyboard.KEY_F3) && !Keyboard.isRepeatEvent()) {
-            cera$engine().scheduleShaderPackReload();
-        }
-    }
-
-    @Inject(method = "setWorld(Lnet/minecraft/client/world/ClientWorld;Ljava/lang/String;)V", at = @At("TAIL"))
-    private void cera$dimensionReload(ClientWorld world, String message, CallbackInfo ci) {
-        if (world != null) {
             cera$engine().scheduleShaderPackReload();
         }
     }
