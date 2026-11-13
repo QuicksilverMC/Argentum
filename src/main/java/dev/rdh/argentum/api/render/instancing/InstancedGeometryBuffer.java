@@ -9,6 +9,7 @@ import org.embeddedt.embeddium.impl.gl.tessellation.GlVertexArrayTessellation;
 import org.embeddedt.embeddium.impl.gl.tessellation.TessellationBinding;
 import org.lwjgl.opengl.ARBDrawInstanced;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL15C;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.FloatBuffer;
@@ -60,7 +61,13 @@ public final class InstancedGeometryBuffer {
 
     public void upload(CommandList commandList, IntBuffer instances) {
         this.initialize(commandList);
-        commandList.uploadData(this.instanceBuffer, MemoryUtil.memAddress(instances), (long)instances.remaining() * Integer.BYTES, GlBufferUsage.STREAM_DRAW);
+        long bytes = (long)instances.remaining() * Integer.BYTES;
+        long capacity = this.instanceBuffer.getSize();
+        if (bytes > capacity) {
+            capacity = Math.max(bytes, capacity * 2);
+        }
+        commandList.allocateStorage(this.instanceBuffer, capacity, GlBufferUsage.STREAM_DRAW);
+        GL15C.nglBufferSubData(GL15C.GL_ARRAY_BUFFER, 0, bytes, MemoryUtil.memAddress(instances));
     }
 
     public void draw(CommandList commandList, int vertexCount, int instanceCount) {
