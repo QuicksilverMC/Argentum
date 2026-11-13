@@ -326,7 +326,7 @@ public final class TextBatcher {
             if ((style & BOLD) != 0) advance++;
             if ((style & STRIKETHROUGH) != 0) this.decoration(pen, y + 4.0F, pen + advance, y + 3.0F, textureManager, unicode);
             if ((style & UNDERLINED) != 0) this.decoration(pen - 1.0F, y + 9.0F, pen + advance, y + 8.0F, textureManager, unicode);
-            pen += (int) advance;
+            pen += advance;
         }
 
         this.endStyle = style;
