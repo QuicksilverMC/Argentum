@@ -103,7 +103,6 @@ public final class FontSet {
         List<IntFunction<Glyph>> providers = new ObjectArrayList<>();
         Glyph space = new Glyph(this.widths[32], false);
         providers.add(codepoint -> SPACES.indexOf(codepoint) == -1 ? null : space);
-        boolean defined = false;
         if (this.sheet.getPath().endsWith("font/ascii.png")) {
             List<Resource> stack = List.of();
             try {
@@ -112,12 +111,11 @@ public final class FontSet {
             }
             for (int i = stack.size() - 1; i >= 0; i--) {
                 this.loadDefinition(resources, stack.get(i), providers);
-                defined = true;
             }
         }
 
         try {
-            if (!defined && !unicode) providers.add(this.bitmap(resources, ASCII, characterGrid(), 8, 7));
+            if (!unicode) providers.add(this.bitmap(resources, ASCII, characterGrid(), 8, 7));
             providers.add(legacyUnicode(resources, GLYPH_SIZES, UNICODE_PAGES));
         } catch (IOException e) {
             Argentum.LOGGER.warn("Could not load the built-in font for {}", this.sheet, e);
