@@ -148,11 +148,11 @@ public final class ArgentumOptionPages {
                 })
                 .add(option(int.class, VANILLA, StandardOptions.Option.MAX_FRAMERATE)
                         .setName(vanilla("options.framerateLimit"))
-                        .setControl(option -> new SliderControl(option, Argentum.CONFIG.explicitVsyncOption ? 5 : 0, 260, 5,
+                        .setControl(option -> new SliderControl(option, Argentum.CONFIG.explicitVsyncOption ? 5 : 0, 1500, 5,
                                 value -> {
                                     if (value == 0 || (Argentum.CONFIG.explicitVsyncOption && Minecraft.getInstance().options.vsync)) {
                                         return text("value.vsync");
-                                    } else if (value == 260) {
+                                    } else if (value == 1500) {
                                         return vanilla("options.framerateLimit.max");
                                     } else {
                                         return text("value.fps", value);
@@ -163,13 +163,13 @@ public final class ArgentumOptionPages {
                                 options.vsync = value == 0;
                                 Display.setVSyncEnabled(options.vsync);
                                 if (options.vsync) {
-                                    options.fpsLimit = 260;
+                                    options.fpsLimit = 1500;
                                     return;
                                 }
                             }
                             options.fpsLimit = value;
                         }, options -> options.vsync && !Argentum.CONFIG.explicitVsyncOption ? 0
-                                : (options.fpsLimit <= 0 ? 260 : options.fpsLimit))
+                                : (options.fpsLimit <= 0 ? 1500 : options.fpsLimit))
                         .setImpact(OptionImpact.VARIES)
                         .setEnabledPredicate(() -> !Argentum.CONFIG.explicitVsyncOption || !Minecraft.getInstance().options.vsync)
                         .build())
