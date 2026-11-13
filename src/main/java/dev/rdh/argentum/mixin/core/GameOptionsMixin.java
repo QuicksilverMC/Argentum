@@ -44,13 +44,14 @@ public class GameOptionsMixin {
             )
     )
     private int argentum$loadVanillaMaxFramerateAsUnlimited(int fpsLimit) {
-        if (!Argentum.CONFIG.fpsCapChanged && fpsLimit == 260) {
-            Argentum.CONFIG.fpsCapChanged = true;
-            Argentum.CONFIG_STORAGE.save();
-            return 1500;
-        } else {
-            return fpsLimit;
-        }
+        return !Argentum.CONFIG.fpsCapChanged && fpsLimit == 260 ? 1500 : fpsLimit;
+    }
+
+    @Inject(method = "load", at = @At("RETURN"))
+    private void argentum$markFramerateCapChanged(CallbackInfo ci) {
+        if (Argentum.CONFIG.fpsCapChanged) return;
+        Argentum.CONFIG.fpsCapChanged = true;
+        Argentum.CONFIG_STORAGE.save();
     }
 
     @Inject(method = "<init>(Lnet/minecraft/client/Minecraft;Ljava/io/File;)V", at = @At("RETURN"))
