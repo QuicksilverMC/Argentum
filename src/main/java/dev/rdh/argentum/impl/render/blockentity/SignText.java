@@ -18,7 +18,7 @@ import java.util.List;
 
 public record SignText(Text[] lines, String font, BakedBlockEntities.Region region, boolean unicode, List<SlotSheet.Entry> pages,
         float[] vertices, int[] colors, byte[] textures) {
-    private static final String FORMATTING = "0123456789abcdefklmnor";
+    private static final int UNSUPPORTED = TextBatcher.OBFUSCATED | TextBatcher.STRIKETHROUGH | TextBatcher.UNDERLINED;
 
     private static int baseColor() {
         return 0;
@@ -88,25 +88,19 @@ public record SignText(Text[] lines, String font, BakedBlockEntities.Region regi
 
         private boolean line(String text, float x, float y) {
             int color = baseColor();
-            boolean bold = false;
-            boolean italic = false;
+            int style = 0;
             for (int i = 0; i < text.length(); i++) {
-                if (text.charAt(i) == '§' && i + 1 < text.length()) {
-                    int code = FORMATTING.indexOf(Character.toLowerCase(text.charAt(++i)));
+                if (text.charAt(i) == TextBatcher.SECTION && i + 1 < text.length()) {
+                    int code = TextBatcher.FORMATTING.indexOf(Character.toLowerCase(text.charAt(++i)));
                     if (code < 16) {
-                        bold = false;
-                        italic = false;
-                        color = this.textRenderer.getColor(FORMATTING.charAt(code < 0 ? 15 : code));
-                    } else if (code == 17) {
-                        bold = true;
-                    } else if (code == 20) {
-                        italic = true;
+                        style = 0;
+                        color = this.textRenderer.getColor(TextBatcher.FORMATTING.charAt(code < 0 ? 15 : code));
                     } else if (code == 21) {
-                        bold = false;
-                        italic = false;
+                        style = 0;
                         color = baseColor();
                     } else {
-                        return false;
+                        style |= 1 << (code - 16);
+                        if ((style & UNSUPPORTED) != 0) return false;
                     }
                     continue;
                 }
@@ -114,11 +108,13 @@ public record SignText(Text[] lines, String font, BakedBlockEntities.Region regi
                 int codepoint = text.codePointAt(i);
                 i += Character.charCount(codepoint) - 1;
                 Glyph glyph = this.fonts.glyph(codepoint, this.unicode);
+                boolean bold = (style & TextBatcher.BOLD) != 0;
+                boolean italic = (style & TextBatcher.ITALIC) != 0;
                 if (glyph.visible()) {
                     if (!this.glyph(glyph, italic, x, y, color)) return false;
-                    if (bold) this.glyph(glyph, italic, x + (this.unicode || glyph.unicodePage ? 0.5F : 1.0F), y, color);
+                    if (bold) this.glyph(glyph, italic, x + glyph.boldOffset(this.unicode), y, color);
                 }
-                x += (int) (bold ? glyph.advance + 1.0F : glyph.advance);
+                x += glyph.advance(bold);
             }
             return true;
         }
@@ -144,8 +140,8 @@ public record SignText(Text[] lines, String font, BakedBlockEntities.Region regi
             float top = y + glyph.top;
             float bottom = top + glyph.height - 0.01F;
             float right = x + glyph.width;
-            float topSlant = italic ? 1.0F - 0.25F * glyph.top : 0.0F;
-            float bottomSlant = italic ? 1.0F - 0.25F * (glyph.top + glyph.height) : 0.0F;
+            float topSlant = glyph.topSlant(italic);
+            float bottomSlant = glyph.bottomSlant(italic);
             float u0 = texels[0] / texture.texelWidth();
             float v0 = texels[1] / texture.texelHeight();
             float u1 = texels[2] / texture.texelWidth();

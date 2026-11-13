@@ -55,6 +55,22 @@ public final class Glyph {
         return this.sheet != null;
     }
 
+    public float advance(boolean bold) {
+        return bold && this.advance > 0.0F ? this.advance + 1.0F : this.advance;
+    }
+
+    public float boldOffset(boolean unicode) {
+        return unicode || this.unicodePage ? 0.5F : 1.0F;
+    }
+
+    public float topSlant(boolean italic) {
+        return italic ? 1.0F - 0.25F * this.top : 0.0F;
+    }
+
+    public float bottomSlant(boolean italic) {
+        return italic ? 1.0F - 0.25F * (this.top + this.height) : 0.0F;
+    }
+
     public Identifier page() {
         return this.page;
     }

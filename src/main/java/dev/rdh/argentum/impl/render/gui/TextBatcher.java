@@ -39,8 +39,8 @@ public final class TextBatcher {
     private static final int WIDTH_CACHE_SIZE = 2048;
     private static final int GEOMETRY_CACHE_SIZE = 1024;
 
-    private static final char SECTION = '§';
-    private static final String FORMATTING = "0123456789abcdefklmnor";
+    public static final char SECTION = '§';
+    public static final String FORMATTING = "0123456789abcdefklmnor";
 
     public static final int OBFUSCATED =    0b00001;
     public static final int BOLD =          0b00010;
@@ -191,15 +191,13 @@ public final class TextBatcher {
         for (int i = 0; i < text.length(); i++) {
             int codepoint = text.codePointAt(i);
             i += Character.charCount(codepoint) - 1;
-            float width = this.charWidth(codepoint, unicode);
-            if (width < 0.0F && i < text.length() - 1) {
+            if (codepoint == SECTION && i < text.length() - 1) {
                 int code = FORMATTING.indexOf(Character.toLowerCase(text.charAt(++i)));
                 if (code == 17) bold = true;
                 else if (code < 16 || code == 21) bold = false;
-                width = 0.0F;
+                continue;
             }
-            total += width;
-            if (bold && width > 0.0F) total += 1.0F;
+            total += codepoint == SECTION ? -1.0F : this.fonts.glyph(codepoint, unicode).advance(bold);
         }
 
         int rounded = Math.round(total);
@@ -314,16 +312,15 @@ public final class TextBatcher {
             i += Character.charCount(codepoint) - 1;
             if ((style & OBFUSCATED) != 0) codepoint = this.obfuscate(codepoint, unicode);
             Glyph glyph = this.fonts.glyph(codepoint, unicode);
-            float advance = glyph.advance;
+            boolean bold = (style & BOLD) != 0;
+            float advance = glyph.advance(bold);
             if (glyph.visible()) {
-                boolean half = unicode || glyph.unicodePage;
-                float shift = half ? 0.5F : 1.0F;
-                float pull = shadow && half ? shift : 0.0F;
+                float shift = glyph.boldOffset(unicode);
+                float pull = shadow && shift < 1.0F ? shift : 0.0F;
                 boolean italic = (style & ITALIC) != 0;
                 this.glyph(glyph, pen - pull, y - pull, italic, textureManager);
-                if ((style & BOLD) != 0) this.glyph(glyph, pen + shift - pull, y - pull, italic, textureManager);
+                if (bold) this.glyph(glyph, pen + shift - pull, y - pull, italic, textureManager);
             }
-            if ((style & BOLD) != 0) advance++;
             if ((style & STRIKETHROUGH) != 0) this.decoration(pen, y + 4.0F, pen + advance, y + 3.0F, textureManager, unicode);
             if ((style & UNDERLINED) != 0) this.decoration(pen - 1.0F, y + 9.0F, pen + advance, y + 8.0F, textureManager, unicode);
             pen += advance;
@@ -372,8 +369,8 @@ public final class TextBatcher {
         float top = y + glyph.top;
         float bottom = top + glyph.height - 0.01F;
         float right = x + glyph.width;
-        float topSlant = italic ? 1.0F - 0.25F * glyph.top : 0.0F;
-        float bottomSlant = italic ? 1.0F - 0.25F * (glyph.top + glyph.height) : 0.0F;
+        float topSlant = glyph.topSlant(italic);
+        float bottomSlant = glyph.bottomSlant(italic);
         this.quad(
                 x + topSlant, top, glyph.u0, glyph.v0,
                 x + bottomSlant, bottom, glyph.u0, glyph.v1,
