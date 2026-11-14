@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import dev.rdh.argentum.impl.Argentum;
-import dev.rdh.argentum.impl.ext.BufferBuilderExtension;
 import dev.rdh.argentum.impl.render.terrain.ArgentumWorldRenderer;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EndPortalBlockEntity;
@@ -77,7 +76,14 @@ public final class EndPortalRenderer {
     private final ChunkShaderEnvironment environment = new ChunkShaderEnvironment(this.fog);
     private final float[][] objectPlanes = new float[4][];
     private final int[] texGenModes = new int[4];
+    private final float[] fogColor = new float[4];
     private int objectPlaneMask;
+    private boolean snapshotTaken;
+    private boolean fixedFunction;
+    private boolean additive;
+    private boolean fogSupported;
+    private boolean lightChecked;
+    private boolean lightValid;
     private List<BlockEntity> list;
 
     private BlockEntity[] targets = new BlockEntity[16];
@@ -226,6 +232,8 @@ public final class EndPortalRenderer {
     private void record(int target, Recording recording, float tickDelta) {
         Arrays.fill(this.texGenModes, 0);
         this.objectPlaneMask = 0;
+        this.snapshotTaken = false;
+        this.lightChecked = false;
         this.source = target;
         this.recording = recording;
         this.lightChanged = false;
@@ -257,16 +265,14 @@ public final class EndPortalRenderer {
 
     public boolean capture(BufferBuilder buffer) {
         if (this.failed || this.lightChanged || !this.emulatable(buffer)) return this.decline();
-        IntBuffer data = ((BufferBuilderExtension)buffer).argentum$rawIntBuffer();
+        IntBuffer data = buffer.argentum$rawIntBuffer();
         int count = buffer.getVertexCount();
         int color = data.get(3);
         for (int i = 1; i < count; i++) {
             if (data.get(i * 4 + 3) != color) return this.decline();
         }
-        this.readMatrix(GL11.GL_MODELVIEW_MATRIX, this.nextModelView);
-        this.readMatrix(GL11.GL_PROJECTION_MATRIX, this.nextProjection);
         if (!this.readProjection()) return this.decline();
-        this.nextFog.capture();
+        this.nextFog.capture(this.fogSupported, this.fogColor);
         if (!this.nextFog.supported) return this.decline();
         boolean merge = this.mergeable();
         if (this.layers != 0 && (!merge || !this.merging || !this.sameGeometry(data, count)
@@ -334,8 +340,24 @@ public final class EndPortalRenderer {
                 && GlStateManager.texture == 0 && GlStateManager.TEXTURES[0].state.enabled
                 && !GlStateManager.LIGHTING.enabled
                 && (!GlStateManager.ALPHA_TEST.state.enabled || GlStateManager.ALPHA_TEST.func == GL11.GL_GREATER)
-                && GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM) == 0
-                && modulates(GL13.GL_PRIMARY_COLOR);
+                && this.fixedFunction();
+    }
+
+    private boolean fixedFunction() {
+        if (this.snapshotTaken) return this.fixedFunction;
+        this.snapshotTaken = true;
+        this.readMatrix(GL11.GL_MODELVIEW_MATRIX, this.nextModelView);
+        this.readMatrix(GL11.GL_PROJECTION_MATRIX, this.nextProjection);
+        this.fixedFunction = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM) == 0 && modulates(GL13.GL_PRIMARY_COLOR);
+        this.additive = !GL11.glIsEnabled(GL11.GL_STENCIL_TEST) && !GL11.glIsEnabled(GL11.GL_COLOR_LOGIC_OP)
+                && !GL11.glIsEnabled(GL13.GL_SAMPLE_ALPHA_TO_COVERAGE) && !GL11.glIsEnabled(GL13.GL_SAMPLE_ALPHA_TO_ONE)
+                && GL11.glGetInteger(GL20.GL_BLEND_EQUATION_RGB) == GL14.GL_FUNC_ADD
+                && GL11.glGetInteger(GL20.GL_BLEND_EQUATION_ALPHA) == GL14.GL_FUNC_ADD;
+        this.fogSupported = GL11.glGetInteger(GL14.GL_FOG_COORDINATE_SOURCE) == GL14.GL_FRAGMENT_DEPTH;
+        GL11.glGetFloatv(GL11.GL_FOG_COLOR, this.scratch.clear());
+        for (int i = 0; i < 4; i++) this.fogColor[i] = this.scratch.get(i);
+        this.fogColor[3] = 1.0F;
+        return this.fixedFunction;
     }
 
     private boolean mergeable() {
@@ -345,19 +367,13 @@ public final class EndPortalRenderer {
                 && (!GlStateManager.DEPTH.state.enabled || !GlStateManager.DEPTH.mask
                         || GlStateManager.DEPTH.func != GL11.GL_LESS && GlStateManager.DEPTH.func != GL11.GL_GREATER
                         && GlStateManager.DEPTH.func != GL11.GL_NOTEQUAL)
-                && !GL11.glIsEnabled(GL11.GL_STENCIL_TEST) && !GL11.glIsEnabled(GL11.GL_COLOR_LOGIC_OP)
-                && !GL11.glIsEnabled(GL13.GL_SAMPLE_ALPHA_TO_COVERAGE) && !GL11.glIsEnabled(GL13.GL_SAMPLE_ALPHA_TO_ONE)
-                && GL11.glGetInteger(GL20.GL_BLEND_EQUATION_RGB) == GL14.GL_FUNC_ADD
-                && GL11.glGetInteger(GL20.GL_BLEND_EQUATION_ALPHA) == GL14.GL_FUNC_ADD
-                && this.additiveBlend();
+                && this.additive && this.additiveAlpha();
     }
 
-    private boolean additiveBlend() {
+    private boolean additiveAlpha() {
         int destinationAlpha = GL11.glGetInteger(GL14.GL_BLEND_DST_ALPHA);
         this.nextAddAlpha = destinationAlpha == GL11.GL_ONE ? 1 : 0;
-        return GL11.glGetInteger(GL14.GL_BLEND_SRC_RGB) == GL11.GL_ONE
-                && GL11.glGetInteger(GL14.GL_BLEND_DST_RGB) == GL11.GL_ONE
-                && GL11.glGetInteger(GL14.GL_BLEND_SRC_ALPHA) == GL11.GL_ONE
+        return GL11.glGetInteger(GL14.GL_BLEND_SRC_ALPHA) == GL11.GL_ONE
                 && (destinationAlpha == GL11.GL_ONE || destinationAlpha == GL11.GL_ZERO);
     }
 
@@ -376,7 +392,7 @@ public final class EndPortalRenderer {
     private boolean readProjection() {
         for (int i = 0; i < 4; i++) {
             int coordinate = GL11.GL_S + i;
-            if (!GL11.glIsEnabled(GL11.GL_TEXTURE_GEN_S + i)) return false;
+            if (!texGen(i).state.enabled) return false;
             int mode = this.texGenModes[i] != 0 ? this.texGenModes[i] : GL11.glGetTexGeni(coordinate, GL11.GL_TEXTURE_GEN_MODE);
             if (mode != GL11.GL_OBJECT_LINEAR && mode != GL11.GL_EYE_LINEAR) return false;
             if (mode == GL11.GL_OBJECT_LINEAR && (this.objectPlaneMask & 1 << i) != 0) {
@@ -394,13 +410,27 @@ public final class EndPortalRenderer {
         return true;
     }
 
+    private static GlStateManager.TexGenCoord texGen(int index) {
+        GlStateManager.TexGen tg = GlStateManager.TEX_GEN;
+        return switch (index) {
+            case 0 -> tg.s;
+            case 1 -> tg.t;
+            case 2 -> tg.r;
+            default -> tg.q;
+        };
+    }
+
     private boolean readLight() {
         if (this.settings[1] == 0.0F) return true;
+        if (this.lightChecked) return this.lightValid;
+        this.lightChecked = true;
+        this.lightValid = false;
         GlStateManager.activeTexture(GL13.GL_TEXTURE1);
         try {
             if (!modulates(GL13.GL_PREVIOUS)) return false;
             for (int i = 0; i < 4; i++) if (GL11.glIsEnabled(GL11.GL_TEXTURE_GEN_S + i)) return false;
             this.readMatrix(GL11.GL_TEXTURE_MATRIX, this.lightTransform);
+            this.lightValid = true;
             return true;
         } finally {
             GlStateManager.activeTexture(GL13.GL_TEXTURE0);
@@ -533,7 +563,7 @@ public final class EndPortalRenderer {
 
     private GlProgram<PortalShader> program(int count) {
         ChunkFogMode mode = this.fog.getFogMode();
-        return this.programs.computeIfAbsent(mode.ordinal() * MAX_LAYERS + count - 1, key -> this.createProgram(mode, count));
+        return this.programs.computeIfAbsent(mode.ordinal() * MAX_LAYERS + count - 1, _ -> this.createProgram(mode, count));
     }
 
     private GlProgram<PortalShader> createProgram(ChunkFogMode fogMode, int count) {
@@ -651,7 +681,6 @@ public final class EndPortalRenderer {
 
     private static final class CapturedFog implements FogService {
         private final float[] color = new float[4];
-        private final FloatBuffer data = BufferUtils.createFloatBuffer(4);
         private int mode;
         private float start;
         private float end;
@@ -659,18 +688,17 @@ public final class EndPortalRenderer {
         private int shape = FOG_SHAPE_PLANAR;
         private boolean supported = true;
 
-        private void capture() {
+        private void capture(boolean supported, float[] color) {
+            GlStateManager.Fog fog = GlStateManager.FOG;
             this.supported = true;
-            this.mode = GL11.glIsEnabled(GL11.GL_FOG) ? GL11.glGetInteger(GL11.GL_FOG_MODE) : 0;
+            this.mode = fog.state.enabled ? fog.mode : 0;
             if (this.mode == 0) return;
-            this.supported = GL11.glGetInteger(GL14.GL_FOG_COORDINATE_SOURCE) == GL14.GL_FRAGMENT_DEPTH;
+            this.supported = supported;
             this.shape = Argentum.CONFIG.fogShape.index;
-            this.start = GL11.glGetFloat(GL11.GL_FOG_START);
-            this.end = GL11.glGetFloat(GL11.GL_FOG_END);
-            this.density = GL11.glGetFloat(GL11.GL_FOG_DENSITY);
-            GL11.glGetFloatv(GL11.GL_FOG_COLOR, this.data.clear());
-            for (int i = 0; i < 4; i++) this.color[i] = this.data.get(i);
-            this.color[3] = 1.0F;
+            this.start = fog.start;
+            this.end = fog.end;
+            this.density = fog.density;
+            System.arraycopy(color, 0, this.color, 0, 4);
         }
 
         private boolean same(CapturedFog other) {

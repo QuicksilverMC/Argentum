@@ -31,3 +31,6 @@ accessible field net/minecraft/client/render/platform/GlStateManager CULL Lnet/m
 accessible field net/minecraft/client/render/platform/GlStateManager LIGHTING Lnet/minecraft/client/render/platform/GlStateManager$GlState;
 accessible field net/minecraft/client/render/platform/GlStateManager TEXTURES [Lnet/minecraft/client/render/platform/GlStateManager$Texture;
 accessible field net/minecraft/client/render/platform/GlStateManager texture I
+accessible class net/minecraft/client/render/platform/GlStateManager$TexGen
+accessible class net/minecraft/client/render/platform/GlStateManager$TexGenCoord
+accessible field net/minecraft/client/render/platform/GlStateManager TEX_GEN Lnet/minecraft/client/render/platform/GlStateManager$TexGen;
