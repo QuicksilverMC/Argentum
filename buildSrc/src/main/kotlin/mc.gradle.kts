@@ -35,6 +35,12 @@ repositories {
     maven("https://maven.taumc.org/releases")
     maven("https://maven.cloverclient.com/releases")
     exclusiveContent {
+        forRepository { maven("https://mvn.ventooth.com/releases") }
+        filter {
+            includeGroup("com.ventooth")
+        }
+    }
+    exclusiveContent {
         forRepository { maven("https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1") }
         filter {
             includeGroup("me.djtheredstoner")
