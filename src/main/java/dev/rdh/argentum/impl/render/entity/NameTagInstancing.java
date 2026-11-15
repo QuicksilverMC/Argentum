@@ -173,9 +173,16 @@ final class NameTagInstancing {
             return false;
         }
 
-        int rows = (this.tagCount + TAGS_PER_ROW - 1) / TAGS_PER_ROW;
-        FloatBuffer tags = this.tags.limit(rows * TAGS_PER_ROW * TAG_FLOATS).position(0);
-        upload(this.tagTexture, 0, 0, TAGS_PER_ROW * TAG_TEXELS, rows, tags);
+        int fullRows = this.tagCount / TAGS_PER_ROW;
+        int lastRow = this.tagCount % TAGS_PER_ROW;
+        if (fullRows > 0) {
+            upload(this.tagTexture, 0, 0, TAGS_PER_ROW * TAG_TEXELS, fullRows,
+                    this.tags.limit(fullRows * TAGS_PER_ROW * TAG_FLOATS).position(0));
+        }
+        if (lastRow > 0) {
+            upload(this.tagTexture, 0, fullRows, lastRow * TAG_TEXELS, 1,
+                    this.tags.limit(this.tagCount * TAG_FLOATS).position(fullRows * TAGS_PER_ROW * TAG_FLOATS));
+        }
         this.tags.clear();
 
         GL13.glActiveTexture(GL13.GL_TEXTURE2);
