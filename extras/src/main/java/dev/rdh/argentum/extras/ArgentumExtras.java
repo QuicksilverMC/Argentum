@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.taumc.celeritas.api.OptionGUIConstructionEvent;
 import pl.tomgirl.pylon.window.DisplaySdl;
 
+import java.util.function.BooleanSupplier;
+
 public class ArgentumExtras implements ClientModInitializer, PreLaunchEntrypoint {
 	public static final Logger LOGGER = LoggerFactory.getLogger("argentum-extras");
 	public static ArgentumExtrasConfig CONFIG;
@@ -27,6 +29,7 @@ public class ArgentumExtras implements ClientModInitializer, PreLaunchEntrypoint
 				ArgentumExtrasConfig.class, ArgentumExtrasConfig::new, ArgentumExtrasConfig::validate
 		);
 		CONFIG = CONFIG_STORAGE.getData();
+		FabricLoader.getInstance().getObjectShare().put("argentum-extras:sky", (BooleanSupplier) () -> CONFIG.sky);
 
 		if (isPylonLoaded()) {
 			DisplaySdl d = DisplaySdl.instance();

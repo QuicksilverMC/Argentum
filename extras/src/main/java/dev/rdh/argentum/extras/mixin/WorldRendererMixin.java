@@ -2,9 +2,12 @@ package dev.rdh.argentum.extras.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.rdh.argentum.extras.ArgentumExtras;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.vertex.Tesselator;
 import net.minecraft.client.render.vertex.VertexBuffer;
 import net.minecraft.client.render.world.WorldRenderer;
 import net.minecraft.entity.living.player.PlayerEntity;
@@ -47,9 +50,17 @@ public class WorldRendererMixin {
         return ArgentumExtras.CONFIG.sky;
     }
 
-    @ModifyArg(method = "renderSky", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;color4f(FFFF)V", ordinal = 0), index = 3)
-    private float argentumExtras$celestialAlpha(float alpha) {
-        return ArgentumExtras.CONFIG.sunAndMoon ? alpha : 0.0F;
+    @WrapOperation(method = "renderSky", at = {
+            @At(value = "INVOKE", target = "Lnet/minecraft/client/render/vertex/Tesselator;end()V", ordinal = 1),
+            @At(value = "INVOKE", target = "Lnet/minecraft/client/render/vertex/Tesselator;end()V", ordinal = 2)
+    })
+    private void argentumExtras$drawSunAndMoon(Tesselator tesselator, Operation<Void> original) {
+        if (ArgentumExtras.CONFIG.sunAndMoon) {
+            original.call(tesselator);
+        } else {
+            tesselator.getBuffer().end();
+            tesselator.getBuffer().clear();
+        }
     }
 
     @WrapWithCondition(method = "renderSky", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/vertex/VertexBuffer;draw(I)V", ordinal = 1))

@@ -5,6 +5,7 @@ import dev.rdh.argentum.impl.ext.WorldRendererExtension;
 import dev.rdh.cera.Cera;
 import dev.rdh.cera.ext.CeraWorldRendererExtension;
 import dev.rdh.cera.modules.CustomSky;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.world.WorldRenderer;
 import net.minecraft.client.world.ClientWorld;
@@ -17,6 +18,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.util.function.BooleanSupplier;
 
 @Mixin(WorldRenderer.class)
 public abstract class WorldRendererMixin implements CeraWorldRendererExtension {
@@ -31,6 +34,9 @@ public abstract class WorldRendererMixin implements CeraWorldRendererExtension {
 
     @Unique
     private float cera$celestialAlpha;
+
+    @Unique
+    private BooleanSupplier cera$extrasSky;
 
     @Override
     public CustomSky cera$getCustomSky() {
@@ -54,7 +60,7 @@ public abstract class WorldRendererMixin implements CeraWorldRendererExtension {
     // Same spot as OptiFine: after the sunrise/sunset disk, before the sun and moon.
     @Inject(method = "renderSky(FI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientWorld;getRain(F)F"))
     private void cera$renderCustomSky(float tickDelta, int anaglyphRenderPass, CallbackInfo ci) {
-        if (Cera.CONFIG.customSky) {
+        if (this.cera$customSkyShown()) {
             this.cera$customSky.render(this.world, tickDelta);
             // restore what vanilla expects for the sun/moon/stars that follow
             GlStateManager.disableFog();
@@ -76,7 +82,16 @@ public abstract class WorldRendererMixin implements CeraWorldRendererExtension {
     // OptiFine hides vanilla stars whenever the dimension has custom sky layers.
     @ModifyExpressionValue(method = "renderSky(FI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientWorld;getStarBrightness(F)F"))
     private float cera$hideVanillaStars(float brightness) {
-        return Cera.CONFIG.customSky && this.cera$customSky.hasLayers(this.world) ? 0.0F : brightness;
+        return this.cera$customSkyShown() && this.cera$customSky.hasLayers(this.world) ? 0.0F : brightness;
+    }
+
+    @Unique
+    private boolean cera$customSkyShown() {
+        if (this.cera$extrasSky == null) {
+            Object shared = FabricLoader.getInstance().getObjectShare().get("argentum-extras:sky");
+            this.cera$extrasSky = shared instanceof BooleanSupplier sky ? sky : () -> true;
+        }
+        return Cera.CONFIG.customSky && this.cera$extrasSky.getAsBoolean();
     }
 
     @ModifyArg(method = "renderSky(FI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/texture/TextureManager;bind(Lnet/minecraft/resource/Identifier;)V", ordinal = 0))
