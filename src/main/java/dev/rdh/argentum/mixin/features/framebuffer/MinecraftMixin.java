@@ -78,7 +78,8 @@ public abstract class MinecraftMixin implements MinecraftExtension {
                 && this.screen == null
                 && !this.gameRenderer.hasShader()
                 && !((WorldRendererInvoker) this.worldRenderer).invokeShouldRenderEntityOutlines()
-                && !this.argentum$framebufferRequested;
+                && !this.argentum$framebufferRequested
+                && !this.argentum$screenshotRequested;
         this.argentum$framebufferRequested = false;
     }
 
@@ -95,7 +96,7 @@ public abstract class MinecraftMixin implements MinecraftExtension {
 
     @Inject(method = "runGame", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;updateDisplay()V"))
     private void argentum$takeScreenshot(CallbackInfo ci) {
-        if (!this.argentum$screenshotRequested) return;
+        if (!this.argentum$screenshotRequested || this.argentum$renderingDirect) return;
         this.argentum$screenshotRequested = false;
         GLX.bindFramebuffer(GLX.GL_FRAMEBUFFER, 0);
         this.gui.getChat().addMessage(Screenshot.take(this.gameDir, this.width, this.height, this.renderTarget));
