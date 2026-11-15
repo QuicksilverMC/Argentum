@@ -74,7 +74,7 @@ public abstract class MinecraftMixin implements MinecraftExtension {
 
     @Inject(method = "runGame", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/pipeline/RenderTarget;bindWrite(Z)V"))
     private void argentum$chooseFramebuffer(CallbackInfo ci) {
-        this.argentum$renderingDirect = Argentum.CONFIG.directRendering && GLX.useFbo()
+        this.argentum$renderingDirect = Argentum.CONFIG.directRendering() && GLX.useFbo()
                 && this.screen == null
                 && !this.gameRenderer.hasShader()
                 && !((WorldRendererInvoker) this.worldRenderer).invokeShouldRenderEntityOutlines()

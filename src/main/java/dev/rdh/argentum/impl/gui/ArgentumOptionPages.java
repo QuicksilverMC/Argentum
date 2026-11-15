@@ -371,7 +371,7 @@ public final class ArgentumOptionPages {
                 .add(toggle(Option.GUI_ITEM_ATLAS, OptionImpact.HIGH,
                         (config, value) -> config.guiItemAtlas = value, config -> config.guiItemAtlas))
                 .add(toggle(Option.DIRECT_RENDERING, OptionImpact.HIGH,
-                        (config, value) -> config.directRendering = value, config -> config.directRendering))
+                        (config, value) -> config.directRendering = value, config -> config.directRendering()))
                 .add(toggle(StandardOptions.Option.TRANSLUCENT_FACE_SORTING,
                         OptionImpact.VARIES,
                         (config, value) -> config.translucencySorting = value,

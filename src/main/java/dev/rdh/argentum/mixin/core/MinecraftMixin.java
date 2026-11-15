@@ -17,6 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.compat.NvidiaWorkarounds;
 import dev.rdh.argentum.impl.compat.PylonFullscreen;
+import dev.rdh.argentum.impl.config.DirectRenderingDefault;
 import dev.rdh.argentum.impl.render.gui.hud.item.GuiItemIcons;
 
 import java.util.ArrayList;
@@ -64,6 +65,7 @@ public abstract class MinecraftMixin {
         if (!missing.isEmpty()) {
             throw new IllegalStateException("Argentum requires " + String.join(", ", missing) + " (GL_VERSION " + GL11.glGetString(GL11.GL_VERSION) + ", GL_RENDERER " + GL11.glGetString(GL11.GL_RENDERER) + ")");
         }
+        DirectRenderingDefault.detect(GL11.glGetString(GL11.GL_RENDERER));
         if (Argentum.renderAheadSupported()) this.celeritas$renderAheadManager = new RenderAheadManager();
     }
 

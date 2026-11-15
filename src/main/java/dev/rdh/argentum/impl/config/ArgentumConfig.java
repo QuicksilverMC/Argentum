@@ -1,5 +1,6 @@
 package dev.rdh.argentum.impl.config;
 
+import com.google.gson.annotations.SerializedName;
 import org.embeddedt.embeddium.impl.render.chunk.occlusion.AsyncOcclusionMode;
 
 import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService.FogShape;
@@ -34,13 +35,18 @@ public class ArgentumConfig {
     public boolean checkGlErrors = false;
     public boolean fontBatching = true;
     public boolean guiItemAtlas = true;
-    public boolean directRendering = false;
+    @SerializedName("direct_rendering_v4")
+    public Boolean directRendering;
     public boolean greedyRenderThread = false;
     public boolean explicitVsyncOption = true; // file only
     public boolean exclusiveFullscreen = false;
     public int fullscreenWidth = 0; // 0 = desktop mode
     public int fullscreenHeight = 0;
     public int fullscreenRefreshRate = 0;
+
+    public boolean directRendering() {
+        return this.directRendering != null ? this.directRendering : DirectRenderingDefault.enabled();
+    }
 
 	public void validate() {
         this.chunkBuilderThreads = Math.max(0, this.chunkBuilderThreads);
