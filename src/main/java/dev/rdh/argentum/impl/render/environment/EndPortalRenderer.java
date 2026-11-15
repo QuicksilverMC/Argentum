@@ -371,9 +371,9 @@ public final class EndPortalRenderer {
     }
 
     private boolean additiveAlpha() {
-        int destinationAlpha = GL11.glGetInteger(GL14.GL_BLEND_DST_ALPHA);
+        int destinationAlpha = GlStateManager.BLEND.dfactorAlpha;
         this.nextAddAlpha = destinationAlpha == GL11.GL_ONE ? 1 : 0;
-        return GL11.glGetInteger(GL14.GL_BLEND_SRC_ALPHA) == GL11.GL_ONE
+        return GlStateManager.BLEND.sfactorAlpha == GL11.GL_ONE
                 && (destinationAlpha == GL11.GL_ONE || destinationAlpha == GL11.GL_ZERO);
     }
 
