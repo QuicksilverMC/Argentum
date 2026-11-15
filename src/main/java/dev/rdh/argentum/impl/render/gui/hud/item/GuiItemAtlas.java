@@ -160,12 +160,15 @@ public final class GuiItemAtlas {
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor(x, y, this.slotSize, this.slotSize);
         GlStateManager.clearColor(0.0F, 0.0F, 0.0F, 0.0F);
+        boolean depthMask = GlStateManager.DEPTH.mask;
+        GlStateManager.depthMask(true);
         GlStateManager.clear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
 
         try {
             render.run();
             return true;
         } finally {
+            GlStateManager.depthMask(depthMask);
             this.bindFramebuffer(previousFramebuffer);
             GL11.glViewport(this.viewport.get(0), this.viewport.get(1), this.viewport.get(2), this.viewport.get(3));
             GL11.glScissor(this.scissor.get(0), this.scissor.get(1), this.scissor.get(2), this.scissor.get(3));
