@@ -79,7 +79,7 @@ vec4 shaded(vec4 color) {
 
 void main() {
     vec4 color = tinted(vTexCoord);
-    if (uGlintPass >= 0 || uItemGlintPass == 1) {
+    if (uGlintPass != -1 || uItemGlintPass == 1) {
         // both layers blend with (SRC_COLOR, ONE), each adding its square, so one pass adds the sum of squares
         vec4 second = tinted(vGlintCoord);
         color = color.a <= 0.1 ? vec4(0.0) : shaded(color);

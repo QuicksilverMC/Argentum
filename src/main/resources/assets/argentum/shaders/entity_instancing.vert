@@ -87,10 +87,10 @@ void main() {
                    (aBoxTexture.y + aVertexColor.z * aBoxSize.y + aVertexColor.w * aBoxSize.z) / textureSize.y)
             : aTexCoord;
     vGlintCoord = vec2(0.0);
-    if (uGlintPass >= 0) {
+    if (uGlintPass != -1) {
         vTexCoord = glintCoord(baseTexCoord, 0.0);
         vGlintCoord = glintCoord(baseTexCoord, 1.0);
-    } else if (uItemGlintPass >= 0) {
+    } else if (uItemGlintPass != -1) {
         vTexCoord = (uItemGlintMatrix * vec4(baseTexCoord, 0.0, 1.0)).xy;
         vGlintCoord = (uItemGlintMatrix1 * vec4(baseTexCoord, 0.0, 1.0)).xy;
     } else if (uChargePass == 1) {
