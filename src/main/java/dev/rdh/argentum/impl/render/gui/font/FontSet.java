@@ -237,7 +237,8 @@ public final class FontSet {
                 float advance = rendererSheet && TextBatcher.CHARACTERS.indexOf(codepoint) == slot
                         ? this.widths[slot]
                         : (int) (0.5 + used * scale) + 1;
-                glyphs.put(codepoint, new Glyph(advance, advance - 1.01F, 7 - ascent, height, 1.0F / scale, false,
+                float width = rendererSheet ? advance - 1.01F : cellWidth * scale - 0.01F;
+                glyphs.put(codepoint, new Glyph(advance, width, 7 - ascent, height, 1.0F / scale, false,
                         used == 0 ? null : sheet, x, y, cellWidth, cellHeight));
             }
         }
