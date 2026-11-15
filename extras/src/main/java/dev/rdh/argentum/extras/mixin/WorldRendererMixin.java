@@ -106,7 +106,7 @@ public class WorldRendererMixin {
     // but it seems to work
     @WrapWithCondition(method = "renderSky", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;callList(I)V", ordinal = 3))
     private boolean argentumExtras$drawLowerSky(int list) {
-        return ArgentumExtras.CONFIG.lowerSky && ArgentumExtras.CONFIG.sky;
+        return ArgentumExtras.CONFIG.drawLowerSky && ArgentumExtras.CONFIG.sky;
     }
 
     @ModifyExpressionValue(method = "renderFancyClouds", at = @At(value = "CONSTANT", args = "doubleValue=0.029999999329447746")) // lmao

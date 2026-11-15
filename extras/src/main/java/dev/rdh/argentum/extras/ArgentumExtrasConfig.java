@@ -35,7 +35,7 @@ public class ArgentumExtrasConfig {
     public boolean secondNameTagLayer = true;
     public boolean sky = true;
     public boolean forceSky = false;
-    public boolean lowerSky = false;
+    public boolean drawLowerSky = true;
     public boolean sunAndMoon = true;
     public boolean stars = true;
     public int vignetteStrength = 100;
