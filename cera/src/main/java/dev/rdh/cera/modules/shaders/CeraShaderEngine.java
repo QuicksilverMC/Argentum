@@ -158,4 +158,19 @@ public final class CeraShaderEngine extends ShaderEngine<CeraShaderState> implem
             }
         }
     }
+
+    @Override
+    public void beginBlockEntities() {
+        ShaderRender.beginSignTextDeferral();
+    }
+
+    @Override
+    public void endBlockEntities(float partialTicks) {
+        ShaderRender.renderDeferredSignText(partialTicks);
+    }
+
+    @Override
+    public void abortBlockEntities() {
+        ShaderRender.discardDeferredSignText();
+    }
 }

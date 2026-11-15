@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.Mixin;
 public abstract class TextRendererMixin {
     @WrapMethod(method = "drawWithShadow(Ljava/lang/String;FFI)I")
     private int cera$drawWithShadow(String text, float x, float y, int color, Operation<Integer> original) {
-        boolean pushed = ShaderRender.isManaged();
+        boolean pushed = !ShaderRender.isTextBatchPushed() && ShaderRender.isManaged();
         if (pushed) ShaderRender.push(Stack.Text);
         try {
             return original.call(text, x, y, color);
@@ -22,7 +22,7 @@ public abstract class TextRendererMixin {
 
     @WrapMethod(method = "draw(Ljava/lang/String;III)I")
     private int cera$draw(String text, int x, int y, int color, Operation<Integer> original) {
-        boolean pushed = ShaderRender.isManaged();
+        boolean pushed = !ShaderRender.isTextBatchPushed() && ShaderRender.isManaged();
         if (pushed) ShaderRender.push(Stack.Text);
         try {
             return original.call(text, x, y, color);
@@ -33,7 +33,7 @@ public abstract class TextRendererMixin {
 
     @WrapMethod(method = "draw(Ljava/lang/String;FFIZ)I")
     private int cera$draw(String text, float x, float y, int color, boolean shadow, Operation<Integer> original) {
-        boolean pushed = ShaderRender.isManaged();
+        boolean pushed = !ShaderRender.isTextBatchPushed() && ShaderRender.isManaged();
         if (pushed) ShaderRender.push(Stack.Text);
         try {
             return original.call(text, x, y, color, shadow);
