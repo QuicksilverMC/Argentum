@@ -66,4 +66,15 @@ public class SignRendererMixin {
         }
         return wrapped;
     }
+
+    @WrapOperation(method = "render(Lnet/minecraft/block/entity/SignBlockEntity;DDDFI)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/text/Text;getFormattedString()Ljava/lang/String;"))
+    private String argentum$cacheFormattedLine(Text line, Operation<String> original, @Local(argsOnly = true) SignBlockEntity sign) {
+        SignTextCache cache = (SignTextCache)sign;
+        String formatted = cache.argentum$getFormattedLine(line);
+        if (formatted == null) {
+            formatted = original.call(line);
+            cache.argentum$putFormattedLine(line, formatted);
+        }
+        return formatted;
+    }
 }
