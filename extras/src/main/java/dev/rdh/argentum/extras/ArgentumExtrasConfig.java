@@ -43,6 +43,7 @@ public class ArgentumExtrasConfig {
     public int weatherDensity = 100;
     public LeafQuality leafQuality = LeafQuality.FANCY;
     public boolean disableTextShadows = false;
+    public boolean achievementToasts = true;
     public boolean fxaa = false;
     public boolean smoothBlockOutlines = false;
     public float blockOutlineWidth = 2.0f;

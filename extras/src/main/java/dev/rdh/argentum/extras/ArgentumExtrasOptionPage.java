@@ -125,6 +125,7 @@ final class ArgentumExtrasOptionPage {
         OptionGroup misc = OptionGroup.createBuilder()
                 .setId(id("misc"))
                 .add(toggle("disable_text_shadows", (c, v) -> c.disableTextShadows = v, c -> c.disableTextShadows))
+                .add(toggle("achievement_toasts", (c, v) -> c.achievementToasts = v, c -> c.achievementToasts))
                 .addConditionally(
                         ArgentumExtras.isPylonLoaded() || ArgentumExtras.isLegacyLwjgl3Loaded(),
                         () -> toggle("high_dpi_screen", (c, v) -> c.highDpiScreen = v, c -> c.highDpiScreen, OptionFlag.REQUIRES_GAME_RESTART)

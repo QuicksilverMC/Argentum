@@ -8,7 +8,7 @@
     "AbstractArmorLayerMixin", "AbstractLeavesBlockMixin", "AnvilScreenMixin", "DebugOverlayMixin",
     "EntityRendererMixin", "GameGuiMixin", "TextRendererMixin",
     "FastBlockRendererMixin", "GameRendererMixin", "LivingEntityRendererMixin", "MobRendererMixin",
-    "ParticleManagerMixin", "WorldRendererMixin"
+    "ParticleManagerMixin", "ToastGuiMixin", "WorldRendererMixin"
   ],
   "mixinextras": {
     "minVersion": "0.5.1"
