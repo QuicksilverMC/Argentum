@@ -35,6 +35,11 @@ public abstract class BufferBuilderMixin implements BufferBuilderExtension {
         this.intBuffer.position(this.vertexCount * this.format.getIntSize());
     }
 
+    @Inject(method = "grow", at = @At("HEAD"))
+    private void argentum$restoreIntBufferLimit(int size, CallbackInfo ci) {
+        this.intBuffer.limit(this.intBuffer.capacity());
+    }
+
     @Override
     public IntBuffer argentum$rawIntBuffer() {
         return this.intBuffer;
