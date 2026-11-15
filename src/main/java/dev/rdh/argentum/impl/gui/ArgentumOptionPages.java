@@ -2,6 +2,7 @@ package dev.rdh.argentum.impl.gui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.Window;
+import net.minecraft.client.render.texture.TextureAtlas;
 import org.embeddedt.embeddium.impl.gui.framework.TextComponent;
 import org.embeddedt.embeddium.impl.render.chunk.compile.executor.ChunkBuilder;
 import org.embeddedt.embeddium.impl.render.chunk.occlusion.AsyncOcclusionMode;
@@ -281,7 +282,13 @@ public final class ArgentumOptionPages {
                 .add(option(int.class, VANILLA, StandardOptions.Option.MIPMAP_LEVEL)
                         .setName(vanilla("options.mipmapLevels"))
                         .setControl(option -> new SliderControl(option, 0, 4, 1, ControlValueFormatter.number()))
-                        .setBinding((options, value) -> options.mipmapLevels = value, options -> options.mipmapLevels)
+                        .setBinding((options, value) -> {
+                            options.mipmapLevels = value;
+                            Minecraft minecraft = Minecraft.getInstance();
+                            minecraft.getBlocksAtlas().setMaxMipLevel(value);
+                            minecraft.getTextureManager().bind(TextureAtlas.BLOCKS_LOCATION);
+                            minecraft.getBlocksAtlas().setFilter(false, value > 0);
+                        }, options -> options.mipmapLevels)
                         .setImpact(OptionImpact.MEDIUM)
                         .setFlags(OptionFlag.REQUIRES_ASSET_RELOAD)
                         .build())
