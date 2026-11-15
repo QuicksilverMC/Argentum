@@ -190,6 +190,9 @@ public final class FontSet {
                     this.references.remove(id);
                 }
             }
+            case "unihex" -> {
+                return new UnihexFont(resources, provider);
+            }
             case "space" -> {
                 Int2ObjectMap<Glyph> glyphs = new Int2ObjectOpenHashMap<>();
                 for (Map.Entry<String, JsonElement> advance : provider.getAsJsonObject("advances").entrySet()) {
