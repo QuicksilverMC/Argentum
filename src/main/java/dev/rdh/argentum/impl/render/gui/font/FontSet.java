@@ -10,6 +10,7 @@ import com.google.gson.JsonParser;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.texture.TextureUtil;
 import net.minecraft.client.resource.Resource;
@@ -27,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.IntFunction;
 
 public final class FontSet {
@@ -38,6 +40,7 @@ public final class FontSet {
 
     private final float[] widths;
     private final Glyph[][] blocks = new Glyph[0x1100][];
+    private final Set<Identifier> references = new ObjectOpenHashSet<>();
     private Identifier sheet;
     private GlyphAtlas atlas;
     private List<IntFunction<Glyph>> providers;
@@ -168,6 +171,24 @@ public final class FontSet {
             case "legacy_unicode" -> {
                 return legacyUnicode(resources, new Identifier(provider.get("sizes").getAsString()),
                         provider.get("template").getAsString());
+            }
+            case "reference" -> {
+                Identifier id = new Identifier(provider.get("id").getAsString());
+                if (!this.references.add(id)) throw new IllegalStateException("Font reference loop at " + id);
+                try {
+                    List<Resource> stack = resources.getResources(new Identifier(id.getNamespace(), "font/" + id.getPath() + ".json"));
+                    List<IntFunction<Glyph>> referenced = new ObjectArrayList<>();
+                    for (int i = stack.size() - 1; i >= 0; i--) this.loadDefinition(resources, stack.get(i), referenced);
+                    return codepoint -> {
+                        for (IntFunction<Glyph> font : referenced) {
+                            Glyph glyph = font.apply(codepoint);
+                            if (glyph != null) return glyph;
+                        }
+                        return null;
+                    };
+                } finally {
+                    this.references.remove(id);
+                }
             }
             case "space" -> {
                 Int2ObjectMap<Glyph> glyphs = new Int2ObjectOpenHashMap<>();
