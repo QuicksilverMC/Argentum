@@ -21,6 +21,12 @@ public class SignBlockEntityMixin implements SignTextCache {
     private int argentum$fontGeneration;
     @Unique
     private int argentum$cursor;
+    @Unique
+    private final Text[] argentum$formattedKeys = new Text[4];
+    @Unique
+    private final String[] argentum$formatted = new String[4];
+    @Unique
+    private int argentum$formattedCursor;
 
     @Override
     public List<Text> argentum$getWrappedLine(Text line, int fontGeneration) {
@@ -48,5 +54,23 @@ public class SignBlockEntityMixin implements SignTextCache {
         this.argentum$keys[slot] = line;
         this.argentum$wrapped[slot] = wrapped;
         this.argentum$cursor = (slot + 1) % this.argentum$keys.length;
+    }
+
+    @Override
+    public String argentum$getFormattedLine(Text line) {
+        for (int i = 0; i < this.argentum$formattedKeys.length; i++) {
+            if (this.argentum$formattedKeys[i] == line) {
+                return this.argentum$formatted[i];
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public void argentum$putFormattedLine(Text line, String formatted) {
+        int slot = this.argentum$formattedCursor;
+        this.argentum$formattedKeys[slot] = line;
+        this.argentum$formatted[slot] = formatted;
+        this.argentum$formattedCursor = (slot + 1) % this.argentum$formattedKeys.length;
     }
 }

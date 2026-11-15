@@ -11,4 +11,11 @@ public interface SignTextCache {
 
     default void argentum$putWrappedLine(Text line, int fontGeneration, List<Text> wrapped) {
     }
+
+    default String argentum$getFormattedLine(Text line) {
+        return null;
+    }
+
+    default void argentum$putFormattedLine(Text line, String formatted) {
+    }
 }
