@@ -33,6 +33,9 @@ public class EntityOcclusionCuller {
     private static final double RENDER_MARGIN = 0.5D;
     private static final double MOTION_MARGIN = 0.1D;
     private static final double EYE_TOLERANCE = 0.1D;
+    private static final double MAX_TOLERANCE = 1.0D;
+    private static final double MOTION_FRAMES = 2.0D;
+    private static final double PARALLAX = 0.6D;
     private static final double GROUP_SIZE = 2.0D;
     private static final double MAX_BOX_VOLUME = 64.0D * 64.0D * 64.0D;
 
@@ -43,6 +46,7 @@ public class EntityOcclusionCuller {
     private final Matrix4f viewProjection = new Matrix4f();
     private final FrustumIntersection frustum = new FrustumIntersection();
     private final Vector3f eye = new Vector3f();
+    private double lastEyeX, lastEyeY, lastEyeZ;
     private long frame;
     private int queryMode = 0;
     private int previousProgram;
@@ -64,6 +68,13 @@ public class EntityOcclusionCuller {
         double eyeY = cameraY + this.eye.y;
         double eyeZ = cameraZ + this.eye.z;
 
+        double moved = Math.sqrt((eyeX - this.lastEyeX) * (eyeX - this.lastEyeX) + (eyeY - this.lastEyeY) * (eyeY - this.lastEyeY)
+                + (eyeZ - this.lastEyeZ) * (eyeZ - this.lastEyeZ));
+        this.lastEyeX = eyeX;
+        this.lastEyeY = eyeY;
+        this.lastEyeZ = eyeZ;
+        double tolerance = Math.min(MAX_TOLERANCE, Math.max(EYE_TOLERANCE, moved * MOTION_FRAMES));
+        double margin = RENDER_MARGIN + PARALLAX * (tolerance - EYE_TOLERANCE);
 
         long now = System.nanoTime() / 1_000_000L;
         this.frame++;
@@ -116,7 +127,7 @@ public class EntityOcclusionCuller {
                 this.poll(query);
                 Snapshot box = query.box;
                 Snapshot result = query.result;
-                boolean culled = query.occluded && result.covers(eyeX, eyeY, eyeZ, EYE_TOLERANCE,
+                boolean culled = query.occluded && result.covers(eyeX, eyeY, eyeZ, result.tolerance,
                         box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
                 if (culled) {
                     this.culled.addAll(query.members);
@@ -124,7 +135,7 @@ public class EntityOcclusionCuller {
 
                 // refresh an occluded result before it stops covering the camera or the entity
                 if (query.pending || now - query.issuedAt < Argentum.CONFIG.entityOcclusionIntervalMs && (!query.occluded
-                        || result.covers(eyeX, eyeY, eyeZ, EYE_TOLERANCE / 2.0D,
+                        || result.covers(eyeX, eyeY, eyeZ, result.tolerance / 2.0D,
                         box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ))) {
                     continue;
                 }
@@ -138,8 +149,8 @@ public class EntityOcclusionCuller {
 
                 // a box partly off screen draws no samples there, so only a box fully on screen can be proven hidden
                 if (this.frustum.intersectAab(
-                        (float) (minX - RENDER_MARGIN - cameraX), (float) (minY - RENDER_MARGIN - cameraY), (float) (minZ - RENDER_MARGIN - cameraZ),
-                        (float) (maxX + RENDER_MARGIN - cameraX), (float) (maxY + RENDER_MARGIN - cameraY), (float) (maxZ + RENDER_MARGIN - cameraZ))
+                        (float) (minX - margin - cameraX), (float) (minY - margin - cameraY), (float) (minZ - margin - cameraZ),
+                        (float) (maxX + margin - cameraX), (float) (maxY + margin - cameraY), (float) (maxZ + margin - cameraZ))
                         != FrustumIntersection.INSIDE) {
                     continue;
                 }
@@ -149,6 +160,8 @@ public class EntityOcclusionCuller {
                     queryPass = true;
                 }
                 query.issued.set(eyeX, eyeY, eyeZ, minX, minY, minZ, maxX, maxY, maxZ);
+                query.issued.tolerance = tolerance;
+                query.issued.margin = margin;
                 this.issue(query, cameraX, cameraY, cameraZ);
                 query.issuedAt = now;
             }
@@ -221,9 +234,10 @@ public class EntityOcclusionCuller {
         Snapshot box = query.issued;
         BufferBuilder buffer = Tesselator.getInstance().getBuffer();
         buffer.begin(GL11.GL_QUAD_STRIP, DefaultVertexFormat.POSITION);
+        double margin = box.margin;
         addBox(buffer,
-                box.minX - RENDER_MARGIN - cameraX, box.minY - RENDER_MARGIN - cameraY, box.minZ - RENDER_MARGIN - cameraZ,
-                box.maxX + RENDER_MARGIN - cameraX, box.maxY + RENDER_MARGIN - cameraY, box.maxZ + RENDER_MARGIN - cameraZ);
+                box.minX - margin - cameraX, box.minY - margin - cameraY, box.minZ - margin - cameraZ,
+                box.maxX + margin - cameraX, box.maxY + margin - cameraY, box.maxZ + margin - cameraZ);
         Tesselator.getInstance().end();
 
         GL15C.glEndQuery(this.queryMode);
@@ -306,6 +320,7 @@ public class EntityOcclusionCuller {
     private static class Snapshot {
         private double eyeX, eyeY, eyeZ;
         private double minX, minY, minZ, maxX, maxY, maxZ;
+        private double tolerance, margin;
 
         private void include(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
             this.minX = Math.min(this.minX, minX);
