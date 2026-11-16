@@ -10,7 +10,8 @@ import net.minecraft.entity.living.mob.monster.GuardianEntity;
 import net.minecraft.entity.living.mob.monster.boss.Boss;
 import net.minecraft.util.math.Box;
 
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import org.embeddedt.embeddium.impl.render.chunk.ChunkRenderMatrices;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
@@ -24,18 +25,21 @@ import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.blockentity.BakedItemFrames;
 import dev.rdh.argentum.impl.render.terrain.ArgentumWorldRenderer;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 public class EntityOcclusionCuller {
     private static final double RENDER_MARGIN = 0.5D;
     private static final double MOTION_MARGIN = 0.1D;
     private static final double EYE_TOLERANCE = 0.1D;
+    private static final double GROUP_SIZE = 2.0D;
     private static final double MAX_BOX_VOLUME = 64.0D * 64.0D * 64.0D;
 
     private final ArgentumWorldRenderer renderer;
-    private final Map<Entity, Query> queries = new Reference2ReferenceOpenHashMap<>();
+    private final Long2ObjectOpenHashMap<Query> queries = new Long2ObjectOpenHashMap<>();
+    private final List<Query> active = new ArrayList<>();
+    private final ReferenceOpenHashSet<Entity> culled = new ReferenceOpenHashSet<>();
     private final Matrix4f viewProjection = new Matrix4f();
     private final FrustumIntersection frustum = new FrustumIntersection();
     private final Vector3f eye = new Vector3f();
@@ -60,55 +64,77 @@ public class EntityOcclusionCuller {
         double eyeY = cameraY + this.eye.y;
         double eyeZ = cameraZ + this.eye.z;
 
+
         long now = System.nanoTime() / 1_000_000L;
         this.frame++;
         if (this.queryMode == 0) {
             this.queryMode = GL.getCapabilities().OpenGL33 ? GL33C.GL_ANY_SAMPLES_PASSED : GL15C.GL_SAMPLES_PASSED;
         }
 
+        List<Query> active = this.active;
+        active.clear();
+        for (Entity entity : entities) {
+            if (!this.isCullable(entity, camera)) {
+                continue;
+            }
+
+            Box shape = entity.getShape();
+            double offsetX = (entity.prevX - entity.x) * (1.0D - tickDelta);
+            double offsetY = (entity.prevY - entity.y) * (1.0D - tickDelta);
+            double offsetZ = (entity.prevZ - entity.z) * (1.0D - tickDelta);
+            double minX = shape.minX + offsetX;
+            double minY = shape.minY + offsetY;
+            double minZ = shape.minZ + offsetZ;
+            double maxX = shape.maxX + offsetX;
+            double maxY = shape.maxY + offsetY;
+            double maxZ = shape.maxZ + offsetZ;
+
+            long key = cell((minX + maxX) / 2.0D, (minY + maxY) / 2.0D, (minZ + maxZ) / 2.0D);
+            Query query = this.queries.get(key);
+            if (query == null) {
+                query = new Query();
+                this.queries.put(key, query);
+            }
+            if (query.lastSeenFrame != this.frame) {
+                query.lastSeenFrame = this.frame;
+                query.members.clear();
+                query.motion = 0.0D;
+                query.box.set(0.0D, 0.0D, 0.0D, minX, minY, minZ, maxX, maxY, maxZ);
+                active.add(query);
+            } else {
+                query.box.include(minX, minY, minZ, maxX, maxY, maxZ);
+            }
+            query.members.add(entity);
+            query.motion = Math.max(query.motion, Math.max(Math.abs(entity.x - entity.prevX),
+                    Math.max(Math.abs(entity.y - entity.prevY), Math.abs(entity.z - entity.prevZ))));
+        }
+
+        this.culled.clear();
         boolean queryPass = false;
         try {
-            for (Entity entity : entities) {
-                Query query = this.queries.get(entity);
-                if (query != null) {
-                    query.lastSeenFrame = this.frame;
-                    query.culled = false;
-                    this.poll(query);
+            for (Query query : active) {
+                this.poll(query);
+                Snapshot box = query.box;
+                Snapshot result = query.result;
+                boolean culled = query.occluded && result.covers(eyeX, eyeY, eyeZ, EYE_TOLERANCE,
+                        box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
+                if (culled) {
+                    this.culled.addAll(query.members);
                 }
 
-                if (!this.isCullable(entity, camera)) {
+                // refresh an occluded result before it stops covering the camera or the entity
+                if (query.pending || now - query.issuedAt < Argentum.CONFIG.entityOcclusionIntervalMs && (!query.occluded
+                        || result.covers(eyeX, eyeY, eyeZ, EYE_TOLERANCE / 2.0D,
+                        box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ))) {
                     continue;
                 }
 
-                Box shape = entity.getShape();
-                double offsetX = (entity.prevX - entity.x) * (1.0D - tickDelta);
-                double offsetY = (entity.prevY - entity.y) * (1.0D - tickDelta);
-                double offsetZ = (entity.prevZ - entity.z) * (1.0D - tickDelta);
-                double minX = shape.minX + offsetX;
-                double minY = shape.minY + offsetY;
-                double minZ = shape.minZ + offsetZ;
-                double maxX = shape.maxX + offsetX;
-                double maxY = shape.maxY + offsetY;
-                double maxZ = shape.maxZ + offsetZ;
-
-                if (query != null) {
-                    query.culled = query.occluded
-                            && query.result.covers(eyeX, eyeY, eyeZ, EYE_TOLERANCE, minX, minY, minZ, maxX, maxY, maxZ);
-                    // refresh an occluded result before it stops covering the camera or the entity
-                    if (query.pending || now - query.issuedAt < Argentum.CONFIG.entityOcclusionIntervalMs && (!query.occluded
-                            || query.result.covers(eyeX, eyeY, eyeZ, EYE_TOLERANCE / 2.0D, minX, minY, minZ, maxX, maxY, maxZ))) {
-                        continue;
-                    }
+                double motion = MOTION_MARGIN + query.motion;
+                double minX = box.minX - motion, minY = box.minY - motion, minZ = box.minZ - motion;
+                double maxX = box.maxX + motion, maxY = box.maxY + motion, maxZ = box.maxZ + motion;
+                if ((maxX - minX) * (maxY - minY) * (maxZ - minZ) > MAX_BOX_VOLUME) {
+                    continue;
                 }
-
-                double motion = MOTION_MARGIN + Math.max(Math.abs(entity.x - entity.prevX),
-                        Math.max(Math.abs(entity.y - entity.prevY), Math.abs(entity.z - entity.prevZ)));
-                minX -= motion;
-                minY -= motion;
-                minZ -= motion;
-                maxX += motion;
-                maxY += motion;
-                maxZ += motion;
 
                 // a box partly off screen draws no samples there, so only a box fully on screen can be proven hidden
                 if (this.frustum.intersectAab(
@@ -116,12 +142,6 @@ public class EntityOcclusionCuller {
                         (float) (maxX + RENDER_MARGIN - cameraX), (float) (maxY + RENDER_MARGIN - cameraY), (float) (maxZ + RENDER_MARGIN - cameraZ))
                         != FrustumIntersection.INSIDE) {
                     continue;
-                }
-
-                if (query == null) {
-                    query = new Query();
-                    query.lastSeenFrame = this.frame;
-                    this.queries.put(entity, query);
                 }
 
                 if (!queryPass) {
@@ -143,9 +163,15 @@ public class EntityOcclusionCuller {
         }
     }
 
+    private static long cell(double x, double y, double z) {
+        long cellX = (long) Math.floor(x / GROUP_SIZE) & 0x1FFFFFL;
+        long cellY = (long) Math.floor(y / GROUP_SIZE) & 0x1FFFFFL;
+        long cellZ = (long) Math.floor(z / GROUP_SIZE) & 0x1FFFFFL;
+        return cellX << 42 | cellY << 21 | cellZ;
+    }
+
     public boolean isVisible(Entity entity) {
-        Query query = this.queries.get(entity);
-        return query == null || !query.culled;
+        return !this.culled.contains(entity);
     }
 
     public void clear() {
@@ -155,6 +181,8 @@ public class EntityOcclusionCuller {
             }
         }
         this.queries.clear();
+        this.active.clear();
+        this.culled.clear();
     }
 
     private boolean isCullable(Entity entity, Entity camera) {
@@ -263,12 +291,14 @@ public class EntityOcclusionCuller {
     }
 
     private static class Query {
+        private final List<Entity> members = new ArrayList<>();
+        private final Snapshot box = new Snapshot();
         private int id;
         private boolean pending;
         private boolean occluded;
-        private boolean culled;
         private long issuedAt;
-        private long lastSeenFrame;
+        private long lastSeenFrame = -1L;
+        private double motion;
         private Snapshot issued = new Snapshot();
         private Snapshot result = new Snapshot();
     }
@@ -276,6 +306,15 @@ public class EntityOcclusionCuller {
     private static class Snapshot {
         private double eyeX, eyeY, eyeZ;
         private double minX, minY, minZ, maxX, maxY, maxZ;
+
+        private void include(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+            this.minX = Math.min(this.minX, minX);
+            this.minY = Math.min(this.minY, minY);
+            this.minZ = Math.min(this.minZ, minZ);
+            this.maxX = Math.max(this.maxX, maxX);
+            this.maxY = Math.max(this.maxY, maxY);
+            this.maxZ = Math.max(this.maxZ, maxZ);
+        }
 
         private void set(double eyeX, double eyeY, double eyeZ,
                 double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
