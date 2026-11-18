@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.Mixin;
 public abstract class LivingEntityRendererMixin {
     @WrapMethod(method = "renderNameTag(Lnet/minecraft/entity/living/LivingEntity;DDD)V")
     private void argentum$batchNameTag(LivingEntity entity, double x, double y, double z, Operation<Void> original) {
-        NameTagBatch batch = NameTagBatch.active();
+        NameTagBatch batch = NameTagBatch.activeForEntities();
         if (batch == null) {
             original.call(entity, x, y, z);
             return;

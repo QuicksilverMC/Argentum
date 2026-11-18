@@ -368,11 +368,13 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     public int renderBlockEntities(Float partialTicks) {
         boolean batching = this.entityInstancing.resumeBatch();
         int count;
+        this.nameTagBatch.begin(this.matrices.modelView());
         try {
             this.renderingBlockEntities = true;
             count = super.renderBlockEntities(partialTicks);
         } catch (RuntimeException | Error exception) {
             this.entityInstancing.discardBatch();
+            this.nameTagBatch.discard();
             throw exception;
         } finally {
             this.renderingBlockEntities = false;
@@ -385,6 +387,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
                 RenderDevice.exitManagedCode();
             }
         }
+        this.nameTagBatch.end();
         BakedBlockEntities.prepare(this.bakeCandidates);
         this.bakeCandidates.clear();
         return count;

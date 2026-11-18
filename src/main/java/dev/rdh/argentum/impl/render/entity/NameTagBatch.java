@@ -1,6 +1,7 @@
 package dev.rdh.argentum.impl.render.entity;
 
 import dev.rdh.argentum.impl.Argentum;
+import dev.rdh.argentum.impl.render.blockentity.BlockEntityBaker;
 import dev.rdh.argentum.impl.render.terrain.ArgentumWorldRenderer;
 import dev.rdh.argentum.mixin.features.model.BufferBuilderAccessor;
 import net.minecraft.client.Minecraft;
@@ -41,6 +42,7 @@ public final class NameTagBatch {
 
     private final Matrix4fStack matrices = new Matrix4fStack(STACK_SIZE);
     private final Matrix4f multiplied = new Matrix4f();
+    private final Matrix4f cameraInverse = new Matrix4f();
     private final Vector3f position = new Vector3f();
     private int[] vertices = new int[256 * STRIDE];
     private int[] source = new int[256 * TEXT_STRIDE];
@@ -55,14 +57,25 @@ public final class NameTagBatch {
     private int pushes;
     private int matrixMode;
     private boolean lost;
+    private boolean capturesDraws;
     private int passCount;
     private float lightU = 240.0F;
     private float lightV = 240.0F;
+    private float tint = 1.0F;
 
     public static NameTagBatch active() {
         ArgentumWorldRenderer renderer = ArgentumWorldRenderer.instanceNullable();
         NameTagBatch batch = renderer == null ? null : renderer.getNameTagBatch();
         return batch != null && batch.active ? batch : null;
+    }
+
+    public static NameTagBatch activeForEntities() {
+        ArgentumWorldRenderer renderer = ArgentumWorldRenderer.instanceNullable();
+        if (renderer == null) return null;
+        NameTagBatch batch = active();
+        if (batch == null || !renderer.isRenderingBlockEntities()) return batch;
+        batch.flush();
+        return null;
     }
 
     public static NameTagBatch capturing() {
@@ -73,6 +86,7 @@ public final class NameTagBatch {
     public void begin(Matrix4fc camera) {
         this.discard();
         this.camera = camera;
+        this.cameraInverse.set(camera).invert();
         this.lastLocation = null;
         this.active = Argentum.CONFIG.nameTagBatching && Argentum.CONFIG.fontBatching;
         this.instancing.beginFrame();
@@ -93,6 +107,7 @@ public final class NameTagBatch {
         this.instancing.discardTags();
         this.passCount = 0;
         this.depth = 0;
+        this.tint = 1.0F;
         this.active = false;
     }
 
@@ -102,7 +117,12 @@ public final class NameTagBatch {
             this.pushes = 0;
             this.matrixMode = GL11.GL_MODELVIEW;
             this.lost = false;
+            this.capturesDraws = true;
         }
+    }
+
+    public void setCapturesDraws(boolean capturesDraws) {
+        this.capturesDraws = capturesDraws;
     }
 
     public void exit() {
@@ -165,6 +185,19 @@ public final class NameTagBatch {
         return this.canCapture(true);
     }
 
+    public boolean beginShadedText() {
+        if (!this.tracks() || GlStateManager.texture != 0 || !GlStateManager.TEXTURES[0].state.enabled) return false;
+        if (GlStateManager.LIGHTING.enabled) {
+            Vector3f normal = this.matrices.transformDirection(0.0F, 0.0F, -1.0F, this.position);
+            this.tint = BlockEntityBaker.shade(this.cameraInverse.transformDirection(normal));
+        }
+        return true;
+    }
+
+    public void endShadedText() {
+        this.tint = 1.0F;
+    }
+
     public void text(Identifier location, int[] vertices, int length, float x, float y, int alpha) {
         boolean textured = location != null;
         Pass pass = this.pass(textured ? this.texture(location) : 0);
@@ -191,14 +224,14 @@ public final class NameTagBatch {
             out[to + 2] = Float.floatToRawIntBits(m02 * vx + m12 * vy + m32);
             out[to + 3] = textured ? vertices[from + 3] : 0;
             out[to + 4] = textured ? vertices[from + 4] : 0;
-            out[to + 5] = vertices[from + color] & alphaMask | alphaBits;
+            out[to + 5] = this.tint(vertices[from + color] & alphaMask | alphaBits);
             out[to + 6] = light;
         }
         pass.buffer.argentum$appendVertices(out, count * STRIDE);
     }
 
     public void text(Identifier location, int[] vertices, int length, float x, float y, int alpha, CachedQuads cached) {
-        if (location != null && this.instancing.available()) {
+        if (location != null && this.tint == 1.0F && this.instancing.available()) {
             Pass pass = this.pass(this.texture(location));
             if (pass.instanceable()) {
                 int base = this.instancing.quads(cached, vertices, length);
@@ -220,6 +253,7 @@ public final class NameTagBatch {
     }
 
     public boolean capture(BufferBuilder buffer) {
+        if (!this.capturesDraws) return false;
         VertexFormat format = buffer.getFormat();
         boolean textured = DefaultVertexFormat.POSITION_TEX_COLOR.equals(format);
         if (buffer.getDrawMode() != GL11.GL_QUADS || !textured && !DefaultVertexFormat.POSITION_COLOR.equals(format)
@@ -357,10 +391,20 @@ public final class NameTagBatch {
             out[to + 2] = Float.floatToRawIntBits(this.position.z);
             out[to + 3] = textured ? source.get(from + 3) : 0;
             out[to + 4] = textured ? source.get(from + 4) : 0;
-            out[to + 5] = source.get(from + color);
+            out[to + 5] = this.tint(source.get(from + color));
             out[to + 6] = light;
         }
         pass.buffer.argentum$appendVertices(out, count * STRIDE);
+    }
+
+    private int tint(int color) {
+        if (this.tint == 1.0F) return color;
+        int shift = LITTLE_ENDIAN ? 0 : 8;
+        int tinted = color & 0xFF << ALPHA_SHIFT;
+        for (int channel = 0; channel < 3; channel++, shift += 8) {
+            tinted |= Math.round((color >>> shift & 0xFF) * this.tint) << shift;
+        }
+        return tinted;
     }
 
     private int[] vertices(int count) {

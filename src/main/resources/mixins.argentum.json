@@ -30,7 +30,7 @@
     "features.blockentity.baking.SkullBlockEntityMixin", "features.blockentity.baking.StitcherMixin",
     "features.blockentity.baking.TextureAtlasMixin", "features.blockentity.baking.WorldMixin",
     "features.terrain.BakedQuadMixin", "features.terrain.BlockModelRendererMixin",
-    "features.text.SignRendererMixin",
+    "features.text.BeaconRendererMixin", "features.text.SignRendererMixin",
     "features.terrain.FaceBakeryMixin", "features.terrain.FlatLightPipelineMixin",
     "features.terrain.BiomeColorsMixin",
     "features.texture.ItemRendererMixin",

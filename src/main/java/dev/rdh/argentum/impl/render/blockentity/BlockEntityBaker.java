@@ -467,7 +467,7 @@ public final class BlockEntityBaker {
         this.buffers.get(material).getVertexBuffer(ModelQuadFacing.UNASSIGNED).push(vertices, material);
     }
 
-    private static float shade(Vector3f normal) {
+    public static float shade(Vector3f normal) {
         return Math.min(1.0F, light(normal));
     }
 

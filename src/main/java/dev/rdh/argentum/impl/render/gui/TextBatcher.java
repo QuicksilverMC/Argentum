@@ -445,6 +445,10 @@ public final class TextBatcher {
         return this.blend;
     }
 
+    public boolean isVanilla() {
+        return this.vanilla;
+    }
+
     private boolean pushBlend() {
         if (!this.blend || GlStateManager.BLEND.state.enabled) return false;
         GlStateManager.enableBlend();
