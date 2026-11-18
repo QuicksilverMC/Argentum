@@ -5,6 +5,8 @@ import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.layer.AbstractArmorLayer;
 import net.minecraft.client.render.model.Model;
 import net.minecraft.client.render.model.ModelPart;
+import net.minecraft.client.render.model.Polygon;
+import net.minecraft.client.render.model.Vertex;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.texture.TextureAtlas;
 import net.minecraft.client.resource.model.BakedModel;
@@ -14,6 +16,7 @@ import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.resource.Identifier;
 import dev.rdh.argentum.api.render.instancing.BoxTemplate;
+import dev.rdh.argentum.mixin.features.model.instancing.BoxAccessor;
 import dev.rdh.argentum.mixin.features.model.instancing.ModelPartAccessor;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
@@ -428,7 +431,8 @@ public final class EntityCapture implements AutoCloseable {
         this.matrices.rotateZ(part.rotationZ).rotateY(part.rotationY).rotateX(part.rotationX);
         this.matrices.scale(part.argentum$getScale());
 
-        if (part.argentum$areBoxesVisible() && !part.boxes.isEmpty() && !this.submitBoxes(part, scale)) {
+        if (part.argentum$areBoxesVisible() && !part.boxes.isEmpty() && !this.submitBoxes(part, scale)
+                && !this.anyBoxContainsEye(part, scale)) {
             this.submit(this.modelFor(part).getGeometry(part, scale), this.matrices);
         }
         if (part.children != null) {
@@ -462,9 +466,39 @@ public final class EntityCapture implements AutoCloseable {
             this.boxMatrix.set(this.matrices)
                     .translate(template.originX() * scale, template.minY() * scale, template.minZ() * scale)
                     .scale(template.spanX() * scale, template.spanY() * scale, template.spanZ() * scale);
+            if (this.owner.containsEye(this.boxMatrix)) {
+                continue;
+            }
             this.submit(this.owner.backend().boxGeometry(template.flipped()), this.boxMatrix, template);
         }
         return true;
+    }
+
+    private boolean anyBoxContainsEye(ModelPart part, float scale) {
+        for (int i = 0; i < part.boxes.size(); i++) {
+            float lowX = Float.MAX_VALUE, lowY = Float.MAX_VALUE, lowZ = Float.MAX_VALUE;
+            float highX = -Float.MAX_VALUE, highY = -Float.MAX_VALUE, highZ = -Float.MAX_VALUE;
+            for (Polygon face : ((BoxAccessor)part.boxes.get(i)).celeritas$getFaces()) {
+                for (Vertex vertex : face.vertices) {
+                    lowX = Math.min(lowX, (float)vertex.pos.x);
+                    lowY = Math.min(lowY, (float)vertex.pos.y);
+                    lowZ = Math.min(lowZ, (float)vertex.pos.z);
+                    highX = Math.max(highX, (float)vertex.pos.x);
+                    highY = Math.max(highY, (float)vertex.pos.y);
+                    highZ = Math.max(highZ, (float)vertex.pos.z);
+                }
+            }
+            if (lowX > highX) {
+                continue;
+            }
+            this.boxMatrix.set(this.matrices)
+                    .translate(lowX * scale, lowY * scale, lowZ * scale)
+                    .scale((highX - lowX) * scale, (highY - lowY) * scale, (highZ - lowZ) * scale);
+            if (this.owner.containsEye(this.boxMatrix)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isSimilarity(Matrix4f m) {

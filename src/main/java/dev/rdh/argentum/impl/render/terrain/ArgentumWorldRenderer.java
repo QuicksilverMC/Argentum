@@ -192,7 +192,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
 
     public void beginEntityRendering() {
         this.entityShadowBatch.beginFrame();
-        this.entityInstancing.beginBatch();
+        this.entityInstancing.beginBatch(this.matrices == null ? null : this.matrices.modelView());
     }
 
     public boolean isRenderingWorld(World world) {

@@ -20,6 +20,8 @@ import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.resource.Identifier;
 import org.embeddedt.embeddium.impl.gl.device.CommandList;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
+import org.joml.Vector3f;
 import org.joml.Vector4f;
 
 import java.util.ArrayDeque;
@@ -31,6 +33,10 @@ public final class EntityInstancing {
     private final Matrix4f arrowMatrix = new Matrix4f();
     private final Vector4f arrowColor = new Vector4f(1.0F);
     private final Vector4f arrowOverlayColor = new Vector4f(0.0F);
+    private final Vector3f eye = new Vector3f();
+    private final Vector3f eyeInBox = new Vector3f();
+    private final Matrix4f boxInverse = new Matrix4f();
+    private boolean eyeKnown;
 
     private EntityCapture activeCapture;
     private int entityCount;
@@ -72,7 +78,11 @@ public final class EntityInstancing {
         return renderer == null ? null : renderer.getEntityInstancing();
     }
 
-    public boolean beginBatch() {
+    public boolean beginBatch(Matrix4fc modelView) {
+        this.eyeKnown = modelView != null;
+        if (this.eyeKnown) {
+            modelView.originAffine(this.eye);
+        }
         this.resetCaptures();
         this.nameTags.clear();
         this.entityCount = 0;
@@ -96,6 +106,23 @@ public final class EntityInstancing {
     public boolean resumeBatch() {
         this.resetCaptures();
         return Argentum.CONFIG.entityInstancing && this.backend.beginBatch();
+    }
+
+    boolean containsEye(Matrix4f unitBox) {
+        if (!this.eyeKnown || this.isShadowPass()) {
+            return false;
+        }
+        float dx = this.eye.x - (unitBox.m30() + 0.5F * (unitBox.m00() + unitBox.m10() + unitBox.m20()));
+        float dy = this.eye.y - (unitBox.m31() + 0.5F * (unitBox.m01() + unitBox.m11() + unitBox.m21()));
+        float dz = this.eye.z - (unitBox.m32() + 0.5F * (unitBox.m02() + unitBox.m12() + unitBox.m22()));
+        float spread = unitBox.m00() * unitBox.m00() + unitBox.m01() * unitBox.m01() + unitBox.m02() * unitBox.m02()
+                + unitBox.m10() * unitBox.m10() + unitBox.m11() * unitBox.m11() + unitBox.m12() * unitBox.m12()
+                + unitBox.m20() * unitBox.m20() + unitBox.m21() * unitBox.m21() + unitBox.m22() * unitBox.m22();
+        if (4.0F * (dx * dx + dy * dy + dz * dz) > 3.0F * spread) {
+            return false;
+        }
+        Vector3f local = unitBox.invertAffine(this.boxInverse).transformPosition(this.eye, this.eyeInBox);
+        return local.x > 0.0F && local.x < 1.0F && local.y > 0.0F && local.y < 1.0F && local.z > 0.0F && local.z < 1.0F;
     }
 
     public boolean isBatchActive() {
