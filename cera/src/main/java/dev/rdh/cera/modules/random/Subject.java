@@ -1,7 +1,6 @@
 package dev.rdh.cera.modules.random;
 
 import dev.rdh.cera.Cera;
-import dev.rdh.cera.entity.EntityContext;
 import dev.rdh.cera.entity.SpawnSnapshot;
 import dev.rdh.cera.mixin.VillagerEntityAccessor;
 import net.minecraft.block.entity.BlockEntity;
@@ -23,127 +22,229 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 
-public final class Subject {
-    private final Entity entity;
-    private final BlockEntity blockEntity;
+public abstract sealed class Subject {
     private NbtCompound nbt;
-    private int metadata = -1;
-
-    private Subject(Entity entity, BlockEntity blockEntity) {
-        this.entity = entity;
-        this.blockEntity = blockEntity;
-    }
 
     public static Subject current() {
         Minecraft minecraft = Minecraft.getInstance();
         Entity entity = minecraft.getEntityRenderDispatcher().cera$getEntityContext().current();
-        if (entity != null) return new Subject(entity, null);
+        if (entity != null) return new Subject.OfEntity(entity);
         BlockEntity blockEntity = BlockEntityRenderDispatcher.INSTANCE.cera$getBlockEntityContext().current();
-        return blockEntity == null ? null : new Subject(null, blockEntity);
+        return blockEntity == null ? null : new Subject.OfBlockEntity(blockEntity);
     }
 
-    public Object key() {
-        return this.entity != null ? this.entity.getUuid() : this.blockEntity.getPos();
-    }
+    public abstract Object key();
 
-    public int seed() {
-        if (this.entity != null) return EntityContext.seed(this.entity.getUuid());
-        return Cera.random(this.blockEntity.getPos(), metadata());
-    }
+    public abstract int seed();
 
-    public World world() {
-        return this.entity != null ? this.entity.world : this.blockEntity.getWorld();
-    }
+    public abstract World world();
 
-    public BlockPos spawnPos() {
-        if (this.entity != null) {
-            SpawnSnapshot snapshot = snapshot();
-            return snapshot == null ? null : snapshot.pos();
-        }
-        return this.blockEntity.getPos();
-    }
+    public abstract BlockPos spawnPos();
 
-    public Biome spawnBiome() {
-        if (this.entity != null) {
-            SpawnSnapshot snapshot = snapshot();
-            return snapshot == null ? null : snapshot.biome();
-        }
-        World world = this.world();
-        return world == null ? null : world.getBiome(this.blockEntity.getPos());
-    }
+    public abstract Biome spawnBiome();
 
-    public String name() {
-        if (this.entity != null) {
-            return this.entity.hasCustomName() ? this.entity.getCustomName() : null;
-        }
-        return this.blockEntity instanceof InventoryBlockEntity inventory && inventory.hasCustomName()
-                ? inventory.getName() : null;
-    }
+    public abstract String name();
 
-    public boolean isLiving() {
-        return this.entity instanceof LivingEntity;
-    }
+    public abstract BlockState blockState();
 
-    public int health() {
-        return this.entity instanceof LivingEntity living ? (int) living.getHealth() : -1;
-    }
-
-    public int maxHealth() {
-        return this.entity instanceof LivingEntity living ? (int) living.getMaxHealth() : -1;
-    }
-
-    public Boolean baby() {
-        return this.entity instanceof LivingEntity living ? living.isBaby() : null;
-    }
-
-    public DyeColor color() {
-        if (this.entity instanceof WolfEntity wolf) return wolf.getCollarColor();
-        if (this.entity instanceof SheepEntity sheep) return sheep.getColor();
-        return null;
-    }
-
-    public int slimeSize() {
-        return this.entity instanceof SlimeEntity slime ? slime.getSize() : -1;
-    }
-
-    public int profession() {
-        return this.entity instanceof VillagerEntity villager ? villager.getProfession() : -1;
-    }
-
-    public int career() {
-        return this.entity instanceof VillagerEntity villager ? ((VillagerEntityAccessor) villager).cera$getCareer() : -1;
-    }
+    protected abstract void writeNbt(NbtCompound nbt);
 
     public NbtCompound nbt() {
         if (this.nbt == null) {
             this.nbt = new NbtCompound();
-            if (this.entity != null) this.entity.writeNbt(this.nbt);
-            else this.blockEntity.writeNbt(this.nbt);
+            this.writeNbt(this.nbt);
         }
         return this.nbt;
     }
 
-    public BlockState blockState() {
-        World world = this.world();
-        if (world == null) return null;
-        BlockPos pos;
-        if (this.entity != null) {
-            pos = new BlockPos(MathHelper.floor(this.entity.x), MathHelper.floor(this.entity.y - 0.5), MathHelper.floor(this.entity.z));
-        } else {
-            pos = this.blockEntity.getPos();
-        }
-        return world.getBlockState(pos);
+    public boolean isLiving() {
+        return false;
     }
 
-    public int metadata() {
-        if (this.metadata < 0 && this.blockEntity != null) {
-            this.metadata = this.blockEntity.getBlockMetadata();
-        }
-        return this.metadata;
+    public int health() {
+        return -1;
     }
 
-    private SpawnSnapshot snapshot() {
-        return this.entity.world instanceof ClientWorld client
-                ? client.cera$getSpawnSnapshots().get(this.entity.getUuid()) : null;
+    public int maxHealth() {
+        return -1;
+    }
+
+    public Boolean baby() {
+        return null;
+    }
+
+    public DyeColor color() {
+        return null;
+    }
+
+    public int slimeSize() {
+        return -1;
+    }
+
+    public int profession() {
+        return -1;
+    }
+
+    public int career() {
+        return -1;
+    }
+
+    private static final class OfEntity extends Subject {
+        private final Entity entity;
+
+        private OfEntity(Entity entity) {
+            this.entity = entity;
+        }
+
+        @Override
+        public Object key() {
+            return this.entity.getUuid();
+        }
+
+        @Override
+        public int seed() {
+            return (int) (this.entity.getUuid().getLeastSignificantBits() & 0x7FFFFFFFL);
+        }
+
+        @Override
+        public World world() {
+            return this.entity.world;
+        }
+
+        @Override
+        public BlockPos spawnPos() {
+            SpawnSnapshot snapshot = this.snapshot();
+            return snapshot == null ? null : snapshot.pos();
+        }
+
+        @Override
+        public Biome spawnBiome() {
+            SpawnSnapshot snapshot = this.snapshot();
+            return snapshot == null ? null : snapshot.biome();
+        }
+
+        @Override
+        public String name() {
+            return this.entity.hasCustomName() ? this.entity.getCustomName() : null;
+        }
+
+        @Override
+        public BlockState blockState() {
+            World world = this.entity.world;
+            if (world == null) return null;
+            return world.getBlockState(new BlockPos(MathHelper.floor(this.entity.x), MathHelper.floor(this.entity.y - 0.5),
+                    MathHelper.floor(this.entity.z)));
+        }
+
+        @Override
+        protected void writeNbt(NbtCompound nbt) {
+            this.entity.writeNbt(nbt);
+        }
+
+        @Override
+        public boolean isLiving() {
+            return this.entity instanceof LivingEntity;
+        }
+
+        @Override
+        public int health() {
+            return this.entity instanceof LivingEntity living ? (int) living.getHealth() : -1;
+        }
+
+        @Override
+        public int maxHealth() {
+            return this.entity instanceof LivingEntity living ? (int) living.getMaxHealth() : -1;
+        }
+
+        @Override
+        public Boolean baby() {
+            return this.entity instanceof LivingEntity living ? living.isBaby() : null;
+        }
+
+        @Override
+        public DyeColor color() {
+            if (this.entity instanceof WolfEntity wolf) return wolf.getCollarColor();
+            if (this.entity instanceof SheepEntity sheep) return sheep.getColor();
+            return null;
+        }
+
+        @Override
+        public int slimeSize() {
+            return this.entity instanceof SlimeEntity slime ? slime.getSize() : -1;
+        }
+
+        @Override
+        public int profession() {
+            return this.entity instanceof VillagerEntity villager ? villager.getProfession() : -1;
+        }
+
+        @Override
+        public int career() {
+            return this.entity instanceof VillagerEntity villager ? ((VillagerEntityAccessor) villager).cera$getCareer() : -1;
+        }
+
+        private SpawnSnapshot snapshot() {
+            return this.entity.world instanceof ClientWorld client
+                    ? client.cera$getSpawnSnapshots().get(this.entity.getUuid()) : null;
+        }
+    }
+
+    private static final class OfBlockEntity extends Subject {
+        private final BlockEntity blockEntity;
+        private int metadata = -1;
+
+        private OfBlockEntity(BlockEntity blockEntity) {
+            this.blockEntity = blockEntity;
+        }
+
+        @Override
+        public Object key() {
+            return this.blockEntity.getPos();
+        }
+
+        @Override
+        public int seed() {
+            return Cera.random(this.blockEntity.getPos(), this.metadata());
+        }
+
+        @Override
+        public World world() {
+            return this.blockEntity.getWorld();
+        }
+
+        @Override
+        public BlockPos spawnPos() {
+            return this.blockEntity.getPos();
+        }
+
+        @Override
+        public Biome spawnBiome() {
+            World world = this.blockEntity.getWorld();
+            return world == null ? null : world.getBiome(this.blockEntity.getPos());
+        }
+
+        @Override
+        public String name() {
+            return this.blockEntity instanceof InventoryBlockEntity inventory && inventory.hasCustomName()
+                    ? inventory.getName() : null;
+        }
+
+        @Override
+        public BlockState blockState() {
+            World world = this.blockEntity.getWorld();
+            return world == null ? null : world.getBlockState(this.blockEntity.getPos());
+        }
+
+        @Override
+        protected void writeNbt(NbtCompound nbt) {
+            this.blockEntity.writeNbt(nbt);
+        }
+
+        private int metadata() {
+            if (this.metadata < 0) {
+                this.metadata = this.blockEntity.getBlockMetadata();
+            }
+            return this.metadata;
+        }
     }
 }

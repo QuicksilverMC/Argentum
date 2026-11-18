@@ -2,8 +2,6 @@ package dev.rdh.cera.entity;
 
 import net.minecraft.entity.Entity;
 
-import java.util.UUID;
-
 public final class EntityContext {
     private Entity current;
 
@@ -17,9 +15,5 @@ public final class EntityContext {
 
     public void end(Entity entity) {
         if (this.current == entity) this.current = null;
-    }
-
-    public static int seed(UUID uuid) {
-        return (int) (uuid.getLeastSignificantBits() & 0x7FFFFFFFL);
     }
 }
