@@ -45,6 +45,7 @@ final class NameTagInstancing {
     private static final int TAG_TEXELS = 3;
     private static final int TAG_ROWS = 32;
     private static final int TAG_FLOATS = TAG_TEXELS * 4;
+    private static final int TAG_TEXTURE_COUNT = 4;
     private static final boolean LITTLE_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
     private static final GlVertexFormat VERTEX_FORMAT = GlVertexFormat.builder(Float.BYTES)
             .addElement("aCorner", 0, GlVertexAttributeFormat.FLOAT, 1, false, false)
@@ -62,7 +63,9 @@ final class NameTagInstancing {
     private boolean initialized;
     private boolean supported;
     private int quadTexture;
+    private final int[] tagTextures = new int[TAG_TEXTURE_COUNT];
     private int tagTexture;
+    private int tagTextureIndex;
     private InstancedGeometryBuffer geometry;
     private int generation = 1;
     private int quadRow;
@@ -80,7 +83,7 @@ final class NameTagInstancing {
             if (this.supported) {
                 this.tags = BufferUtils.createFloatBuffer(TAGS_PER_ROW * TAG_ROWS * TAG_FLOATS);
                 this.quadTexture = createTexture(QUADS_PER_ROW * QUAD_TEXELS, QUAD_ROWS);
-                this.tagTexture = createTexture(TAGS_PER_ROW * TAG_TEXELS, TAG_ROWS);
+                for (int i = 0; i < TAG_TEXTURE_COUNT; i++) this.tagTextures[i] = createTexture(TAGS_PER_ROW * TAG_TEXELS, TAG_ROWS);
             } else {
                 Argentum.LOGGER.warn("Instanced name tags disabled: required OpenGL features are missing");
             }
@@ -173,6 +176,8 @@ final class NameTagInstancing {
             return false;
         }
 
+        this.tagTextureIndex = (this.tagTextureIndex + 1) % TAG_TEXTURE_COUNT;
+        this.tagTexture = this.tagTextures[this.tagTextureIndex];
         int fullRows = this.tagCount / TAGS_PER_ROW;
         int lastRow = this.tagCount % TAGS_PER_ROW;
         if (fullRows > 0) {
@@ -230,7 +235,10 @@ final class NameTagInstancing {
         this.programs.values().forEach(GlProgram::delete);
         this.programs.clear();
         if (this.quadTexture != 0) GL11.glDeleteTextures(this.quadTexture);
-        if (this.tagTexture != 0) GL11.glDeleteTextures(this.tagTexture);
+        for (int i = 0; i < TAG_TEXTURE_COUNT; i++) {
+            if (this.tagTextures[i] != 0) GL11.glDeleteTextures(this.tagTextures[i]);
+            this.tagTextures[i] = 0;
+        }
         this.quadTexture = 0;
         this.tagTexture = 0;
         this.initialized = false;
