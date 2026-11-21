@@ -29,6 +29,7 @@ import java.util.Map;
 
 public class RenderPassConfigurationBuilder {
     public static final Object DECAL = new Object();
+    public static final Object BLENDED_DECAL = new Object();
     public static final Object UNMIPPED_SOLID = new Object();
     static final int ATLAS_EDGE_MASK_TEXTURE_UNIT = 2;
 
@@ -189,6 +190,7 @@ public class RenderPassConfigurationBuilder {
         renderTypeToMaterialMap.put(BlockLayer.CUTOUT_MIPPED, cutoutMippedMaterial);
         renderTypeToMaterialMap.put(BlockLayer.TRANSLUCENT, translucentMaterial);
         renderTypeToMaterialMap.put(DECAL, decalMaterial);
+        renderTypeToMaterialMap.put(BLENDED_DECAL, new Material(translucentPass, AlphaCutoffParameter.ZERO, false));
         renderTypeToMaterialMap.put(UNMIPPED_SOLID, new Material(solidPass, AlphaCutoffParameter.ZERO, false));
 
         return new RenderPassConfiguration<>(renderTypeToMaterialMap, vanillaRenderStages, solidMaterial, cutoutMippedMaterial, translucentMaterial, sampling);
