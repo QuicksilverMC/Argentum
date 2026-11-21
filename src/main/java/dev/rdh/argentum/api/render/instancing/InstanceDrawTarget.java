@@ -49,4 +49,26 @@ public interface InstanceDrawTarget {
      * @param pass the same pass passed to {@link #beginPass}
      */
     void endPass(InstanceRenderPass pass);
+
+    /**
+     * Runs before Argentum renders the frame's block entities.
+     */
+    default void beginBlockEntities() {
+    }
+
+    /**
+     * Runs after the frame's block entities have rendered and captured batches have been flushed.
+     * Draw anything deferred since {@link #beginBlockEntities} here.
+     *
+     * @param partialTicks the frame's partial tick
+     */
+    default void endBlockEntities(float partialTicks) {
+    }
+
+    /**
+     * Runs instead of {@link #endBlockEntities} when block-entity rendering throws.
+     * Discard anything deferred since {@link #beginBlockEntities}.
+     */
+    default void abortBlockEntities() {
+    }
 }

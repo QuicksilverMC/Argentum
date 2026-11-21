@@ -367,6 +367,21 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
 
     @Override
     public int renderBlockEntities(Float partialTicks) {
+        var target = ((MinecraftExtension)Minecraft.getInstance()).argentum$getInstanceDrawTarget();
+        if (target == null) return this.renderBlockEntitiesBatched(partialTicks);
+        target.beginBlockEntities();
+        int count;
+        try {
+            count = this.renderBlockEntitiesBatched(partialTicks);
+        } catch (RuntimeException | Error exception) {
+            target.abortBlockEntities();
+            throw exception;
+        }
+        target.endBlockEntities(partialTicks);
+        return count;
+    }
+
+    private int renderBlockEntitiesBatched(Float partialTicks) {
         boolean batching = this.entityInstancing.resumeBatch();
         int count;
         try {
