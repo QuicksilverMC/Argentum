@@ -9,11 +9,19 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 public final class AtlasUploads {
-    private static final int RECT_FIELDS = 8;
+    private static final int RECT_FIELDS = 8; // level, x, y, width, height, format, type, byte offset
     private static ByteBuffer pixels = MemoryUtil.memAlloc(1 << 20);
-    private static int[] rects = new int[8 * 64]; // level, x, y, width, height, format, type, byte offset
+    private static int[] rects = new int[RECT_FIELDS * 64];
     private static int count, buffer;
     private static boolean collecting;
+
+    public static void reset() {
+        pixels.clear();
+        pixels = MemoryUtil.memRealloc(pixels, 1 << 20);
+        rects = new int[RECT_FIELDS * 64];
+        count = 0;
+        collecting = false;
+    }
 
     public static void begin() {
         collecting = true;

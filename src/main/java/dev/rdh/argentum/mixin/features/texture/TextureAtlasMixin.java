@@ -43,6 +43,7 @@ public abstract class TextureAtlasMixin extends AbstractTexture implements Textu
 
     @Inject(method = "loadAndStitch", at = @At("RETURN"))
     private void celeritas$buildLookup(CallbackInfo ci) {
+        AtlasUploads.reset();
         int width = 0;
         int height = 0;
         int minSize = Integer.MAX_VALUE;
