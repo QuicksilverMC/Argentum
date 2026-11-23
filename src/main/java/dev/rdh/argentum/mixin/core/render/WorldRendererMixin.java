@@ -24,6 +24,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.Culler;
 import net.minecraft.client.render.block.BlockLayer;
 import net.minecraft.client.render.platform.Lighting;
+import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.vertex.VertexBuffer;
 import net.minecraft.client.render.world.RenderChunkFactory;
 import net.minecraft.client.render.world.RenderChunkStorage;
@@ -32,6 +33,8 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.world.World;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL14;
+import org.lwjgl.system.MemoryStack;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -198,15 +201,24 @@ public abstract class WorldRendererMixin implements WorldRendererExtension {
         return new NoopRenderChunkStorage(world, viewDistance, renderer, factory);
     }
 
-    // vanilla forgot to not use display lists for this one call, which breaks it with vbos on
     @Redirect(method = "renderSky", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;callList(I)V", ordinal = 3))
     private void celeritas$renderLowerSky(int list) {
-        this.darkSkyBuffer.bind();
-        GL11.glEnableClientState(GL11.GL_VERTEX_ARRAY);
-        GL11.glVertexPointer(3, GL11.GL_FLOAT, 12, 0L);
-        this.darkSkyBuffer.draw(GL11.GL_QUADS);
-        this.darkSkyBuffer.unbind();
-        GL11.glDisableClientState(GL11.GL_VERTEX_ARRAY);
+        GL11.glPushAttrib(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_FOG_BIT | GL11.GL_CURRENT_BIT);
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            GL14.glBlendColor(GlStateManager.COLOR.r, GlStateManager.COLOR.g, GlStateManager.COLOR.b, 1.0F);
+            GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+            GL11.glFogfv(GL11.GL_FOG_COLOR, stack.floats(0.0F, 0.0F, 0.0F, 0.0F));
+            GL11.glEnable(GL11.GL_BLEND);
+            GL14.glBlendFuncSeparate(GL14.GL_CONSTANT_COLOR, GL11.GL_ONE_MINUS_SRC_COLOR, GL11.GL_ZERO, GL11.GL_ONE);
+            this.darkSkyBuffer.bind();
+            GL11.glEnableClientState(GL11.GL_VERTEX_ARRAY);
+            GL11.glVertexPointer(3, GL11.GL_FLOAT, 12, 0L);
+            this.darkSkyBuffer.draw(GL11.GL_QUADS);
+            this.darkSkyBuffer.unbind();
+            GL11.glDisableClientState(GL11.GL_VERTEX_ARRAY);
+        } finally {
+            GL11.glPopAttrib();
+        }
     }
 
     /**
