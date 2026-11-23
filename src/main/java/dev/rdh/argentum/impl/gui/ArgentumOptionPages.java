@@ -297,6 +297,11 @@ public final class ArgentumOptionPages {
                         .setImpact(OptionImpact.MEDIUM)
                         .setFlags(OptionFlag.REQUIRES_ASSET_RELOAD)
                         .build())
+                .addConditionally(Argentum.rgssFilteringSupported(), () ->
+                        toggle(StandardOptions.Option.RGSS_TEXTURE_FILTERING, OptionImpact.MEDIUM,
+                                (config, value) -> config.rgssTextureFiltering = value,
+                                config -> config.rgssTextureFiltering,
+                                OptionFlag.REQUIRES_RENDERER_RELOAD))
                 .build();
 
         return page(Page.QUALITY, graphics, details);

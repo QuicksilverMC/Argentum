@@ -49,6 +49,8 @@ celeritas.chunk_fade_in_duration.value=%s ms
 celeritas.chunk_fade_in_duration.tooltip=Controls how long it takes for newly loaded chunks to fully appear. Longer durations create a smoother transition between unloaded and loaded chunks, reducing visual popping, but may make distant terrain appear to 'fade in' more slowly.
 minecraft.entity_shadows.tooltip=If enabled basic shadows will be rendered beneath mobs and other entities.
 minecraft.mipmap_levels.tooltip=Controls the number of mipmaps which will be used for block model textures. Higher values provide better rendering of blocks in the distance but may adversely affect performance with many animated textures.
+celeritas.rgss_texture_filtering.name=RGSS Texture Filtering
+celeritas.rgss_texture_filtering.tooltip=Smooths block textures in the distance by supersampling them, which reduces shimmering and jagged texel edges. Requires mipmaps, and has no effect while a shader pack is active.
 
 celeritas.chunk_update_threads.name=Chunk Update Threads
 celeritas.chunk_update_threads.tooltip=Specifies the number of threads to use for chunk building. Using more threads can speed up chunk loading and update speed but may negatively impact frame times.

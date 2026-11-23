@@ -10,6 +10,22 @@ public interface TextureAtlasExtension {
         throw new UnsupportedOperationException();
     }
 
+    default int argentum$getWidth() {
+        throw new UnsupportedOperationException();
+    }
+
+    default int argentum$getHeight() {
+        throw new UnsupportedOperationException();
+    }
+
+    default int argentum$getMipLevel() {
+        throw new UnsupportedOperationException();
+    }
+
+    default int[] argentum$getSpriteRects() {
+        throw new UnsupportedOperationException();
+    }
+
     default BakedBlockEntities.Region argentum$getEntityTextureRegion(String texture) {
         throw new UnsupportedOperationException();
     }

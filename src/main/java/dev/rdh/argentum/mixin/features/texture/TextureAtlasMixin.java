@@ -3,13 +3,14 @@ package dev.rdh.argentum.mixin.features.texture;
 import com.google.common.collect.Iterators;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.texture.AbstractTexture;
+import net.minecraft.client.render.texture.Stitcher;
 import net.minecraft.client.render.texture.TextureAtlas;
 import net.minecraft.client.render.texture.TextureAtlasSprite;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import it.unimi.dsi.fastutil.HashCommon;
+import com.llamalad7.mixinextras.sugar.Local;
 import org.embeddedt.embeddium.impl.util.collections.quadtree.QuadTree;
 import org.embeddedt.embeddium.impl.util.collections.quadtree.Rect2i;
 import org.jetbrains.annotations.NotNull;
@@ -24,9 +25,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import dev.rdh.argentum.impl.Argentum;
+import dev.rdh.argentum.impl.render.blockentity.EntityTextureSprite;
 import dev.rdh.argentum.impl.render.texture.AtlasUploads;
 import dev.rdh.argentum.impl.ext.TextureAtlasExtension;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -35,6 +38,9 @@ public abstract class TextureAtlasMixin extends AbstractTexture implements Textu
     @Shadow @Final
     private Map<String, TextureAtlasSprite> stitchedSprites;
 
+    @Shadow
+    private int maxMipLevel;
+
     @Unique
     private QuadTree<TextureAtlasSprite> celeritas$quadTree;
 
@@ -42,19 +48,15 @@ public abstract class TextureAtlasMixin extends AbstractTexture implements Textu
     @Unique private int celeritas$height;
 
     @Inject(method = "loadAndStitch", at = @At("RETURN"))
-    private void celeritas$buildLookup(CallbackInfo ci) {
+    private void celeritas$buildLookup(CallbackInfo ci, @Local Stitcher stitcher) {
         AtlasUploads.reset();
-        int width = 0;
-        int height = 0;
         int minSize = Integer.MAX_VALUE;
         for (TextureAtlasSprite sprite : this.stitchedSprites.values()) {
-            width = Math.max(width, sprite.getX() + sprite.getWidth());
-            height = Math.max(height, sprite.getY() + sprite.getHeight());
             int maxDimension = Math.max(sprite.getWidth(), sprite.getHeight());
             minSize = Math.min(minSize, maxDimension);
         }
-        this.celeritas$width = HashCommon.nextPowerOfTwo(width);
-        this.celeritas$height = HashCommon.nextPowerOfTwo(height);
+        this.celeritas$width = stitcher.getWidth();
+        this.celeritas$height = stitcher.getHeight();
         Rect2i bounds = new Rect2i(0, 0, this.celeritas$width, this.celeritas$height);
         this.celeritas$quadTree = new QuadTree<>(bounds, minSize, this.stitchedSprites.values(),
                 sprite -> new Rect2i(sprite.getX(), sprite.getY(), sprite.getWidth(), sprite.getHeight())
@@ -92,6 +94,37 @@ public abstract class TextureAtlasMixin extends AbstractTexture implements Textu
         QuadTree<TextureAtlasSprite> quadTree = this.celeritas$quadTree;
         return quadTree == null ? null
                 : quadTree.find(Math.round(u * this.celeritas$width), Math.round(v * this.celeritas$height));
+    }
+
+    @Override
+    public int argentum$getWidth() {
+        return this.celeritas$width;
+    }
+
+    @Override
+    public int argentum$getHeight() {
+        return this.celeritas$height;
+    }
+
+    @Override
+    public int argentum$getMipLevel() {
+        return this.maxMipLevel;
+    }
+
+    @Override
+    public int[] argentum$getSpriteRects() {
+        int[] rects = new int[this.stitchedSprites.size() * 4];
+        int i = 0;
+        for (TextureAtlasSprite sprite : this.stitchedSprites.values()) {
+            if (sprite instanceof EntityTextureSprite) {
+                continue;
+            }
+            rects[i++] = sprite.getX();
+            rects[i++] = sprite.getY();
+            rects[i++] = sprite.getWidth();
+            rects[i++] = sprite.getHeight();
+        }
+        return i == rects.length ? rects : Arrays.copyOf(rects, i);
     }
 
 }

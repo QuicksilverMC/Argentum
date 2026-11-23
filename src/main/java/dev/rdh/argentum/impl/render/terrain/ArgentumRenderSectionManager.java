@@ -19,7 +19,6 @@ import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderInterface;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderComponent;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderOptions;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderTextureSlot;
-import org.embeddedt.embeddium.impl.render.chunk.terrain.sampling.TerrainSampling;
 import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkVertexType;
 import org.embeddedt.embeddium.impl.render.viewport.Viewport;
 import org.embeddedt.embeddium.impl.util.position.SectionPos;
@@ -191,7 +190,7 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
             this.cache = cache;
             renderPassConfiguration.getAllKnownRenderPasses().forEach(pass -> {
                 for (ChunkFogMode fogMode : ChunkFogMode.values()) {
-                    this.compileProgram(new ChunkShaderOptions(List.of(fogMode), pass, TerrainSampling.NATIVE));
+                    this.compileProgram(new ChunkShaderOptions(List.of(fogMode), pass, renderPassConfiguration.terrainSampling()));
                 }
             });
         }
@@ -219,6 +218,7 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
         protected void configureShaderInterface(ChunkShaderInterface shader) {
             shader.setTextureSlot(ChunkShaderTextureSlot.BLOCK, 0);
             shader.setTextureSlot(ChunkShaderTextureSlot.LIGHT, 1);
+            shader.setTextureSlot(ChunkShaderTextureSlot.ATLAS_EDGE_MASK, RenderPassConfigurationBuilder.ATLAS_EDGE_MASK_TEXTURE_UNIT);
         }
     }
 }

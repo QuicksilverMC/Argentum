@@ -2,6 +2,7 @@ package dev.rdh.argentum.impl;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
+import org.embeddedt.embeddium.impl.render.shader.ShaderLoader;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GLCapabilities;
 import org.slf4j.Logger;
@@ -41,6 +42,11 @@ public class Argentum implements ClientModInitializer {
     public static boolean renderAheadSupported() {
         GLCapabilities caps = GL.getCapabilities();
         return caps.OpenGL32 || caps.GL_ARB_sync;
+    }
+
+    public static boolean rgssFilteringSupported() {
+        GLCapabilities caps = GL.getCapabilities();
+        return !ShaderLoader.useLegacyGlsl() && (caps.OpenGL33 || caps.GL_ARB_sampler_objects);
     }
 
     private Path getConfigPath(Path c) {
