@@ -100,8 +100,8 @@ argentum.safe_chunk_edges.name=Safe Chunk Edges
 argentum.safe_chunk_edges.tooltip=If enabled chunks will wait for their neighbors before building edge geometry. This prevents temporary gaps and incorrect lighting at chunk borders, but reduces the effective server view distance by one chunk. Disable this on low-view-distance servers if the lost terrain matters, or if you see unexplainable missing chunks.
 celeritas.render_pass_optimization.name=Use Render Pass Optimization
 celeritas.render_pass_optimization.tooltip=If enabled block faces with fully opaque textures are moved into the solid render pass, which skips alpha testing and lets the GPU reject hidden fragments earlier. Disable this if a resource pack causes faces to render in the wrong order.
-celeritas.compact_vertex_format.name=Use Compact Vertex Format
-celeritas.compact_vertex_format.tooltip=If enabled a more compact vertex format will be used for rendering chunks. This can reduce graphics memory usage and bandwidth requirements significantly especially for integrated graphics cards but can cause z-fighting with some resource packs due to how it reduces the precision of position and texture coordinate attributes.
+argentum.vertex_format.name=Vertex Format
+argentum.vertex_format.tooltip=Controls how chunk vertices are encoded for rendering. Vanilla uses full 32-bit positions and UVs. Compact cuts memory usage at reduced precision, which can cause z-fighting with some resource packs. Quad-Relative keeps high precision with low memory usage by pulling quad data from a texture buffer.
 argentum.greedy_render_thread.name=Greedy Render Thread
 argentum.greedy_render_thread.tooltip=If enabled, the render thread does not yield to other threads every frame, increasing framerate but possibly causing stuttering on some systems.
 
@@ -130,3 +130,6 @@ argentum.options.value.borderless=Borderless
 argentum.options.value.exclusive=Exclusive
 argentum.options.value.desktop=Desktop
 argentum.options.value.display_mode=%sx%s@%sHz
+argentum.options.value.vanilla=Vanilla
+argentum.options.value.compact=Compact
+argentum.options.value.quad_relative=Quad-Relative
