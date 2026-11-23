@@ -208,7 +208,7 @@ public final class EntityShadowBatch {
 
         try {
             if (programs.isEmpty()) {
-                for (ChunkFogMode fogMode : ChunkFogMode.values()) {
+                for (ChunkFogMode fogMode : ArgentumFogService.GL_FOG_MODES) {
                     program = createProgram(fogMode);
                     programs.put(fogMode, program);
                     program.bind();

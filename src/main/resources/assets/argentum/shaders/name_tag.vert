@@ -16,7 +16,6 @@ varying vec2 vLightCoord;
 varying vec4 vColor;
 #ifdef USE_FOG
 varying float vFogDistance;
-uniform int u_FogShape;
 #endif
 
 vec4 fetch(sampler2D texture, float x, float y, vec2 texelSize) {

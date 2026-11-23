@@ -22,7 +22,6 @@ varying vec2 vLightCoord;
 varying float vAlpha;
 #ifdef USE_FOG
 varying float vFogDistance;
-uniform int u_FogShape;
 #endif
 
 void main() {

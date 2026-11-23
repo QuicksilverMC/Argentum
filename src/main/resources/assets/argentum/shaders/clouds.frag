@@ -8,15 +8,6 @@ varying vec2 vTexCoord;
 varying vec4 vColor;
 #ifdef USE_FOG
 varying vec3 vFogPosition;
-uniform int u_FogShape;
-uniform vec4 u_FogColor;
-#ifdef USE_FOG_SMOOTH
-uniform float u_FogStart;
-uniform float u_FogEnd;
-#endif
-#if defined(USE_FOG_EXP) || defined(USE_FOG_EXP2)
-uniform float u_FogDensity;
-#endif
 #endif
 
 void main() {

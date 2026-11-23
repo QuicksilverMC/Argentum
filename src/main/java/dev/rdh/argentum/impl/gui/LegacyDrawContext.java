@@ -94,6 +94,11 @@ final class LegacyDrawContext implements DrawContext {
     }
 
     @Override
+    public String substrByWidth(String str, int maxWidth, boolean reverse) {
+        return this.font.trim(str, maxWidth, reverse);
+    }
+
+    @Override
     public List<TextComponent> split(TextComponent text, int width) {
         return this.font.split(this.extractString(text), width).stream().map(TextComponent::literal).toList();
     }

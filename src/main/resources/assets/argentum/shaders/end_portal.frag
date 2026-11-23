@@ -5,17 +5,6 @@
 uniform sampler2D uTexture;
 uniform sampler2D uLightmap;
 uniform int uAddAlpha;
-#ifdef USE_FOG
-uniform vec4 u_FogColor;
-uniform int u_FogShape;
-#ifdef USE_FOG_SMOOTH
-uniform float u_FogStart;
-uniform float u_FogEnd;
-#endif
-#if defined(USE_FOG_EXP) || defined(USE_FOG_EXP2)
-uniform float u_FogDensity;
-#endif
-#endif
 uniform vec4 uS[LAYER_COUNT];
 uniform vec4 uT[LAYER_COUNT];
 uniform vec4 uQ[LAYER_COUNT];

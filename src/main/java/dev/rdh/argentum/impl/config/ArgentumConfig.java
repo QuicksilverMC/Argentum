@@ -23,6 +23,7 @@ public class ArgentumConfig {
     public boolean animateOnlyVisibleTextures = true;
     public int chunkFadeInDuration = 0;
     public FogShape fogShape = FogShape.SPHERICAL;
+    public boolean useSkyFog = false;
     public boolean fasterClouds = true;
     public boolean defaultClouds = false;
     public boolean fasterWeather = true;

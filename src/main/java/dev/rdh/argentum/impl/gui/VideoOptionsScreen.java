@@ -3,6 +3,8 @@ package dev.rdh.argentum.impl.gui;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import org.embeddedt.embeddium.impl.gui.CeleritasVideoOptionsController;
+import org.embeddedt.embeddium.impl.gui.framework.InteractionContext.EditAction;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.taumc.celeritas.api.options.structure.OptionFlag;
@@ -50,7 +52,13 @@ public final class VideoOptionsScreen extends Screen {
 
     @Override
     public void init() {
+        Keyboard.enableRepeatEvents(true);
         this.controller.init(this.width, this.height);
+    }
+
+    @Override
+    public void removed() {
+        Keyboard.enableRepeatEvents(false);
     }
 
     @Override
@@ -84,7 +92,11 @@ public final class VideoOptionsScreen extends Screen {
 
     @Override
     protected void keyPressed(char character, int keyCode) {
-        if (keyCode == Keyboard.KEY_P && isShiftDown()) {
+        EditAction editAction = toEditAction(keyCode);
+        if (editAction != null ? this.controller.keyPressed(LegacyInteractionContext.INSTANCE, editAction) : this.controller.charTyped(character)) {
+            return;
+        }
+        if (keyCode == Keyboard.KEY_P && isShiftDown() && !this.controller.isSearchFocused()) {
             this.minecraft.openScreen(new net.minecraft.client.gui.screen.VideoOptionsScreen(this, this.minecraft.options));
             return;
         }
@@ -93,6 +105,33 @@ public final class VideoOptionsScreen extends Screen {
             return;
         }
         super.keyPressed(character, keyCode);
+    }
+
+    private static @Nullable EditAction toEditAction(int keyCode) {
+        if (isSelectAll(keyCode)) {
+            return EditAction.SELECT_ALL;
+        } else if (isCopy(keyCode)) {
+            return EditAction.COPY;
+        } else if (isPaste(keyCode)) {
+            return EditAction.PASTE;
+        } else if (isCut(keyCode)) {
+            return EditAction.CUT;
+        }
+
+        if (keyCode == Keyboard.KEY_BACK) {
+            return EditAction.BACKSPACE;
+        } else if (keyCode == Keyboard.KEY_DELETE) {
+            return EditAction.DELETE;
+        } else if (keyCode == Keyboard.KEY_LEFT) {
+            return EditAction.LEFT;
+        } else if (keyCode == Keyboard.KEY_RIGHT) {
+            return EditAction.RIGHT;
+        } else if (keyCode == Keyboard.KEY_HOME) {
+            return EditAction.HOME;
+        } else if (keyCode == Keyboard.KEY_END) {
+            return EditAction.END;
+        }
+        return null;
     }
 
     @Override

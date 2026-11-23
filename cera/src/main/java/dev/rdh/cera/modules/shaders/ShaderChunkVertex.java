@@ -8,6 +8,7 @@ import org.embeddedt.embeddium.impl.gl.attribute.GlVertexFormat;
 import org.embeddedt.embeddium.impl.render.chunk.LocalSectionIndex;
 import org.embeddedt.embeddium.impl.render.chunk.terrain.material.Material;
 import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkVertexEncoder;
+import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkVertexLayout;
 import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkVertexType;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
@@ -30,6 +31,8 @@ final class ShaderChunkVertex implements ChunkVertexType {
             .addElement("position", 0, GlVertexAttributeFormat.FLOAT, 3, false, false)
             .build();
 
+    private static final ChunkVertexLayout LAYOUT = ChunkVertexLayout.of(FORMAT);
+
     private ShaderChunkVertex() {
     }
 
@@ -48,23 +51,13 @@ final class ShaderChunkVertex implements ChunkVertexType {
     }
 
     @Override
-    public float getPositionScale() {
-        return 1F;
+    public ChunkVertexLayout getLayout() {
+        return LAYOUT;
     }
 
     @Override
-    public float getPositionOffset() {
-        return 0F;
-    }
-
-    @Override
-    public float getTextureScale() {
-        return 1F;
-    }
-
-    @Override
-    public GlVertexFormat getVertexFormat() {
-        return FORMAT;
+    public String getShaderLibrary() {
+        throw new UnsupportedOperationException("Cera supplies its own terrain shaders");
     }
 
     @Override
@@ -74,35 +67,30 @@ final class ShaderChunkVertex implements ChunkVertexType {
 
     private static final class Encoder implements ChunkVertexEncoder {
         private final ShaderVert[] quad = {new ShaderVert(), new ShaderVert(), new ShaderVert(), new ShaderVert()};
-        private int vertexCount;
 
         @Override
-        public boolean supportsBilinearCorrection() {
-            return false;
-        }
+        public long writePrimitive(long ptr, Material material, Vertex[] vertices, int sectionIndex) {
+            long first = ptr;
+            for (int i = 0; i < this.quad.length; i++) {
+                var vertex = vertices[i];
+                var vert = this.quad[i];
+                vert.positionX = vertex.x + LocalSectionIndex.unpackX(sectionIndex) * SECTION_SIZE;
+                vert.positionY = vertex.y + LocalSectionIndex.unpackY(sectionIndex) * SECTION_SIZE;
+                vert.positionZ = vertex.z + LocalSectionIndex.unpackZ(sectionIndex) * SECTION_SIZE;
+                vert.textureU = vertex.u;
+                vert.textureV = vertex.v;
 
-        @Override
-        public long write(long ptr, Material material, Vertex vertex, int sectionIndex) {
-            var vert = this.quad[this.vertexCount++];
-            vert.positionX = vertex.x + LocalSectionIndex.unpackX(sectionIndex) * SECTION_SIZE;
-            vert.positionY = vertex.y + LocalSectionIndex.unpackY(sectionIndex) * SECTION_SIZE;
-            vert.positionZ = vertex.z + LocalSectionIndex.unpackZ(sectionIndex) * SECTION_SIZE;
-            vert.textureU = vertex.u;
-            vert.textureV = vertex.v;
-
-            MemoryUtil.memPutFloat(ptr, vert.positionX);
-            MemoryUtil.memPutFloat(ptr + 4, vert.positionY);
-            MemoryUtil.memPutFloat(ptr + 8, vert.positionZ);
-            MemoryUtil.memPutInt(ptr + COLOR, vertex.color);
-            MemoryUtil.memPutFloat(ptr + TEXTURE, vert.textureU);
-            MemoryUtil.memPutFloat(ptr + TEXTURE + 4, vert.textureV);
-            MemoryUtil.memPutInt(ptr + LIGHT, vertex.light);
-
-            if (this.vertexCount == 4) {
-                this.vertexCount = 0;
-                this.completeQuad(ptr - 3L * STRIDE);
+                MemoryUtil.memPutFloat(ptr, vert.positionX);
+                MemoryUtil.memPutFloat(ptr + 4, vert.positionY);
+                MemoryUtil.memPutFloat(ptr + 8, vert.positionZ);
+                MemoryUtil.memPutInt(ptr + COLOR, vertex.color);
+                MemoryUtil.memPutFloat(ptr + TEXTURE, vert.textureU);
+                MemoryUtil.memPutFloat(ptr + TEXTURE + 4, vert.textureV);
+                MemoryUtil.memPutInt(ptr + LIGHT, vertex.light);
+                ptr += STRIDE;
             }
-            return ptr + STRIDE;
+            this.completeQuad(first);
+            return ptr;
         }
 
         private void completeQuad(long first) {

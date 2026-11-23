@@ -173,7 +173,6 @@ public final class BlockEntityBaker {
                 vertex.y = this.position.y;
                 vertex.z = this.position.z;
                 vertex.color = 0xFFFFFFFF;
-                vertex.rdhFactor = 0;
                 vertex.u = region.u() + source[2] * region.width();
                 vertex.v = region.v() + source[3] * region.height();
                 vertex.light = this.light;
@@ -210,7 +209,6 @@ public final class BlockEntityBaker {
                 vertex.y = this.position.y;
                 vertex.z = this.position.z;
                 vertex.color = color;
-                vertex.rdhFactor = 0;
                 vertex.u = Float.intBitsToFloat(vertices[offset + 4]);
                 vertex.v = Float.intBitsToFloat(vertices[offset + 5]);
                 vertex.light = this.light;
@@ -346,7 +344,6 @@ public final class BlockEntityBaker {
                 vertex.y = this.localY + this.position.y;
                 vertex.z = this.localZ + this.position.z;
                 vertex.color = color;
-                vertex.rdhFactor = 0;
                 vertex.u = texture.u() + vertices[index + 2] * texture.width();
                 vertex.v = texture.v() + vertices[index + 3] * texture.height();
                 vertex.light = this.light;
@@ -419,7 +416,6 @@ public final class BlockEntityBaker {
             vertex.y = this.localY + this.position.y;
             vertex.z = this.localZ + this.position.z;
             vertex.color = color;
-            vertex.rdhFactor = 0;
             vertex.u = this.region.u() + source.u * this.region.width();
             vertex.v = this.region.v() + source.v * this.region.height();
             vertex.light = this.light;
@@ -484,7 +480,6 @@ public final class BlockEntityBaker {
         to.y = from.y;
         to.z = from.z;
         to.color = from.color;
-        to.rdhFactor = from.rdhFactor;
         to.u = from.u;
         to.v = from.v;
         to.light = from.light;

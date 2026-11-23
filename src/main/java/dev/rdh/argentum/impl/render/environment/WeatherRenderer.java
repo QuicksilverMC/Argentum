@@ -222,7 +222,7 @@ public final class WeatherRenderer {
 
     private GlProgram<WeatherShader> program() {
         if (this.programs.isEmpty()) {
-            for (ChunkFogMode fogMode : ChunkFogMode.values()) {
+            for (ChunkFogMode fogMode : ArgentumFogService.GL_FOG_MODES) {
                 GlProgram<WeatherShader> program = createProgram(fogMode);
                 this.programs.put(fogMode, program);
                 program.bind();

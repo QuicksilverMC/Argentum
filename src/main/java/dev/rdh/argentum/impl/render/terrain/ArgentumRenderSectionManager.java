@@ -16,8 +16,10 @@ import org.embeddedt.embeddium.impl.render.chunk.lists.SectionTicker;
 import org.embeddedt.embeddium.impl.render.chunk.sprite.GenericSectionSpriteTicker;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkFogMode;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderInterface;
+import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderComponent;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderOptions;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderTextureSlot;
+import org.embeddedt.embeddium.impl.render.chunk.terrain.sampling.TerrainSampling;
 import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkVertexType;
 import org.embeddedt.embeddium.impl.render.viewport.Viewport;
 import org.embeddedt.embeddium.impl.util.position.SectionPos;
@@ -26,6 +28,7 @@ import dev.rdh.argentum.api.render.terrain.TerrainDrawTarget;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.ext.ItemFrameEntityExtension;
 import dev.rdh.argentum.impl.ext.MinecraftExtension;
+import dev.rdh.argentum.impl.render.ArgentumGlStateService;
 import dev.rdh.argentum.impl.render.blockentity.BakedItemFrames;
 import dev.rdh.argentum.impl.render.blockentity.SlotSheet;
 import dev.rdh.argentum.impl.render.terrain.compile.ArgentumChunkBuildContext;
@@ -184,11 +187,11 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
         private final ChunkProgramCache cache;
 
         public ChunkRenderer(RenderDevice device, RenderPassConfiguration<?> renderPassConfiguration, ChunkProgramCache cache) {
-            super(device, renderPassConfiguration, ArgentumFogService.INSTANCE);
+            super(device, renderPassConfiguration, ArgentumFogService.INSTANCE, ArgentumGlStateService.INSTANCE);
             this.cache = cache;
             renderPassConfiguration.getAllKnownRenderPasses().forEach(pass -> {
                 for (ChunkFogMode fogMode : ChunkFogMode.values()) {
-                    this.compileProgram(new ChunkShaderOptions(List.of(fogMode), pass));
+                    this.compileProgram(new ChunkShaderOptions(List.of(fogMode), pass, TerrainSampling.NATIVE));
                 }
             });
         }
@@ -200,6 +203,11 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
                 @Override
                 protected void destroyInternal() {}
             };
+        }
+
+        @Override
+        protected List<ChunkShaderComponent.Factory<?>> getShaderComponents() {
+            return List.of(ArgentumFogService.INSTANCE.getTerrainFogMode());
         }
 
         @Override

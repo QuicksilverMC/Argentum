@@ -250,7 +250,7 @@ public final class CloudRenderer {
 
     private GlProgram<CloudShader> program() {
         if (this.programs.isEmpty()) {
-            for (ChunkFogMode fogMode : ChunkFogMode.values()) {
+            for (ChunkFogMode fogMode : ArgentumFogService.GL_FOG_MODES) {
                 GlProgram<CloudShader> program = createProgram(fogMode);
                 this.programs.put(fogMode, program);
                 program.bind();

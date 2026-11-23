@@ -11,14 +11,6 @@ varying vec2 vLightCoord;
 varying float vAlpha;
 #ifdef USE_FOG
 varying float vFogDistance;
-uniform vec4 u_FogColor;
-#ifdef USE_FOG_SMOOTH
-uniform float u_FogStart;
-uniform float u_FogEnd;
-#endif
-#if defined(USE_FOG_EXP) || defined(USE_FOG_EXP2)
-uniform float u_FogDensity;
-#endif
 #endif
 
 void main() {

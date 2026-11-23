@@ -380,7 +380,7 @@ public final class ModelInstancer {
 
     private GlProgram<InstanceShader> getProgram() {
         if (this.programs.isEmpty()) {
-            for (ChunkFogMode fogMode : ChunkFogMode.values()) {
+            for (ChunkFogMode fogMode : ArgentumFogService.GL_FOG_MODES) {
                 GlProgram<InstanceShader> program = this.createProgram(fogMode);
                 program.bind();
                 try {

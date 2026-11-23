@@ -6,6 +6,7 @@ sodium.option_impact.varies=Varies
 sodium.options.performance_impact_string=Performance Impact: %s
 sodium.options.buttons.undo=Undo
 sodium.options.buttons.apply=Apply
+embeddium.search_bar_empty=Search options...
 
 argentum.options.pages.general=General
 argentum.options.pages.quality=Quality
@@ -36,6 +37,8 @@ minecraft.clouds.tooltip=Controls the presence of rendered clouds in the sky. De
 argentum.options.value.default=Default
 minecraft.particles.tooltip=Controls the maximum number of particles which can be present on screen at any one time.
 minecraft.smooth_lighting.tooltip=Controls whether blocks will be smoothly lit and shaded. This slightly increases the amount of time needed to re-build a chunk but doesn't affect frame rates.
+celeritas.sky_fog.name=Sky Fog
+celeritas.sky_fog.tooltip=Makes distant terrain fade into the sky behind it instead of a single fog color. Has no effect while a shader pack is active.
 argentum.fog_shape.name=Fog Shape
 argentum.fog_shape.tooltip=Controls the shape of fog in the world.
 minecraft.biome_blend.name=Biome Blend

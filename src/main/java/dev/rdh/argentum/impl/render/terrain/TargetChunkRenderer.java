@@ -17,6 +17,7 @@ import org.joml.Matrix4fc;
 import org.lwjgl.opengl.GL11;
 import dev.rdh.argentum.api.render.terrain.TerrainDrawTarget;
 import dev.rdh.argentum.impl.Argentum;
+import dev.rdh.argentum.impl.render.ArgentumGlStateService;
 import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
 
 import net.minecraft.client.render.platform.GlStateManager;
@@ -25,13 +26,20 @@ import net.minecraft.client.render.platform.GlStateManager;
  * Draws terrain with whatever program is already bound, feeding it through the fixed function attributes and matrices.
  */
 final class TargetChunkRenderer extends DefaultChunkRenderer {
+    private static final Object SHADOW_VIEW = new Object();
+
     private final TerrainDrawTarget target;
 
     TargetChunkRenderer(RenderDevice device, RenderPassConfiguration<?> configuration, TerrainDrawTarget target) {
-        super(device, configuration, ArgentumFogService.INSTANCE);
+        super(device, configuration, ArgentumFogService.INSTANCE, ArgentumGlStateService.INSTANCE);
         this.target = target;
         // never bound or deleted, begin and end below keep it away from GL
         this.activeProgram = new GlProgram<>(0, context -> new BoundProgramInterface()) {};
+    }
+
+    @Override
+    protected Object getRenderView() {
+        return this.target.isShadowPass() ? SHADOW_VIEW : DEFAULT_VIEW;
     }
 
     @Override

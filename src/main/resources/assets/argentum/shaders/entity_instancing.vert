@@ -34,7 +34,6 @@ out float vTextureLayer;
 out float vLighting;
 #ifdef USE_FOG
 out float vFogDistance;
-uniform int u_FogShape;
 #endif
 out vec4 vColor;
 out vec4 vOverlay;

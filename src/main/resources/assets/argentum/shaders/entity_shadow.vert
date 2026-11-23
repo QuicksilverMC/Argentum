@@ -11,7 +11,6 @@ varying vec2 vTexCoord;
 varying float vAlpha;
 #ifdef USE_FOG
 varying float vFogDistance;
-uniform int u_FogShape;
 #endif
 
 void main() {

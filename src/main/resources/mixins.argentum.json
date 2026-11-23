@@ -36,6 +36,7 @@
     "features.texture.ItemRendererMixin",
     "features.texture.TextureAtlasMixin", "features.texture.TextureAtlasSpriteMixin",
     "features.texture.TextureManagerMixin", "features.texture.TextureUtilMixin",
+    "features.sky.GameRendererMixin", "features.sky.WorldRendererMixin",
     "features.weather.GameRendererMixin", "features.portal.EndPortalRendererMixin",
     "features.portal.TesselatorMixin", "features.portal.GlStateManagerMixin", "features.portal.GLXMixin"
   ],

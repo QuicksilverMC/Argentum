@@ -18,16 +18,6 @@ uniform int uAlphaPass;
 uniform int uGlintPass;
 uniform int uItemGlintPass;
 #define ALPHA_OPAQUE_CUTOFF (254.0 / 255.0)
-#ifdef USE_FOG
-uniform vec4 u_FogColor;
-#ifdef USE_FOG_SMOOTH
-uniform float u_FogStart;
-uniform float u_FogEnd;
-#endif
-#if defined(USE_FOG_EXP) || defined(USE_FOG_EXP2)
-uniform float u_FogDensity;
-#endif
-#endif
 
 in vec2 vTexCoord;
 in vec2 vGlintCoord;

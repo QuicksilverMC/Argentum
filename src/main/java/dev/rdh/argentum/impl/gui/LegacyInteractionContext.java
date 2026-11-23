@@ -21,6 +21,16 @@ enum LegacyInteractionContext implements InteractionContext {
     }
 
     @Override
+    public String getClipboard() {
+        return Screen.getClipboard();
+    }
+
+    @Override
+    public void setClipboard(String text) {
+        Screen.setClipboard(text);
+    }
+
+    @Override
     public void playClickSound() {
         Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.of(BUTTON_SOUND, 1.0F));
     }

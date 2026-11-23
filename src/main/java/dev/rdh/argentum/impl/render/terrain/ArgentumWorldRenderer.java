@@ -122,6 +122,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
 
     @Override
     protected void unloadWorld() {
+        ArgentumFogService.INSTANCE.deleteSkyTexture();
         this.entityGatherer.clear();
         this.entityOcclusionCuller.clear();
         this.entityInstancing.discardBatch();

@@ -7,6 +7,7 @@ import org.embeddedt.embeddium.impl.render.chunk.terrain.TerrainRenderPass;
 import org.embeddedt.embeddium.impl.render.chunk.terrain.TerrainRenderPass.PipelineState;
 import org.embeddedt.embeddium.impl.render.chunk.terrain.material.Material;
 import org.embeddedt.embeddium.impl.render.chunk.terrain.material.parameters.AlphaCutoffParameter;
+import org.embeddedt.embeddium.impl.render.chunk.terrain.sampling.TerrainSampling;
 import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkVertexType;
 
 import net.minecraft.client.Minecraft;
@@ -125,6 +126,6 @@ public class RenderPassConfigurationBuilder {
         renderTypeToMaterialMap.put(DECAL, decalMaterial);
         renderTypeToMaterialMap.put(UNMIPPED_SOLID, new Material(solidPass, AlphaCutoffParameter.ZERO, false));
 
-        return new RenderPassConfiguration<>(renderTypeToMaterialMap, vanillaRenderStages, solidMaterial, cutoutMippedMaterial, translucentMaterial);
+        return new RenderPassConfiguration<>(renderTypeToMaterialMap, vanillaRenderStages, solidMaterial, cutoutMippedMaterial, translucentMaterial, TerrainSampling.NATIVE);
     }
 }
