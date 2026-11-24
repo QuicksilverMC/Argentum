@@ -6,6 +6,7 @@ import net.minecraft.client.render.texture.TextureAtlas;
 import org.embeddedt.embeddium.impl.gui.framework.TextComponent;
 import org.embeddedt.embeddium.impl.render.chunk.compile.executor.ChunkBuilder;
 import org.embeddedt.embeddium.impl.render.chunk.occlusion.AsyncOcclusionMode;
+import org.embeddedt.embeddium.impl.render.clouds.CloudRenderer;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
 import org.taumc.celeritas.api.options.OptionIdentifier;
@@ -298,11 +299,13 @@ public final class ArgentumOptionPages {
                         .setImpact(OptionImpact.MEDIUM)
                         .setFlags(OptionFlag.REQUIRES_ASSET_RELOAD)
                         .build())
-                .addConditionally(Argentum.rgssFilteringSupported(), () ->
-                        toggle(StandardOptions.Option.RGSS_TEXTURE_FILTERING, OptionImpact.MEDIUM,
-                                (config, value) -> config.rgssTextureFiltering = value,
-                                config -> config.rgssTextureFiltering,
-                                OptionFlag.REQUIRES_RENDERER_RELOAD))
+                .add(option(boolean.class, CONFIG_STORAGE, StandardOptions.Option.RGSS_TEXTURE_FILTERING)
+                        .setControl(TickBoxControl::new)
+                        .setBinding((config, value) -> config.rgssTextureFiltering = value, config -> config.rgssTextureFiltering && Argentum.rgssFilteringSupported())
+                        .setImpact(OptionImpact.MEDIUM)
+                        .setEnabledPredicate(Argentum::rgssFilteringSupported)
+                        .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
+                        .build())
                 .build();
 
         return page(Page.QUALITY, graphics, details);
@@ -387,9 +390,12 @@ public final class ArgentumOptionPages {
                         OptionImpact.VARIES,
                         (config, value) -> config.translucencySorting = value,
                         config -> config.translucencySorting, OptionFlag.REQUIRES_RENDERER_RELOAD))
-                .add(toggle(StandardOptions.Option.USE_FASTER_CLOUDS,
-                        OptionImpact.MEDIUM,
-                        (config, value) -> config.fasterClouds = value, config -> config.fasterClouds))
+                .add(option(boolean.class, CONFIG_STORAGE, StandardOptions.Option.USE_FASTER_CLOUDS)
+                        .setControl(TickBoxControl::new)
+                        .setBinding((config, value) -> config.fasterClouds = value, config -> config.fasterClouds && CloudRenderer.isSupported())
+                        .setImpact(OptionImpact.MEDIUM)
+                        .setEnabledPredicate(CloudRenderer::isSupported)
+                        .build())
                 .add(toggle(Option.FASTER_END_PORTALS, OptionImpact.MEDIUM,
                         (config, value) -> config.fasterEndPortals = value, config -> config.fasterEndPortals))
                 .add(toggle(Option.FASTER_WEATHER, OptionImpact.MEDIUM,
