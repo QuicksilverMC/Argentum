@@ -26,6 +26,8 @@
     "shaders.LivingEntityRendererMixin",
     "shaders.MinecraftMixin",
     "shaders.MobRendererMixin",
+    "shaders.ShaderEngineAccessor",
+    "shaders.StateGraphAccessor",
     "shaders.TextRendererMixin",
     "shaders.VideoOptionsControllerMixin",
     "shaders.WorldRendererMixin",

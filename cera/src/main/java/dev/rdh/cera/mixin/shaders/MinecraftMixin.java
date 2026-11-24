@@ -38,7 +38,14 @@ public abstract class MinecraftMixin {
                   .updateSubTick(tickDelta);
             engine.beginRenderAll();
         }
-        original.call(instance, tickDelta, nanoTime);
+        try {
+            original.call(instance, tickDelta, nanoTime);
+        } catch (Throwable t) {
+            if (engine.isInitializedImpl()) {
+                engine.abortFrame();
+            }
+            throw t;
+        }
         if (engine.isInitializedImpl()) {
             engine.endRenderAll();
         }

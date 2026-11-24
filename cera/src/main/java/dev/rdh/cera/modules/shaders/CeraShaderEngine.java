@@ -6,8 +6,11 @@ import dev.rdh.argentum.impl.ext.MinecraftExtension;
 import dev.rdh.argentum.impl.render.entity.instancing.InstanceKind;
 import dev.rdh.argentum.impl.render.entity.instancing.InstanceRenderPass;
 import dev.rdh.cera.Cera;
+import dev.rdh.cera.mixin.shaders.ShaderEngineAccessor;
+import dev.rdh.cera.mixin.shaders.StateGraphAccessor;
 
 import com.ventooth.swansong.EnvInfo;
+import com.ventooth.swansong.StackStateTracker;
 import com.ventooth.swansong.gl.GLEnvProbe;
 import com.ventooth.swansong.shader.ShaderEngine;
 import com.ventooth.swansong.shader.ShaderEntityData;
@@ -84,6 +87,15 @@ public final class CeraShaderEngine extends ShaderEngine<CeraShaderState> implem
     @Override
     public boolean isShadowPass() {
         return graph().isShadowPass();
+    }
+
+    public void abortFrame() {
+        unlockShader();
+        ((ShaderEngineAccessor)(Object)this).cera$getShaderStack().clear();
+        ShaderEntityData.get().reset();
+        var graph = (StateGraphAccessor)graph();
+        graph.cera$setCurrent(Unmanaged);
+        graph.cera$setStack(new StackStateTracker<>(false));
     }
 
     public boolean pushBlock(BlockState state) {
