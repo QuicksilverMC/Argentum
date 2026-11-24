@@ -83,6 +83,7 @@ public final class ArgentumOptionPages {
         private static final OptionIdentifier<Void> FASTER_END_PORTALS = OptionIdentifier.create(Argentum.ID, "faster_end_portals");
         private static final OptionIdentifier<Void> FASTER_WEATHER = OptionIdentifier.create(Argentum.ID, "faster_weather");
         private static final OptionIdentifier<Void> GREEDY_RENDER_THREAD = OptionIdentifier.create(Argentum.ID, "greedy_render_thread");
+        private static final OptionIdentifier<Void> PARALLEL_TEXTURE_LOADING = OptionIdentifier.create(Argentum.ID, "parallel_texture_loading");
         private static final OptionIdentifier<Void> FOG_SHAPE = OptionIdentifier.create(Argentum.ID, "fog_shape");
         private static final OptionIdentifier<Void> FULLSCREEN_MODE = OptionIdentifier.create(Argentum.ID, "fullscreen_mode");
         private static final OptionIdentifier<Void> FULLSCREEN_RESOLUTION = OptionIdentifier.create(Argentum.ID, "fullscreen_resolution");
@@ -422,6 +423,8 @@ public final class ArgentumOptionPages {
                 .add(toggle(Option.GREEDY_RENDER_THREAD,
                         OptionImpact.LOW,
                         (config, value) -> config.greedyRenderThread = value, config -> config.greedyRenderThread))
+                .add(toggle(Option.PARALLEL_TEXTURE_LOADING, OptionImpact.LOW,
+                        (config, value) -> config.parallelTextureLoading = value, config -> config.parallelTextureLoading))
                 .build();
 
         return page(Page.PERFORMANCE, chunkUpdates, culling, rendering);
