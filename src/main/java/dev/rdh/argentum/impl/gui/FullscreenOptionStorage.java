@@ -8,10 +8,6 @@ import dev.rdh.argentum.impl.compat.PylonFullscreen;
 
 import java.util.Set;
 
-/**
- * Applies fullscreen changes when the options are saved, so they take effect from any screen that applies
- * Argentum's option pages (our video screen, or another mod driving the pages directly).
- */
 final class FullscreenOptionStorage<T> implements OptionStorage<T> {
     private final OptionStorage<T> delegate;
 
@@ -40,7 +36,6 @@ final class FullscreenOptionStorage<T> implements OptionStorage<T> {
             PylonFullscreen.reenter();
         }
         this.delegate.save(flags);
-        // OneConfig mirrors the exclusive fullscreen setting into options.txt when it is saved
         if (this.delegate != ArgentumOptionPages.VANILLA) minecraft.options.save();
     }
 }
