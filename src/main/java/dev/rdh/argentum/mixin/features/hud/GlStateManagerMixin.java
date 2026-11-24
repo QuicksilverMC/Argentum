@@ -1,5 +1,6 @@
 package dev.rdh.argentum.mixin.features.hud;
 
+import dev.rdh.argentum.impl.render.gui.hud.ScreenBatch;
 import dev.rdh.argentum.impl.render.gui.hud.item.GuiItemIcons;
 import net.minecraft.client.render.platform.GlStateManager;
 import org.spongepowered.asm.mixin.Mixin;
@@ -11,6 +12,12 @@ import java.nio.FloatBuffer;
 
 @Mixin(GlStateManager.class)
 public abstract class GlStateManagerMixin {
+    @Inject(method = {"matrixMode", "pushMatrix", "popMatrix", "loadIdentity", "ortho", "rotatef", "scalef", "scaled",
+            "translatef", "translated", "multMatrix", "callList"}, at = @At("HEAD"))
+    private static void argentum$flushScreenBatch(CallbackInfo ci) {
+        ScreenBatch.flush();
+    }
+
     @Inject(method = "matrixMode", at = @At("HEAD"))
     private static void argentum$trackMatrixMode(int mode, CallbackInfo ci) {
         GuiItemIcons.matrixModeChanged(mode);

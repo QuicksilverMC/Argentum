@@ -13,6 +13,7 @@ import it.unimi.dsi.fastutil.ints.IntSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.platform.GLX;
 import net.minecraft.client.render.platform.GlStateManager;
+import net.minecraft.client.render.texture.TextureAtlasSprite;
 import net.minecraft.client.resource.model.BakedModel;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
@@ -171,13 +172,14 @@ public final class GuiItemIcons {
         return baking;
     }
 
-    private static int currentTick() {
-        var world = Minecraft.getInstance().world;
-        return world != null ? (int) world.getTime() : (int) (System.nanoTime() / 50_000_000L);
-    }
-
     private static int sourceVersion(BakedModel model) {
-        return ((ItemRendererExtension) Minecraft.getInstance().getItemRenderer()).argentum$getAnimatedSprites().of(model).length > 0 ? currentTick() : 0;
+        int version = 0;
+        for (TextureAtlasSprite sprite : ((ItemRendererExtension) Minecraft.getInstance().getItemRenderer()).argentum$getAnimatedSprites().of(model)) {
+            if (Argentum.CONFIG.animateOnlyVisibleTextures) sprite.argentum$markActive();
+            version = 31 * version + sprite.activeFrame;
+            if (sprite.animation != null && sprite.animation.isInterpolated()) version = 31 * version + sprite.frameTicks;
+        }
+        return version;
     }
 
     public static void draw(int slot, int x, int y, float zOffset) {

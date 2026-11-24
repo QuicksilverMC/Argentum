@@ -20,6 +20,7 @@ import org.lwjgl.opengl.GL11;
 import org.jetbrains.annotations.Nullable;
 
 import dev.rdh.argentum.impl.Argentum;
+import dev.rdh.argentum.impl.render.gui.hud.ScreenBatch;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -74,12 +75,14 @@ final class LegacyDrawContext implements DrawContext {
     public void enableScissor(int x, int y, int x2, int y2) {
         Window window = new Window(this.minecraft);
         int scale = window.getScale();
+        ScreenBatch.flush();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor(x * scale, this.minecraft.height - y2 * scale, (x2 - x) * scale, (y2 - y) * scale);
     }
 
     @Override
     public void disableScissor() {
+        ScreenBatch.flush();
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
     }
 

@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 
+import dev.rdh.argentum.impl.render.gui.hud.ScreenBatch;
 import dev.rdh.argentum.impl.render.gui.hud.item.GuiItemIcons;
 
 import net.minecraft.client.render.entity.ItemRenderer;
@@ -50,6 +51,7 @@ public abstract class GuiItemRendererMixin {
 
     @WrapMethod(method = "renderGuiItemModel")
     private void argentum$bakeGuiItem(ItemStack item, int x, int y, Operation<Void> original) {
+        ScreenBatch.flush();
         if (!GuiItemIcons.enabled()) {
             GuiItemIcons.flush();
             original.call(item, x, y);

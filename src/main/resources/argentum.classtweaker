@@ -18,6 +18,8 @@ accessible field net/minecraft/client/render/GameRenderer fogRed F
 accessible field net/minecraft/client/render/GameRenderer fogGreen F
 accessible field net/minecraft/client/render/GameRenderer fogBlue F
 accessible class net/minecraft/client/render/platform/GlStateManager$Color
+accessible class net/minecraft/client/render/platform/GlStateManager$ColorMask
+accessible field net/minecraft/client/render/platform/GlStateManager COLOR_MASK Lnet/minecraft/client/render/platform/GlStateManager$ColorMask;
 accessible class net/minecraft/client/render/platform/GlStateManager$Blend
 accessible field net/minecraft/client/render/platform/GlStateManager BLEND Lnet/minecraft/client/render/platform/GlStateManager$Blend;
 accessible field net/minecraft/client/render/platform/GlStateManager COLOR Lnet/minecraft/client/render/platform/GlStateManager$Color;
@@ -34,3 +36,6 @@ accessible field net/minecraft/client/render/platform/GlStateManager texture I
 accessible class net/minecraft/client/render/platform/GlStateManager$TexGen
 accessible class net/minecraft/client/render/platform/GlStateManager$TexGenCoord
 accessible field net/minecraft/client/render/platform/GlStateManager TEX_GEN Lnet/minecraft/client/render/platform/GlStateManager$TexGen;
+accessible field net/minecraft/client/render/texture/TextureAtlasSprite activeFrame I
+accessible field net/minecraft/client/render/texture/TextureAtlasSprite frameTicks I
+accessible field net/minecraft/client/render/texture/TextureAtlasSprite animation Lnet/minecraft/client/resource/metadata/AnimationMetadata;
