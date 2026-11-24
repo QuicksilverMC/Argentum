@@ -16,6 +16,9 @@ public class ArgentumConfig {
     public boolean entityInstancing = true;
     public boolean bakeBlockEntities = true;
     public boolean nameTagBatching = true;
+    public boolean hologramFastPath = true;
+    public boolean tickCulling = true;
+    public boolean entityShadowCache = true;
     public int entityOcclusionIntervalMs = 50;
     public boolean particleCulling = true;
     public boolean fastParticles = true;

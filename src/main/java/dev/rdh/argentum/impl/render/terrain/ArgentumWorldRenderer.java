@@ -44,6 +44,8 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraft.util.math.Box;
 
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -66,6 +68,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     private ChunkRenderMatrices matrices = null;
     private boolean renderingBlockEntities;
     private final List<BlockEntity> bakeCandidates = new ArrayList<>();
+    private final ReferenceOpenHashSet<Entity> hiddenEntities = new ReferenceOpenHashSet<>();
 
     /**
      * @return The ArgentumWorldRenderer based on the current dimension
@@ -124,6 +127,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
         ArgentumFogService.INSTANCE.deleteSkyTexture();
         this.entityGatherer.clear();
         this.entityOcclusionCuller.clear();
+        this.hiddenEntities.clear();
         this.entityInstancing.discardBatch();
         this.nameTagBatch.discard();
         BakedBlockEntities.clearSlotSheets();
@@ -191,7 +195,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     }
 
     public void beginEntityRendering() {
-        this.entityShadowBatch.beginFrame();
+        this.entityShadowBatch.beginFrame(this.world);
         this.entityInstancing.beginBatch();
     }
 
@@ -263,6 +267,10 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
         return this.isEntitySectionVisible(box) && this.entityOcclusionCuller.isVisible(entity);
     }
 
+    public boolean isEntityHidden(Entity entity) {
+        return this.hiddenEntities.contains(entity);
+    }
+
     public static boolean hasNameTag(Entity entity) {
         return entity.shouldShowNameTag() || entity.hasCustomName() || entity instanceof PlayerEntity;
     }
@@ -277,8 +285,10 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
         boolean batching = this.entityInstancing.isBatchActive();
         List<Entity> entities = this.entityGatherer.getLoadedEntityList((ClientWorld)this.world,
                 MathHelper.floor(cameraX) >> 4, MathHelper.floor(cameraZ) >> 4, this.getEffectiveRenderDistance() + 1);
+        boolean trackHidden = !this.entityInstancing.isShadowPass() && Argentum.CONFIG.tickCulling;
         if (!this.entityInstancing.isShadowPass()) {
             this.entityOcclusionCuller.prepare(entities, camera, tickDelta, this.matrices, cameraX, cameraY, cameraZ);
+            this.hiddenEntities.clear();
         }
 
         int rendered = 0;
@@ -294,6 +304,9 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
                 boolean visible = inFrustum && this.isEntityVisible(entity);
 
                 if (!visible && entity.rider != minecraft.player) {
+                    if (trackHidden) {
+                        this.hiddenEntities.add(entity);
+                    }
                     if (entity instanceof WitherSkullEntity || (inFrustum && hasNameTag(entity))) {
                         dispatcher.renderNameTag(entity, tickDelta);
                     }

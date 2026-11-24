@@ -34,3 +34,11 @@ accessible field net/minecraft/client/render/platform/GlStateManager texture I
 accessible class net/minecraft/client/render/platform/GlStateManager$TexGen
 accessible class net/minecraft/client/render/platform/GlStateManager$TexGenCoord
 accessible field net/minecraft/client/render/platform/GlStateManager TEX_GEN Lnet/minecraft/client/render/platform/GlStateManager$TexGen;
+accessible field net/minecraft/entity/living/LivingEntity lerpSteps I
+accessible field net/minecraft/entity/living/LivingEntity lerpX D
+accessible field net/minecraft/entity/living/LivingEntity lerpY D
+accessible field net/minecraft/entity/living/LivingEntity lerpZ D
+accessible field net/minecraft/entity/living/LivingEntity lerpYaw D
+accessible field net/minecraft/entity/living/LivingEntity lerpPitch D
+accessible field net/minecraft/entity/living/LivingEntity totalWalkDistance F
+accessible field net/minecraft/entity/living/LivingEntity lastTotalWalkDistance F

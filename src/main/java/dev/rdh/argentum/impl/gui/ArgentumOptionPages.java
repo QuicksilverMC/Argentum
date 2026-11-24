@@ -75,6 +75,9 @@ public final class ArgentumOptionPages {
         private static final OptionIdentifier<Void> ENTITY_INSTANCING = OptionIdentifier.create(Argentum.ID, "entity_instancing");
         private static final OptionIdentifier<Void> BAKE_BLOCK_ENTITIES = OptionIdentifier.create(Argentum.ID, "bake_block_entities");
         private static final OptionIdentifier<Void> NAME_TAG_BATCHING = OptionIdentifier.create(Argentum.ID, "name_tag_batching");
+        private static final OptionIdentifier<Void> HOLOGRAM_FAST_PATH = OptionIdentifier.create(Argentum.ID, "hologram_fast_path");
+        private static final OptionIdentifier<Void> TICK_CULLING = OptionIdentifier.create(Argentum.ID, "tick_culling");
+        private static final OptionIdentifier<Void> ENTITY_SHADOW_CACHE = OptionIdentifier.create(Argentum.ID, "entity_shadow_cache");
         private static final OptionIdentifier<Void> FONT_BATCHING = OptionIdentifier.create(Argentum.ID, "font_batching");
         private static final OptionIdentifier<Void> GUI_ITEM_ATLAS = OptionIdentifier.create(Argentum.ID, "gui_item_atlas");
         private static final OptionIdentifier<Void> DIRECT_RENDERING = OptionIdentifier.create(Argentum.ID, "direct_rendering");
@@ -361,6 +364,8 @@ public final class ArgentumOptionPages {
                         .setEnabledPredicate(() -> CONFIG.entityCulling)
                         .setImpact(OptionImpact.VARIES)
                         .build())
+                .add(toggle(Option.TICK_CULLING, OptionImpact.MEDIUM,
+                        (config, value) -> config.tickCulling = value, config -> config.tickCulling))
                 .add(toggle(Option.PARTICLE_CULLING, OptionImpact.LOW, (config7, value4) -> config7.particleCulling = value4, config8 -> config8.particleCulling))
                 .add(toggle(Option.FAST_PARTICLES, OptionImpact.MEDIUM, (config, value) -> config.fastParticles = value, config -> config.fastParticles))
                 .build();
@@ -377,6 +382,10 @@ public final class ArgentumOptionPages {
                         .setEnabledPredicate(() -> CONFIG.fontBatching)
                         .setImpact(OptionImpact.MEDIUM)
                         .build())
+                .add(toggle(Option.HOLOGRAM_FAST_PATH, OptionImpact.MEDIUM,
+                        (config, value) -> config.hologramFastPath = value, config -> config.hologramFastPath))
+                .add(toggle(Option.ENTITY_SHADOW_CACHE, OptionImpact.LOW,
+                        (config, value) -> config.entityShadowCache = value, config -> config.entityShadowCache))
                 .add(toggle(StandardOptions.Option.ANIMATE_VISIBLE_TEXTURES,
                         OptionImpact.HIGH,
                         (config, value) -> config.animateOnlyVisibleTextures = value,

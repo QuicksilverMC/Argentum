@@ -57,6 +57,8 @@ public final class EntityShadowBatch {
     private final Map<ChunkShaderComponent.Factory<?>, GlProgram<ShadowShader>> programs = new Object2ObjectOpenHashMap<>();
     private final ShadowInstances instances = new ShadowInstances();
 
+    private World cachedWorld;
+    private long cachedTick;
     private boolean initialized;
     private boolean supported;
     private boolean active;
@@ -67,9 +69,14 @@ public final class EntityShadowBatch {
         light.defaultReturnValue(Long.MIN_VALUE);
     }
 
-    public void beginFrame() {
-        blocks.clear();
-        light.clear();
+    public void beginFrame(World world) {
+        long tick = world == null ? 0L : world.getTime();
+        if (!Argentum.CONFIG.entityShadowCache || world != cachedWorld || tick != cachedTick) {
+            blocks.clear();
+            light.clear();
+            cachedWorld = world;
+            cachedTick = tick;
+        }
         instances.clear();
         active = initialize();
     }
@@ -242,6 +249,9 @@ public final class EntityShadowBatch {
 
     public void close(CommandList commandList) {
         active = false;
+        blocks.clear();
+        light.clear();
+        cachedWorld = null;
         if (geometry != null) {
             geometry.delete(commandList);
             geometry = null;
