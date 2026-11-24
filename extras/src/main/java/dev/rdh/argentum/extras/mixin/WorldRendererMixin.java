@@ -5,11 +5,16 @@ import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.rdh.argentum.extras.ArgentumExtras;
+import dev.rdh.argentum.extras.ArgentumExtrasConfig;
+import dev.rdh.argentum.extras.CeraCompat;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.platform.GlStateManager;
+import net.minecraft.client.render.platform.Lighting;
 import net.minecraft.client.render.vertex.Tesselator;
 import net.minecraft.client.render.vertex.VertexBuffer;
 import net.minecraft.client.render.world.WorldRenderer;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.world.HitResult;
 
@@ -29,6 +34,28 @@ public class WorldRendererMixin {
     @Shadow
     @Final
     private Minecraft minecraft;
+
+    @Shadow
+    private ClientWorld world;
+
+    // with everything in the sky hidden, vanilla still pays for the state changes and two invisible sun/moon quads
+    @Inject(method = "renderSky(FI)V", at = @At("HEAD"), cancellable = true)
+    private void argentumExtras$skipEmptySky(float tickDelta, int anaglyphRenderPass, CallbackInfo ci) {
+        ArgentumExtrasConfig config = ArgentumExtras.CONFIG;
+        if (config.sky || config.sunAndMoon || config.stars) return;
+        if (this.world.dimension.getId() == 1 || !this.world.dimension.isNatural()) return;
+        // the black void box below the horizon still draws with the sky off
+        if (this.minecraft.player.getEyePosition(tickDelta).y < this.world.getHorizonHeight()) return;
+        if (CeraCompat.shadersActive() || CeraCompat.hasCustomSky((WorldRenderer) (Object) this, this.world)) return;
+
+        GlStateManager.disableBlend();
+        GlStateManager.enableAlphaTest();
+        GlStateManager.enableFog();
+        GlStateManager.enableTexture();
+        GlStateManager.depthMask(true);
+        Lighting.turnOff();
+        ci.cancel();
+    }
 
     @ModifyExpressionValue(method = "renderSky", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/dimension/Dimension;getSunriseColor(FF)[F"))
     private float[] argentumExtras$hideSunrise(float[] color) {
