@@ -85,7 +85,9 @@ public final class ArgentumCloudRenderer {
         GL11.glGetFloatv(GL11.GL_PROJECTION_MATRIX, this.projectionBuffer);
         this.projection.set(this.projectionBuffer);
         CloudFrame frame = new CloudFrame(this.modelView, this.projection, x, 0.0, z, relativeHeight - 0.33F, 0.0,
-                red, green, blue, fancy, range, fogEnd);
+                red, green, blue, fancy, range, fogEnd,
+                fancy ? CloudFrame.DEFAULT_TEXTURE_SIZE : 2048.0F,
+                fancy ? CloudFrame.DEFAULT_TEXTURE_OFFSET_Z : 0.0F);
 
         RenderDevice.enterManagedCode();
         try (CommandList commands = RenderDevice.INSTANCE.createCommandList()) {
