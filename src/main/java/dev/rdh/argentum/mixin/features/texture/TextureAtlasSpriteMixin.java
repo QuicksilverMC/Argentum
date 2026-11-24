@@ -32,20 +32,23 @@ public abstract class TextureAtlasSpriteMixin implements TextureAtlasSpriteExten
     @Inject(method = "load", at = @At("RETURN"))
     private void celeritas$analyzeTransparency(BufferedImage[] images, AnimationMetadata animation, CallbackInfo ci) {
         boolean fillTransparentPixels = argentum$shouldFillTransparentPixels(this.name);
-        SpriteTransparencyLevel level = SpriteTransparencyLevel.OPAQUE;
+        boolean hasTransparent = false;
+        boolean hasTranslucent = false;
         for (int[][] frame : this.frames) {
             if (frame == null || frame.length == 0 || frame[0] == null) continue;
             if (fillTransparentPixels) argentum$fillTransparentPixels(frame[0]);
             for (int color : frame[0]) {
                 int alpha = color >>> 24;
-                if (alpha != 255) {
-                    level = level.chooseNextLevel(alpha == 0 ? SpriteTransparencyLevel.TRANSPARENT : SpriteTransparencyLevel.TRANSLUCENT);
-                    if (level == SpriteTransparencyLevel.TRANSLUCENT) break;
+                if (alpha == 0) {
+                    hasTransparent = true;
+                } else if (alpha < 255) {
+                    hasTranslucent = true;
+                    break;
                 }
             }
-            if (level == SpriteTransparencyLevel.TRANSLUCENT) break;
+            if (hasTranslucent) break;
         }
-        this.celeritas$transparency = level;
+        this.celeritas$transparency = SpriteTransparencyLevel.of(hasTransparent, hasTranslucent);
     }
 
     @Unique
