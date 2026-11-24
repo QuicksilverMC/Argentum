@@ -1,9 +1,14 @@
 package dev.rdh.argentum.test.mixin;
 
+import java.nio.FloatBuffer;
+
 import dev.rdh.argentum.test.PortalBenchmark;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.block.entity.EndPortalRenderer;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.resource.Identifier;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.spongepowered.asm.mixin.injection.ModifyArgs;
@@ -54,7 +59,7 @@ abstract class PortalEffectsMixin {
     @ModifyArgs(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;texGenParam(Lnet/minecraft/client/render/platform/GlStateManager$TexGenMode;ILjava/nio/FloatBuffer;)V"))
     private void portalBenchmark$texGen(Args args) {
         if (PortalBenchmark.effect("texgen") && args.get(0) == GlStateManager.TexGenMode.S) {
-            java.nio.FloatBuffer plane = args.get(2);
+            FloatBuffer plane = args.get(2);
             plane.put(plane.position(), plane.get(plane.position()) * 1.25F);
         }
     }
@@ -81,14 +86,18 @@ abstract class PortalEffectsMixin {
     private void portalBenchmark$blend(CallbackInfo ci) {
         int draw = this.portalBenchmark$draw++;
         if (PortalBenchmark.effect("fog") || PortalBenchmark.effect("fog_exp") || PortalBenchmark.effect("fog_linear")) {
-            GL11.glEnable(GL11.GL_FOG);
-            GL11.glFogi(GL11.GL_FOG_MODE, PortalBenchmark.effect("fog_exp") ? GL11.GL_EXP
+            GlStateManager.enableFog();
+            GlStateManager.fogMode(PortalBenchmark.effect("fog_exp") ? GL11.GL_EXP
                     : PortalBenchmark.effect("fog_linear") ? GL11.GL_LINEAR : GL11.GL_EXP2);
-            GL11.glFogf(GL11.GL_FOG_START, 20.0F);
-            GL11.glFogf(GL11.GL_FOG_END, 100.0F);
-            GL11.glFogf(GL11.GL_FOG_DENSITY, 0.02F);
-            java.nio.FloatBuffer color = org.lwjgl.BufferUtils.createFloatBuffer(4);
-            color.put(new float[]{draw % 3 * 0.2F, 0.1F, 0.3F, 1.0F}).flip();
+            GlStateManager.fogStart(20.0F);
+            GlStateManager.fogEnd(100.0F);
+            GlStateManager.fogDensity(0.02F);
+            GameRenderer renderer = Minecraft.getInstance().gameRenderer;
+            renderer.fogRed = draw % 3 * 0.2F;
+            renderer.fogGreen = 0.1F;
+            renderer.fogBlue = 0.3F;
+            FloatBuffer color = BufferUtils.createFloatBuffer(4);
+            color.put(new float[]{renderer.fogRed, renderer.fogGreen, renderer.fogBlue, 1.0F}).flip();
             GL11.glFogfv(GL11.GL_FOG_COLOR, color);
         }
         if (PortalBenchmark.effect("blend") && draw > 0) GlStateManager.blendFunc(GL11.GL_ONE, GL11.GL_ZERO);

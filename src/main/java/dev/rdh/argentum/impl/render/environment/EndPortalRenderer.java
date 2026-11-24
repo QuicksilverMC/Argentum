@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import dev.rdh.argentum.impl.Argentum;
+import dev.rdh.argentum.impl.render.GlStateMirror;
 import dev.rdh.argentum.impl.render.terrain.ArgentumWorldRenderer;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.EndPortalBlockEntity;
@@ -271,6 +272,8 @@ public final class EndPortalRenderer {
         for (int i = 1; i < count; i++) {
             if (data.get(i * 4 + 3) != color) return this.decline();
         }
+        this.nextModelView.set(GlStateMirror.matrix(GL11.GL_MODELVIEW_MATRIX));
+        this.nextProjection.set(GlStateMirror.matrix(GL11.GL_PROJECTION_MATRIX));
         if (!this.readProjection()) return this.decline();
         this.nextFog.capture(this.fogSupported, this.fogColor);
         if (!this.nextFog.supported) return this.decline();
@@ -346,8 +349,6 @@ public final class EndPortalRenderer {
     private boolean fixedFunction() {
         if (this.snapshotTaken) return this.fixedFunction;
         this.snapshotTaken = true;
-        this.readMatrix(GL11.GL_MODELVIEW_MATRIX, this.nextModelView);
-        this.readMatrix(GL11.GL_PROJECTION_MATRIX, this.nextProjection);
         this.fixedFunction = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM) == 0 && modulates(GL13.GL_PRIMARY_COLOR);
         this.additive = !GL11.glIsEnabled(GL11.GL_STENCIL_TEST) && !GL11.glIsEnabled(GL11.GL_COLOR_LOGIC_OP)
                 && !GL11.glIsEnabled(GL13.GL_SAMPLE_ALPHA_TO_COVERAGE) && !GL11.glIsEnabled(GL13.GL_SAMPLE_ALPHA_TO_ONE)
@@ -371,9 +372,10 @@ public final class EndPortalRenderer {
     }
 
     private boolean additiveAlpha() {
-        int destinationAlpha = GlStateManager.BLEND.dfactorAlpha;
+        GlStateManager.Blend blend = GlStateManager.BLEND;
+        int destinationAlpha = blend.dfactorAlpha;
         this.nextAddAlpha = destinationAlpha == GL11.GL_ONE ? 1 : 0;
-        return GlStateManager.BLEND.sfactorAlpha == GL11.GL_ONE
+        return blend.sfactorAlpha == GL11.GL_ONE
                 && (destinationAlpha == GL11.GL_ONE || destinationAlpha == GL11.GL_ZERO);
     }
 
@@ -481,13 +483,14 @@ public final class EndPortalRenderer {
         GlStateManager.activeTexture(GL13.GL_TEXTURE0);
         int previousTexture = GlStateManager.TEXTURES[0].texture;
         int previousProgram = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
-        int previousMode = GL11.glGetInteger(GL11.GL_MATRIX_MODE);
+        int previousMode = GlStateMirror.matrixMode();
         int sourceRgb = 0, destinationRgb = 0, sourceAlpha = 0, destinationAlpha = 0, equationRgb = 0, equationAlpha = 0;
         if (this.merging) {
-            sourceRgb = GL11.glGetInteger(GL14.GL_BLEND_SRC_RGB);
-            destinationRgb = GL11.glGetInteger(GL14.GL_BLEND_DST_RGB);
-            sourceAlpha = GL11.glGetInteger(GL14.GL_BLEND_SRC_ALPHA);
-            destinationAlpha = GL11.glGetInteger(GL14.GL_BLEND_DST_ALPHA);
+            GlStateManager.Blend blend = GlStateManager.BLEND;
+            sourceRgb = blend.sfactorRGB;
+            destinationRgb = blend.dfactorRGB;
+            sourceAlpha = blend.sfactorAlpha;
+            destinationAlpha = blend.dfactorAlpha;
             equationRgb = GL11.glGetInteger(GL20.GL_BLEND_EQUATION_RGB);
             equationAlpha = GL11.glGetInteger(GL20.GL_BLEND_EQUATION_ALPHA);
             GL14.glBlendFuncSeparate(GL11.GL_ONE, GL11.GL_ONE, GL11.GL_ONE, this.addAlpha != 0 ? GL11.GL_ONE : GL11.GL_ZERO);

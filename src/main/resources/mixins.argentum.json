@@ -19,6 +19,7 @@
     "features.nametag.EntityRendererMixin", "features.nametag.GLXMixin", "features.nametag.GlStateManagerMixin",
     "features.nametag.LivingEntityRendererMixin", "features.nametag.TesselatorMixin", "features.options.OptionPageFrameMixin",
     "features.options.OptionsScreenMixin", "features.particle.ParticleManagerMixin", "features.particle.ParticleMixin",
+    "core.state.GlStateManagerMixin", "core.state.CameraMixin", "core.state.GameRendererMixin",
     "features.blockentity.BlockEntityRenderDispatcherMixin",
     "features.blockentity.baking.BannerRendererMixin", "features.blockentity.baking.ChestBlockEntityMixin",
     "features.blockentity.baking.ClientPlayNetworkHandlerMixin", "features.blockentity.baking.EnderChestBlockEntityMixin",
