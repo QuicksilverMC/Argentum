@@ -60,6 +60,7 @@ public final class EntityShadowBatch {
     private boolean initialized;
     private boolean supported;
     private boolean active;
+    private Entity topLevelEntity;
     private InstancedGeometryBuffer geometry;
     private GlProgram<ShadowShader> program;
 
@@ -71,11 +72,16 @@ public final class EntityShadowBatch {
         blocks.clear();
         light.clear();
         instances.clear();
+        topLevelEntity = null;
         active = initialize();
     }
 
+    public void setTopLevelEntity(Entity entity) {
+        topLevelEntity = entity;
+    }
+
     public boolean record(World world, Entity entity, double dx, double dy, double dz, float opacity, float tickDelta, float shadowSize) {
-        if (!active) {
+        if (!active || entity != topLevelEntity || world == null) {
             return false;
         }
 

@@ -312,7 +312,12 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
                 }
 
                 rendered++;
-                dispatcher.render(entity, tickDelta);
+                this.entityShadowBatch.setTopLevelEntity(entity);
+                try {
+                    dispatcher.render(entity, tickDelta);
+                } finally {
+                    this.entityShadowBatch.setTopLevelEntity(null);
+                }
             }
         } catch (RuntimeException | Error exception) {
             this.entityInstancing.discardBatch();

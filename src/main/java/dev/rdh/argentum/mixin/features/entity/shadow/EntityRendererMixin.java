@@ -2,8 +2,10 @@ package dev.rdh.argentum.mixin.features.entity.shadow;
 
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.render.entity.EntityRenderer;
+import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.entity.Entity;
 
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -30,6 +32,10 @@ public abstract class EntityRendererMixin {
         }
         if (renderer != null && renderer.getEntityShadowBatch().record(this.dispatcher.world, entity,
                 dx, dy, dz, opacity, tickDelta, this.shadowSize)) {
+            GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+            GlStateManager.disableBlend();
+            GlStateManager.depthMask(true);
             ci.cancel();
         }
     }
