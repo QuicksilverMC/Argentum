@@ -434,7 +434,8 @@ public final class ArgentumOptionPages {
                         .setControl(option -> new SliderControl(option, 0, 9, 1,
                                 value -> optionText(StandardOptions.Option.CPU_FRAMES_AHEAD, "value", value)))
                         .setBinding((config, value) -> config.cpuRenderAheadLimit = value,
-                                config -> config.cpuRenderAheadLimit)
+                                config -> Argentum.renderAheadSupported() ? config.cpuRenderAheadLimit : 0)
+                        .setEnabledPredicate(Argentum::renderAheadSupported)
                         .build())
                 .build();
 
@@ -442,7 +443,7 @@ public final class ArgentumOptionPages {
                 .setId(Group.DIAGNOSTICS)
                 .add(toggle(Option.CHECK_GL_ERRORS, OptionImpact.LOW, (config, value) -> config.checkGlErrors = value, config1 -> config1.checkGlErrors, OptionFlag.REQUIRES_GAME_RESTART))
                 .build();
-        return Argentum.renderAheadSupported() ? page(Page.ADVANCED, cpuSaving, diagnostics) : page(Page.ADVANCED, diagnostics);
+        return page(Page.ADVANCED, cpuSaving, diagnostics);
     }
 
     private static OptionImpl<ArgentumConfig, Boolean> toggle(OptionIdentifier<?> id,
