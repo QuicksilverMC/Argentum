@@ -5,8 +5,9 @@
   "plugin": "dev.rdh.argentum.extras.ArgentumExtrasMixinPlugin",
   "compatibilityLevel": "JAVA_25",
   "client": [
-    "AbstractArmorLayerMixin", "AbstractLeavesBlockMixin", "AnvilScreenMixin", "DebugOverlayMixin",
-    "EntityRendererMixin", "GameGuiMixin", "TextRendererMixin",
+    "AbstractArmorLayerMixin", "AbstractLeavesBlockMixin", "AnvilScreenMixin", "BakedItemFramesMixin", "BeaconRendererMixin",
+    "DebugOverlayMixin", "EnchantingTableRendererMixin", "EntityRendererMixin", "GameGuiMixin", "ItemFrameRendererMixin",
+    "MovingBlockRendererMixin", "PaintingRendererMixin", "TextRendererMixin",
     "FastBlockRendererMixin", "GameRendererMixin", "LivingEntityRendererMixin", "MobRendererMixin",
     "ParticleManagerMixin", "ToastGuiMixin", "WorldRendererMixin"
   ],

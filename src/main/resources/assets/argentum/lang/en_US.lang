@@ -77,6 +77,8 @@ argentum.particle_culling.name=Particle Culling
 argentum.particle_culling.tooltip=If enabled particles outside the camera frustum or hidden behind terrain will be skipped during rendering. This can improve performance in particle-heavy scenes, but may cause particles to disappear unexpectedly with some mods.
 argentum.fast_particles.name=Fast Particles
 argentum.fast_particles.tooltip=If enabled particles are prepared for drawing more efficiently, improving performance when lots of particles are on screen. Particles from mods that draw themselves differently are detected and drawn normally.
+argentum.particle_light_cache.name=Particle Light Cache
+argentum.particle_light_cache.tooltip=If enabled each particle looks up its light level once per tick instead of every frame. This improves performance when lots of particles are on screen.
 
 argentum.entity_instancing.name=Entity Instancing
 argentum.entity_instancing.tooltip=If enabled compatible entity models will be batched into instanced draw calls. This can significantly improve performance when many similar entities are visible, but may cause rendering issues with mods that use unusual entity renderers.

@@ -113,9 +113,14 @@ final class Animation implements Consumer<ModelPart> {
         if (this.sequence != this.context.sequence) {
             this.sequence = this.context.sequence;
             this.first = part;
-            if (this.usesVars) this.context.loadVars();
-            for (Runnable assignment : this.assignments) assignment.run();
-            for (int i = 0; i < this.targets.length; i++) this.values[i] = this.targets[i].get().eval();
+            if (!this.usesVars && this.context.reusePose(this, this.values)) {
+                for (int i = 0; i < this.targets.length; i++) this.targets[i].set().set(this.values[i]);
+            } else {
+                if (this.usesVars) this.context.loadVars();
+                for (Runnable assignment : this.assignments) assignment.run();
+                for (int i = 0; i < this.targets.length; i++) this.values[i] = this.targets[i].get().eval();
+                if (!this.usesVars) this.context.savePose(this, this.values);
+            }
         } else if (part == this.first) {
             for (int i = 0; i < this.targets.length; i++) this.targets[i].set().set(this.values[i]);
         } else {

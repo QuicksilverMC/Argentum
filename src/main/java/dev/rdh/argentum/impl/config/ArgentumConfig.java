@@ -19,6 +19,7 @@ public class ArgentumConfig {
     public int entityOcclusionIntervalMs = 50;
     public boolean particleCulling = true;
     public boolean fastParticles = true;
+    public boolean particleLightCache = true;
     public boolean blockFaceCulling = true;
     public boolean rasterCulling = false;
     public boolean translucencySorting = true;

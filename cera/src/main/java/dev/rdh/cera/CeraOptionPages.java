@@ -56,6 +56,12 @@ final class CeraOptionPages {
         OptionPage entities = page("entities", OptionGroup.createBuilder()
                 .add(toggle("random_entities", (config, value) -> config.randomEntities = value, config -> config.randomEntities))
                 .add(toggle("custom_entity_models", (config, value) -> config.customEntityModels = value, config -> config.customEntityModels, REQUIRES_ASSET_RELOAD))
+                .add(OptionImpl.createBuilder(int.class, Cera.CONFIG_STORAGE)
+                        .setId(id("cem_animation_lod"))
+                        .setControl(option -> new SliderControl(option, 0, 128, 8,
+                                value -> value == 0 ? text("value.off") : text("value.blocks", value)))
+                        .setBinding((config, value) -> config.cemAnimationLodDistance = value, config -> config.cemAnimationLodDistance)
+                        .build())
                 .add(toggle("custom_items", (config, value) -> config.customItems = value, config -> config.customItems))
                 .add(toggle("optifine_cosmetics", (config, value) -> config.optifineCosmetics = value, config -> config.optifineCosmetics)));
 

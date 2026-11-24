@@ -16,6 +16,7 @@ public class CeraConfig {
     public boolean customLightmaps = true;
     public boolean randomEntities = true;
     public boolean customEntityModels = true;
+    public int cemAnimationLodDistance = 24; // blocks, 0 = off
     public boolean customSky = true;
     public boolean customGuis = true;
     public boolean customItems = true;
@@ -34,6 +35,7 @@ public class CeraConfig {
     public boolean shaderErrorReports = true;
 
     public void validate() {
+        this.cemAnimationLodDistance = Math.clamp(this.cemAnimationLodDistance, 0, 128);
         if (this.betterGrass == null) this.betterGrass = BetterGrass.Mode.OFF;
         if (this.connectedTextures == null) this.connectedTextures = ConnectedTextures.Mode.OFF;
         if (this.dynamicLights == null) this.dynamicLights = DynamicLights.Mode.OFF;

@@ -26,7 +26,9 @@ import dev.rdh.argentum.impl.render.environment.WeatherRenderer;
 import dev.rdh.argentum.impl.render.environment.EndPortalRenderer;
 import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
 
+import net.minecraft.block.entity.BeaconBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.MobSpawnerBlockEntity;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.entity.SkullBlockEntity;
 import net.minecraft.client.Minecraft;
@@ -351,6 +353,27 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
         return frustum.testAab(x - halfWidth, y, z - halfWidth, x + halfWidth, y + particle.height, z + halfWidth);
     }
 
+    private boolean isBlockEntityInFrustum(BlockEntity blockEntity) {
+        Viewport viewport = this.getLastViewport();
+        if (viewport == null || !(viewport.getFrustum() instanceof PlaneFrustum frustum)) {
+            return true;
+        }
+        BlockPos pos = blockEntity.getPos();
+        CameraTransform camera = viewport.getTransform();
+        float x = (float)(pos.getX() - camera.intX) - camera.fracX;
+        float y = (float)(pos.getY() - camera.intY) - camera.fracY;
+        float z = (float)(pos.getZ() - camera.intZ) - camera.fracZ;
+        if (blockEntity instanceof BeaconBlockEntity) {
+            return frustum.testAab(x, y, z, x + 1.0F, (float)(256 - camera.intY) - camera.fracY, z + 1.0F);
+        }
+        var renderer = BlockEntityRenderDispatcher.INSTANCE.getRenderer(blockEntity);
+        // the spawner mob is drawn at a fixed scale, so large mobs reach far outside the block
+        if (blockEntity instanceof MobSpawnerBlockEntity || renderer != null && renderer.shouldRenderOffScreen()) {
+            return true;
+        }
+        return frustum.testAab(x - 3.0F, y - 3.0F, z - 3.0F, x + 4.0F, y + 4.0F, z + 4.0F);
+    }
+
     private Box cullableParticleBox(Particle particle) {
         if (!Argentum.CONFIG.particleCulling || this.getLastViewport() == null) {
             return null;
@@ -396,6 +419,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
         this.endPortalRenderer.begin(list);
         for (var blockEntity : list) {
             if (blockEntity instanceof SkullBlockEntity || blockEntity instanceof SignBlockEntity) this.bakeCandidates.add(blockEntity);
+            if (!this.isBlockEntityInFrustum(blockEntity)) continue;
             try {
                 if (!this.endPortalRenderer.render(blockEntity, partialTicks)) {
                     BlockEntityRenderDispatcher.INSTANCE.render(blockEntity, partialTicks, -1);

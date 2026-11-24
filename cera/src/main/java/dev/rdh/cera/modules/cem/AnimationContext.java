@@ -21,6 +21,8 @@ import java.util.Arrays;
 import java.util.List;
 
 public final class AnimationContext {
+    private static final int MAX_LOD_INTERVAL = 8;
+
     private Entity entity;
     private LivingEntity living;
     private float tickDelta;
@@ -43,6 +45,8 @@ public final class AnimationContext {
     private long lastFrame;
     private float frameTime;
     private int frameCounter;
+    private boolean lodCandidate;
+    private boolean reusePose;
 
     private final Object2IntOpenHashMap<String> varSlots = new Object2IntOpenHashMap<>();
     private float[] scratchVars = new float[0];
@@ -78,6 +82,40 @@ public final class AnimationContext {
         this.ruleIndex = 0;
         this.shadowOffsetX = this.shadowOffsetZ = 0.0F;
         this.leashOffsetX = this.leashOffsetY = this.leashOffsetZ = 0.0F;
+        this.updateLod(entity);
+    }
+
+    private void updateLod(Entity entity) {
+        this.lodCandidate = this.reusePose = false;
+        int distance = Cera.CONFIG.cemAnimationLodDistance;
+        if (distance <= 0 || this.inGui || !(entity instanceof CeraEntityExtension)) return;
+        Minecraft minecraft = Minecraft.getInstance();
+        Entity camera = minecraft.getCamera();
+        if (camera == null || entity == minecraft.player || entity == camera) return;
+        double squared = entity.squaredDistanceTo(camera);
+        if (squared <= (double)distance * distance) {
+            ((CeraEntityExtension)entity).cera$clearAnimationPoses();
+            return;
+        }
+        this.lodCandidate = true;
+        int interval = Math.min(MAX_LOD_INTERVAL, (int)(Math.sqrt(squared) / distance) + 1);
+        this.reusePose = (this.frameCounter + entity.getNetworkId() & Integer.MAX_VALUE) % interval != 0;
+    }
+
+    boolean reusePose(Object animation, float[] values) {
+        if (!this.reusePose) return false;
+        float[] pose = ((CeraEntityExtension)this.entity).cera$getAnimationPoses().get(animation);
+        if (pose == null || pose.length != values.length) return false;
+        System.arraycopy(pose, 0, values, 0, values.length);
+        return true;
+    }
+
+    void savePose(Object animation, float[] values) {
+        if (!this.lodCandidate) return;
+        var poses = ((CeraEntityExtension)this.entity).cera$getAnimationPoses();
+        float[] pose = poses.get(animation);
+        if (pose == null || pose.length != values.length) poses.put(animation, pose = new float[values.length]);
+        System.arraycopy(values, 0, pose, 0, values.length);
     }
 
     public void setModelParameters(float limbSwing, float limbSpeed, float age, float headYaw, float headPitch, float scale) {

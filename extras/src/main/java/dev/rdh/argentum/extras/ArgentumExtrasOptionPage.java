@@ -170,12 +170,21 @@ final class ArgentumExtrasOptionPage {
                 .add(toggle("second_name_tag_layer", (c, v) -> c.secondNameTagLayer = v, c -> c.secondNameTagLayer))
                 .build();
 
+        OptionGroup worldObjects = OptionGroup.createBuilder()
+                .setId(id("world_objects"))
+                .add(toggle("beacon_beam", (c, v) -> c.beaconBeam = v, c -> c.beaconBeam))
+                .add(toggle("enchanting_table_book", (c, v) -> c.enchantingTableBook = v, c -> c.enchantingTableBook))
+                .add(toggle("pistons", (c, v) -> c.pistons = v, c -> c.pistons))
+                .add(toggle("item_frames", (c, v) -> c.itemFrames = v, c -> c.itemFrames, OptionFlag.REQUIRES_RENDERER_RELOAD))
+                .add(toggle("paintings", (c, v) -> c.paintings = v, c -> c.paintings))
+                .build();
+
         return List.of(
                 new OptionPage(id("environment"), text("pages.environment"), List.of(clouds, fog, sky, weather, leaves)),
                 new OptionPage(id("camera_effects"), text("pages.camera_effects"), List.of(camera)),
                 new OptionPage(id("particles"), text("pages.particles"), List.of(particles)),
                 new OptionPage(id("debug_hud"), text("pages.debug_hud"), List.of(debug)),
-                new OptionPage(id("entities"), text("pages.entities"), List.of(entities, equipment, playerCosmetics, attachments)),
+                new OptionPage(id("entities"), text("pages.entities"), List.of(entities, equipment, playerCosmetics, attachments, worldObjects)),
                 new OptionPage(id("quality"), text("pages.quality"), List.of(quality)),
                 new OptionPage(id("misc"), text("pages.misc"), List.of(misc))
         );

@@ -72,6 +72,7 @@ public final class ArgentumOptionPages {
         private static final OptionIdentifier<Void> ENTITY_OCCLUSION_INTERVAL = OptionIdentifier.create(Argentum.ID, "entity_occlusion_interval");
         private static final OptionIdentifier<Void> PARTICLE_CULLING = OptionIdentifier.create(Argentum.ID, "particle_culling");
         private static final OptionIdentifier<Void> FAST_PARTICLES = OptionIdentifier.create(Argentum.ID, "fast_particles");
+        private static final OptionIdentifier<Void> PARTICLE_LIGHT_CACHE = OptionIdentifier.create(Argentum.ID, "particle_light_cache");
         private static final OptionIdentifier<Void> ENTITY_INSTANCING = OptionIdentifier.create(Argentum.ID, "entity_instancing");
         private static final OptionIdentifier<Void> BAKE_BLOCK_ENTITIES = OptionIdentifier.create(Argentum.ID, "bake_block_entities");
         private static final OptionIdentifier<Void> NAME_TAG_BATCHING = OptionIdentifier.create(Argentum.ID, "name_tag_batching");
@@ -363,6 +364,7 @@ public final class ArgentumOptionPages {
                         .build())
                 .add(toggle(Option.PARTICLE_CULLING, OptionImpact.LOW, (config7, value4) -> config7.particleCulling = value4, config8 -> config8.particleCulling))
                 .add(toggle(Option.FAST_PARTICLES, OptionImpact.MEDIUM, (config, value) -> config.fastParticles = value, config -> config.fastParticles))
+                .add(toggle(Option.PARTICLE_LIGHT_CACHE, OptionImpact.LOW, (config, value) -> config.particleLightCache = value, config -> config.particleLightCache))
                 .build();
 
         OptionGroup rendering = OptionGroup.createBuilder()
