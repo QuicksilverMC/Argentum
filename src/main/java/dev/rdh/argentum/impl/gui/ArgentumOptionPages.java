@@ -415,7 +415,7 @@ public final class ArgentumOptionPages {
                                 }, new TextComponent[]{
                                         text("value.vanilla"), text("value.compact")
                                 }))
-                        .setBinding((config, value) -> config.vertexFormat = value, config -> Argentum.effectiveVertexFormat())
+                        .setBinding((config, value) -> config.vertexFormat = value, config -> config.vertexFormat.fallback())
                         .setImpact(OptionImpact.MEDIUM)
                         .setFlags(OptionFlag.REQUIRES_RENDERER_RELOAD)
                         .build())

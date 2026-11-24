@@ -4,6 +4,7 @@ import org.embeddedt.embeddium.impl.render.chunk.occlusion.AsyncOcclusionMode;
 import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkMeshFormats;
 import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkVertexType;
 
+import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService.FogShape;
 
 public class ArgentumConfig {
@@ -72,6 +73,14 @@ public class ArgentumConfig {
 
         VertexFormat(ChunkVertexType type) {
             this.type = type;
+        }
+
+        public VertexFormat fallback() {
+            if (this == QUAD_RELATIVE && !Argentum.quadRelativeSupported()) {
+                return COMPACT;
+            } else {
+                return this;
+            }
         }
     }
 }

@@ -54,13 +54,6 @@ public class Argentum implements ClientModInitializer {
         return RenderDevice.INSTANCE.getDeviceFunctions().textureBufferFunctions().isSupported();
     }
 
-    public static ArgentumConfig.VertexFormat effectiveVertexFormat() {
-        ArgentumConfig.VertexFormat format = CONFIG.vertexFormat;
-        return format == ArgentumConfig.VertexFormat.QUAD_RELATIVE && !quadRelativeSupported()
-                ? ArgentumConfig.VertexFormat.COMPACT
-                : format;
-    }
-
     private Path getConfigPath(Path c) {
         Path celery = c.resolve("celeritas.json");
         Path argentum = c.resolve("argentum.json");

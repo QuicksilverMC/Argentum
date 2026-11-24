@@ -240,7 +240,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
         ChunkTrackerHolder.get(this.world).setRequiredNeighborRadius(Argentum.CONFIG.safeChunkEdges ? 1 : 0);
         TerrainDrawTarget target = ((MinecraftExtension)Minecraft.getInstance()).argentum$getTerrainDrawTarget();
         ChunkVertexType targetType = target == null ? null : target.vertexType();
-        ChunkVertexType vertexType = targetType != null ? targetType : Argentum.effectiveVertexFormat().type;
+        ChunkVertexType vertexType = targetType != null ? targetType : Argentum.CONFIG.vertexFormat.fallback().type;
         return ArgentumRenderSectionManager.create(vertexType, targetType != null, targetType != null && target.hasShadowPass(),
                 this.world, this.renderDistance, commandList, this.chunkPrograms);
     }
