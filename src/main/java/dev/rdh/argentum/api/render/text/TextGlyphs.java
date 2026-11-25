@@ -14,6 +14,10 @@ public final class TextGlyphs {
         return renderer.argentum$getBatcher().fonts().glyph(codepoint, unicode).info(unicode);
     }
 
+    public static boolean pixels(TextRenderer renderer, int codepoint, int[] dst) {
+        return renderer.argentum$getBatcher().fonts().glyph(codepoint, renderer.getUnicode()).copyPixels(dst);
+    }
+
     public static int obfuscate(TextRenderer renderer, int codepoint, RandomGenerator random) {
         return renderer.argentum$getBatcher().obfuscate(codepoint, renderer.getUnicode(), random);
     }

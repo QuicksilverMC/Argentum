@@ -34,6 +34,9 @@ public final class Glyph {
     public float u1;
     public float v1;
 
+    private GlyphInfo info;
+    private GlyphInfo unicodeInfo;
+
     Glyph(float advance, float width, float top, float height, float oversample, boolean unicodePage,
             Sheet sheet, int srcX, int srcY, int srcWidth, int srcHeight) {
         this.advance = advance;
@@ -90,19 +93,37 @@ public final class Glyph {
 
     public @Nullable GlyphInfo info(boolean unicode) {
         if (this == EMPTY) return null;
+        if (unicode) {
+            if (this.unicodeInfo == null) this.unicodeInfo = this.computeInfo(true);
+            return this.unicodeInfo;
+        }
+        if (this.info == null) this.info = this.computeInfo(false);
+        return this.info;
+    }
+
+    private GlyphInfo computeInfo(boolean unicode) {
         float boldShift = this.boldOffset(unicode);
         if (this.sheet == null || !this.sheet.load()) {
-            return new GlyphInfo(this.advance, boldShift, this.top, this.width, this.height, 0.0F, 0, 0, null);
+            return new GlyphInfo(this.advance, boldShift, this.top, this.width, this.height, 0.0F, 0, 0);
         }
 
         int scale = this.sheet.scale;
+        return new GlyphInfo(this.advance, boldShift, this.top, this.width, this.height, this.oversample * scale,
+                this.srcWidth * scale, this.srcHeight * scale);
+    }
+
+    public boolean copyPixels(int[] dst) {
+        if (this.sheet == null || !this.sheet.load()) return false;
+        int scale = this.sheet.scale;
         int width = this.srcWidth * scale;
         int height = this.srcHeight * scale;
-        int[] argb = new int[width * height];
-        for (int row = 0; row < height; row++) {
-            System.arraycopy(this.sheet.pixels, (this.srcY * scale + row) * this.sheet.width + this.srcX * scale, argb, row * width, width);
+        if (dst.length < width * height) {
+            throw new IllegalArgumentException("Pixel buffer holds " + dst.length + " ints, glyph needs " + width * height);
         }
-        return new GlyphInfo(this.advance, boldShift, this.top, this.width, this.height, this.oversample * scale, width, height, argb);
+        for (int row = 0; row < height; row++) {
+            System.arraycopy(this.sheet.pixels, (this.srcY * scale + row) * this.sheet.width + this.srcX * scale, dst, row * width, width);
+        }
+        return true;
     }
 
     static final class Sheet {
