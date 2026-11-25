@@ -20,6 +20,8 @@ import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 
+import java.util.ArrayList;
+
 public final class EntityCapture implements AutoCloseable {
     private static final Identifier ENCHANTMENT_GLINT_TEXTURE =
             new Identifier("textures/misc/enchanted_item_glint.png");
@@ -27,6 +29,13 @@ public final class EntityCapture implements AutoCloseable {
     private final EntityInstancing owner;
     private final Matrix4f arrowMatrix = new Matrix4f();
     private final Matrix4f boxMatrix = new Matrix4f();
+
+    // the current armor piece's base-pass submissions, replayed as its glint pass (replayArmorGlint)
+    private final ArrayList<InstanceGeometry> armorGeometry = new ArrayList<>();
+    private final ArrayList<BoxTemplate> armorBoxes = new ArrayList<>();
+    private final ArrayList<Matrix4f> armorMatrices = new ArrayList<>();
+    private int armorCount;
+    private boolean armorReplayValid;
     private final ReferenceOpenHashSet<ModelPart> glintParts = new ReferenceOpenHashSet<>();
 
     private final Matrix4fStack matrices = new Matrix4fStack(64);
@@ -180,6 +189,8 @@ public final class EntityCapture implements AutoCloseable {
         }
         this.pass = layerPass;
         this.armorLayer = layer instanceof AbstractArmorLayer;
+        this.armorCount = 0;
+        this.armorReplayValid = false;
         this.currentOverlayColor.set(this.overlayColor);
         this.glintParts.clear();
         this.itemGlintPass = 0;
@@ -348,6 +359,11 @@ public final class EntityCapture implements AutoCloseable {
         if (this.modelActive && this.armorLayer) {
             this.pass = ENCHANTMENT_GLINT_TEXTURE.equals(texture)
                     ? InstanceRenderPass.GLINT : InstanceRenderPass.NORMAL;
+            if (this.pass != InstanceRenderPass.GLINT) {
+                // a new armor piece (or its leather overlay): record its base pass afresh
+                this.armorCount = 0;
+                this.armorReplayValid = true;
+            }
         }
     }
 
@@ -404,11 +420,43 @@ public final class EntityCapture implements AutoCloseable {
     }
 
     private boolean submit(InstanceGeometry geometry, Matrix4f matrix, BoxTemplate box) {
+        if (this.armorReplayValid && this.armorLayer && this.pass != InstanceRenderPass.GLINT) {
+            this.recordArmorSubmission(geometry, matrix, box);
+        }
         boolean submitted = this.owner.backend().submit(geometry, this.boundTexture, this.pass, matrix,
                 this.packedLight, this.color, this.effectTime, this.currentOverlayColor, box, this.kind, this.id
         );
         this.recorded |= submitted;
         return submitted;
+    }
+
+    private void recordArmorSubmission(InstanceGeometry geometry, Matrix4f matrix, BoxTemplate box) {
+        int i = this.armorCount++;
+        if (i == this.armorMatrices.size()) {
+            this.armorMatrices.add(new Matrix4f());
+            this.armorGeometry.add(null);
+            this.armorBoxes.add(null);
+        }
+        this.armorMatrices.get(i).set(matrix);
+        this.armorGeometry.set(i, geometry);
+        this.armorBoxes.set(i, box);
+    }
+
+    /**
+     * Re-submits the current armor piece's base-pass parts as its glint pass, with the glint texture, colour and
+     * light as currently set. The glint draws the same parts in the same pose, so this matches walking the model
+     * again. {@return false if there is nothing to replay}, in which case the caller walks the model.
+     */
+    public boolean replayArmorGlint() {
+        if (!this.armorReplayValid || !this.modelActive || !this.armorLayer
+                || this.pass != InstanceRenderPass.GLINT || this.armorCount == 0) {
+            return false;
+        }
+        for (int i = 0; i < this.armorCount; i++) {
+            this.submit(this.armorGeometry.get(i), this.armorMatrices.get(i), this.armorBoxes.get(i));
+        }
+        this.armorReplayValid = false; // one replay per piece
+        return true;
     }
 
     private void recordPart(ModelPart part, float scale) {
