@@ -139,7 +139,7 @@ public record SignText(Text[] lines, String font, BakedBlockEntities.Region regi
 
             float top = y + glyph.top;
             float bottom = top + glyph.height - 0.01F;
-            float right = x + glyph.width;
+            float right = x + glyph.width - 0.01F;
             float topSlant = glyph.topSlant(italic);
             float bottomSlant = glyph.bottomSlant(italic);
             float u0 = texels[0] / texture.texelWidth();

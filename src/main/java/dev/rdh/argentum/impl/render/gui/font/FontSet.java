@@ -237,7 +237,7 @@ public final class FontSet {
                 float advance = rendererSheet && TextBatcher.CHARACTERS.indexOf(codepoint) == slot
                         ? this.widths[slot]
                         : (int) (0.5 + used * scale) + 1;
-                float width = rendererSheet ? advance - 1.01F : cellWidth * scale - 0.01F;
+                float width = rendererSheet ? advance - 1.0F : cellWidth * scale;
                 glyphs.put(codepoint, new Glyph(advance, width, 7 - ascent, height, 1.0F / scale, false,
                         used == 0 ? null : sheet, x, y, cellWidth, cellHeight));
             }
@@ -274,7 +274,7 @@ public final class FontSet {
                 Identifier name = new Identifier(String.format(template, String.format("%02x", page)));
                 pages[page] = new Glyph.Sheet(resources, new Identifier(name.getNamespace(), "textures/" + name.getPath()), 256);
             }
-            return new Glyph(columns / 2 + 1, (columns - 0.02F) / 2.0F, 0.0F, 8.0F, 2.0F, true,
+            return new Glyph(columns / 2 + 1, columns / 2.0F, 0.0F, 8.0F, 2.0F, true,
                     pages[page], (codepoint & 15) * 16 + start, (codepoint >> 4 & 15) * 16, columns, 16);
         };
     }

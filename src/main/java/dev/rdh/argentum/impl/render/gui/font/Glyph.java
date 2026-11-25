@@ -1,10 +1,12 @@
 package dev.rdh.argentum.impl.render.gui.font;
 
+import dev.rdh.argentum.api.render.text.GlyphInfo;
 import dev.rdh.argentum.impl.Argentum;
 
 import net.minecraft.client.render.texture.TextureUtil;
 import net.minecraft.client.resource.manager.ResourceManager;
 import net.minecraft.resource.Identifier;
+import org.jetbrains.annotations.Nullable;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -82,8 +84,25 @@ public final class Glyph {
     public float[] texels() {
         if (!this.sheet.load()) return null;
         int scale = this.sheet.scale;
-        return new float[] {this.srcX * scale, this.srcY * scale, (this.srcX + this.width * this.oversample) * scale,
+        return new float[] {this.srcX * scale, this.srcY * scale, (this.srcX + (this.width - 0.01F) * this.oversample) * scale,
                 (this.srcY + (this.height - 0.01F) * this.oversample) * scale};
+    }
+
+    public @Nullable GlyphInfo info(boolean unicode) {
+        if (this == EMPTY) return null;
+        float boldShift = this.boldOffset(unicode);
+        if (this.sheet == null || !this.sheet.load()) {
+            return new GlyphInfo(this.advance, boldShift, this.top, this.width, this.height, 0.0F, 0, 0, null);
+        }
+
+        int scale = this.sheet.scale;
+        int width = this.srcWidth * scale;
+        int height = this.srcHeight * scale;
+        int[] argb = new int[width * height];
+        for (int row = 0; row < height; row++) {
+            System.arraycopy(this.sheet.pixels, (this.srcY * scale + row) * this.sheet.width + this.srcX * scale, argb, row * width, width);
+        }
+        return new GlyphInfo(this.advance, boldShift, this.top, this.width, this.height, this.oversample * scale, width, height, argb);
     }
 
     static final class Sheet {
