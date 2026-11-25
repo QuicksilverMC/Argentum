@@ -95,6 +95,7 @@ public final class HudBatch {
         }
 
         public void fill(int left, int top, int right, int bottom, int color) {
+            if ((color >>> 24) == 0) return;
             this.drawing = true;
             this.recorder.fill(HudRecorder.LAYER_BACKGROUND, left, top, right, bottom, color);
         }
