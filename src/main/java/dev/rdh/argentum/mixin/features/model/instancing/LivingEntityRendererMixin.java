@@ -18,6 +18,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import dev.rdh.argentum.impl.render.entity.instancing.CapturedOverlay;
 import dev.rdh.argentum.impl.render.entity.instancing.EntityCapture;
 import dev.rdh.argentum.impl.render.entity.instancing.EntityInstancing;
 
@@ -109,9 +110,13 @@ public abstract class LivingEntityRendererMixin {
             }
             capture.beginModel();
         }
+        // a model drawn immediately inside a capture needs the real overlay
+        boolean immediate = capture != null && !capture.isModelActive();
+        if (immediate) CapturedOverlay.beginImmediate();
         try {
             original.call(entity, walkAnimationProgress, walkAnimationSpeed, bob, yaw, pitch, scale);
         } finally {
+            if (immediate) CapturedOverlay.endImmediate();
             if (capture != null) {
                 capture.endModel();
             }
@@ -124,11 +129,15 @@ public abstract class LivingEntityRendererMixin {
             float yaw, float pitch, float scale, Operation<Void> original) {
         EntityCapture active = EntityCapture.current();
         boolean capture = active != null && active.beginLayer(layer, entity);
+        // an uncapturable layer is drawn immediately inside the capture and needs the real overlay
+        boolean immediate = active != null && !capture;
+        if (immediate) CapturedOverlay.beginImmediate();
         EntityInstancing instancing = EntityInstancing.current();
         if (instancing != null) instancing.beginLayerRender();
         try {
             original.call(layer, entity, walkAnimationProgress, walkAnimationSpeed, tickDelta, bob, yaw, pitch, scale);
         } finally {
+            if (immediate) CapturedOverlay.endImmediate();
             if (instancing != null) instancing.endLayerRender();
             if (capture) {
                 active.endLayer();
