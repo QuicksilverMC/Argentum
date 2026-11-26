@@ -3,7 +3,9 @@ package dev.rdh.argentum.impl.compat;
 import net.fabricmc.loader.api.FabricLoader;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
+import org.lwjgl.system.Platform;
 import pl.tomgirl.pylon.window.DisplaySdl;
+import pl.tomgirl.pylon.window.DisplaySdl.FullscreenMode;
 
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.config.ArgentumConfig;
@@ -15,19 +17,23 @@ import java.util.stream.Stream;
 
 public final class PylonFullscreen {
     public static final boolean SUPPORTED = FabricLoader.getInstance().isModLoaded("pylon");
+    public static final boolean OVERHANGING_SUPPORTED = SUPPORTED && Platform.get() == Platform.WINDOWS;
 
     private PylonFullscreen() {
     }
 
     public static boolean sync() {
         if (!SUPPORTED) return false;
-        boolean exclusive = Argentum.CONFIG.exclusiveFullscreen;
+        FullscreenMode fullscreenMode = Argentum.CONFIG.exclusiveFullscreen ? FullscreenMode.EXCLUSIVE
+                : OVERHANGING_SUPPORTED && Argentum.CONFIG.overhangingBorderless ? FullscreenMode.OVERHANG
+                : FullscreenMode.BORDERLESS;
         DisplayMode mode = configuredMode(Argentum.CONFIG);
         DisplaySdl display = DisplaySdl.instance();
-        boolean changed = display.isExclusiveFullscreen() != exclusive
-                || exclusive && !Objects.equals(display.getFullscreenDisplayMode(), mode);
-        display.setExclusiveFullscreen(exclusive);
+        boolean changed = display.getFullscreenMode() == fullscreenMode
+                && fullscreenMode == FullscreenMode.EXCLUSIVE
+                && !Objects.equals(display.getFullscreenDisplayMode(), mode);
         display.setFullscreenDisplayMode(mode);
+        display.setFullscreenMode(fullscreenMode);
         return changed;
     }
 

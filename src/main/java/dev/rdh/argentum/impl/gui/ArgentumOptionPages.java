@@ -130,10 +130,17 @@ public final class ArgentumOptionPages {
                         .setControl(TickBoxControl::new)
                         .setBinding((options, value) -> options.fullscreen = value, options -> options.fullscreen)
                         .build())
-                .addConditionally(PylonFullscreen.SUPPORTED, () -> option(boolean.class, CONFIG_FULLSCREEN, Option.FULLSCREEN_MODE)
-						.setControl(option1 -> new CyclingControl<>(option1, new Boolean[]{false, true},
-								new TextComponent[]{text("value.borderless"), text("value.exclusive")}))
-						.setBinding((config1, value1) -> config1.exclusiveFullscreen = value1, config1 -> config1.exclusiveFullscreen)
+                .addConditionally(PylonFullscreen.SUPPORTED, () -> option(int.class, CONFIG_FULLSCREEN, Option.FULLSCREEN_MODE)
+						.setTooltip(optionText(Option.FULLSCREEN_MODE, PylonFullscreen.OVERHANGING_SUPPORTED ? "tooltip_windows" : "tooltip"))
+						.setControl(option1 -> PylonFullscreen.OVERHANGING_SUPPORTED
+								? new CyclingControl<>(option1, new Integer[]{0, 1, 2},
+										new TextComponent[]{text("value.experimental_borderless"), text("value.borderless"), text("value.exclusive")})
+								: new CyclingControl<>(option1, new Integer[]{0, 2},
+										new TextComponent[]{text("value.borderless"), text("value.exclusive")}))
+						.setBinding((config1, value1) -> {
+							config1.exclusiveFullscreen = value1 == 2;
+							config1.overhangingBorderless = value1 == 1;
+						}, config1 -> config1.exclusiveFullscreen ? 2 : config1.overhangingBorderless && PylonFullscreen.OVERHANGING_SUPPORTED ? 1 : 0)
 						.build())
                 .addConditionally(PylonFullscreen.SUPPORTED, () -> {
                     DisplayMode[] modes = PylonFullscreen.displayModes();

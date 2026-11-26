@@ -43,6 +43,7 @@ public class ArgentumConfig {
     public boolean greedyRenderThread = false;
     public boolean explicitVsyncOption = true; // file only
     public boolean exclusiveFullscreen = false;
+    public boolean overhangingBorderless = true;
     public int fullscreenWidth = 0; // 0 = desktop mode
     public int fullscreenHeight = 0;
     public int fullscreenRefreshRate = 0;

@@ -22,7 +22,7 @@
     "minecraft": "1.8.9"
   },
   "breaks": {
-    "pylon": "<0.2.1",
+    "pylon": "<0.2.9",
     "sarcio": "<=1.1.1"
   },
   "accessWidener": "argentum.classtweaker",
