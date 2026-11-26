@@ -1,6 +1,7 @@
 package dev.rdh.argentum.impl.render.entity.instancing;
 
 import org.embeddedt.embeddium.impl.gl.shader.ShaderBindingContext;
+import org.embeddedt.embeddium.impl.gl.shader.uniform.GlUniformFloat;
 import org.embeddedt.embeddium.impl.gl.shader.uniform.GlUniformFloat3v;
 import org.embeddedt.embeddium.impl.gl.shader.uniform.GlUniformInt;
 import org.embeddedt.embeddium.impl.gl.shader.uniform.GlUniformMatrix4f;
@@ -19,6 +20,7 @@ final class InstanceShader {
     static final int ALPHA_TRANSLUCENT = 1;
     /** Only fully opaque texels, so they can lay down depth first. */
     static final int ALPHA_OPAQUE = 2;
+    private static final float ALPHA_OPAQUE_CUTOFF = 254.0F / 255.0F;
 
     private static final Vector3fc LIGHT_0 = new Vector3f(0.2F, 1.0F, -0.7F).normalize();
     private static final Vector3fc LIGHT_1 = new Vector3f(-0.2F, 1.0F, 0.7F).normalize();
@@ -37,7 +39,8 @@ final class InstanceShader {
     private final GlUniformInt chargePass;
     private final GlUniformInt itemGlintPass;
     private final GlUniformInt boxInstancing;
-    private final GlUniformInt alphaPass;
+    private final GlUniformFloat alphaMin;
+    private final GlUniformFloat alphaMax;
     private final GlUniformMatrix4f itemGlintMatrix;
     private final GlUniformMatrix4f itemGlintMatrix1;
     private final GlUniformFloat3v lightDirection0;
@@ -62,7 +65,8 @@ final class InstanceShader {
         this.chargePass = context.bindUniform("uChargePass", GlUniformInt::new);
         this.itemGlintPass = context.bindUniform("uItemGlintPass", GlUniformInt::new);
         this.boxInstancing = context.bindUniform("uBoxInstancing", GlUniformInt::new);
-        this.alphaPass = context.bindUniform("uAlphaPass", GlUniformInt::new);
+        this.alphaMin = context.bindUniformIfPresent("uAlphaMin", GlUniformFloat::new);
+        this.alphaMax = context.bindUniformIfPresent("uAlphaMax", GlUniformFloat::new);
         this.itemGlintMatrix = context.bindUniform("uItemGlintMatrix", GlUniformMatrix4f::new);
         this.itemGlintMatrix1 = context.bindUniform("uItemGlintMatrix1", GlUniformMatrix4f::new);
         this.lightDirection0 = context.bindUniform("uLightDirection0", GlUniformFloat3v::new);
@@ -80,7 +84,7 @@ final class InstanceShader {
         this.chargePass.setInt(0);
         this.itemGlintPass.setInt(-1);
         this.boxInstancing.setInt(0);
-        this.alphaPass.setInt(ALPHA_ALL);
+        this.setAlphaPass(ALPHA_ALL);
     }
 
     void setUniforms() {
@@ -121,7 +125,10 @@ final class InstanceShader {
     }
 
     void setAlphaPass(int pass) {
-        this.alphaPass.setInt(pass);
+        if (this.alphaMin != null) {
+            this.alphaMin.setFloat(pass == ALPHA_OPAQUE ? ALPHA_OPAQUE_CUTOFF : 0.0F);
+            this.alphaMax.setFloat(pass == ALPHA_TRANSLUCENT ? ALPHA_OPAQUE_CUTOFF : 2.0F);
+        }
     }
 
     void setItemGlintPass(int pass) {

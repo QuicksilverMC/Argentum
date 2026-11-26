@@ -88,7 +88,7 @@ final class InstanceBatcher {
         return batch;
     }
 
-    Stats render(CommandList commandList, GlProgram<InstanceShader> program) {
+    Stats render(CommandList commandList, GlProgram<InstanceShader> program, GlProgram<InstanceShader> glintProgram) {
         int draws = 0;
         int textureCount = 0;
         GlStateManager.disableBlend();
@@ -185,16 +185,20 @@ final class InstanceBatcher {
             GlStateManager.depthFunc(GL11.GL_EQUAL);
             GlStateManager.depthMask(false);
             GlStateManager.blendFunc(GL11.GL_SRC_COLOR, GL11.GL_ONE);
-            program.getInterface().setGlintPass(0);
-            Stats glint = this.renderPass(commandList, program, InstanceRenderPass.GLINT);
+            glintProgram.bind();
+            glintProgram.getInterface().setUniforms();
+            glintProgram.getInterface().setGlintPass(0);
+            Stats glint = this.renderPass(commandList, glintProgram, InstanceRenderPass.GLINT);
             draws += glint.draws;
             textureCount += glint.textures;
-            program.getInterface().setGlintPass(-1);
-            program.getInterface().setItemGlintPass(this.itemGlintCaptured[1] ? 1 : 0, this.itemGlintMatrices);
-            glint = this.renderPass(commandList, program, InstanceRenderPass.ITEM_GLINT);
+            glintProgram.getInterface().setGlintPass(-1);
+            GlProgram<InstanceShader> itemProgram = this.itemGlintCaptured[1] ? glintProgram : program;
+            itemProgram.bind();
+            itemProgram.getInterface().setItemGlintPass(this.itemGlintCaptured[1] ? 1 : 0, this.itemGlintMatrices);
+            glint = this.renderPass(commandList, itemProgram, InstanceRenderPass.ITEM_GLINT);
             draws += glint.draws;
             textureCount += glint.textures;
-            program.getInterface().setItemGlintPass(-1);
+            itemProgram.getInterface().setItemGlintPass(-1);
             GlStateManager.depthMask(true);
             GlStateManager.depthFunc(GL11.GL_LEQUAL);
             GlStateManager.disableBlend();

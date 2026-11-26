@@ -39,6 +39,8 @@ public final class ModelInstancer {
     private final StandardVertexStream standardVertices = new StandardVertexStream();
     private final Reference2ReferenceOpenHashMap<ChunkShaderComponent.Factory<?>, GlProgram<InstanceShader>> programs =
             new Reference2ReferenceOpenHashMap<>();
+    private final Reference2ReferenceOpenHashMap<ChunkShaderComponent.Factory<?>, GlProgram<InstanceShader>> glintPrograms =
+            new Reference2ReferenceOpenHashMap<>();
 
     private boolean initialized;
     private boolean supported;
@@ -207,7 +209,7 @@ public final class ModelInstancer {
         boolean failed = false;
         InstanceBatcher.Stats stats;
         try {
-            stats = this.batcher.render(commandList, program);
+            stats = this.batcher.render(commandList, program, this.glintPrograms.get(ArgentumFogService.INSTANCE.getFogMode()));
         } catch (RuntimeException exception) {
             failed = true;
             this.supported = false;
@@ -283,8 +285,7 @@ public final class ModelInstancer {
             this.arrowGeometry.delete(commandList);
             this.arrowGeometry = null;
         }
-        this.programs.values().forEach(GlProgram::delete);
-        this.programs.clear();
+        this.deletePrograms();
         this.textureArrays.delete();
         this.initialized = false;
         this.supported = false;
@@ -361,8 +362,7 @@ public final class ModelInstancer {
                     throw exception;
                 }
                 Argentum.LOGGER.warn("Texture-array shader unavailable", exception);
-                this.programs.values().forEach(GlProgram::delete);
-                this.programs.clear();
+                this.deletePrograms();
                 this.textureArrays.delete();
                 this.textureArraysSupported = false;
                 this.getProgram();
@@ -370,8 +370,7 @@ public final class ModelInstancer {
             Argentum.LOGGER.info("Model instancing enabled");
         } catch (RuntimeException exception) {
             this.supported = false;
-            this.programs.values().forEach(GlProgram::delete);
-            this.programs.clear();
+            this.deletePrograms();
             this.textureArrays.delete();
             Argentum.LOGGER.error("Model instancing failed to initialize", exception);
         }
@@ -381,24 +380,39 @@ public final class ModelInstancer {
     private GlProgram<InstanceShader> getProgram() {
         if (this.programs.isEmpty()) {
             for (ChunkFogMode fogMode : ArgentumFogService.GL_FOG_MODES) {
-                GlProgram<InstanceShader> program = this.createProgram(fogMode);
-                program.bind();
-                try {
-                    program.getInterface().initialize();
-                } catch (RuntimeException exception) {
-                    program.delete();
-                    throw exception;
-                } finally {
-                    program.unbind();
-                }
-                this.programs.put(fogMode, program);
+                this.programs.put(fogMode, this.createProgram(fogMode, false));
+                this.glintPrograms.put(fogMode, this.createProgram(fogMode, true));
             }
         }
         return this.programs.get(ArgentumFogService.INSTANCE.getFogMode());
     }
 
-    private GlProgram<InstanceShader> createProgram(ChunkShaderComponent.Factory<?> fogFactory) {
+    private void deletePrograms() {
+        this.programs.values().forEach(GlProgram::delete);
+        this.programs.clear();
+        this.glintPrograms.values().forEach(GlProgram::delete);
+        this.glintPrograms.clear();
+    }
+
+    private GlProgram<InstanceShader> createProgram(ChunkShaderComponent.Factory<?> fogFactory, boolean glint) {
+        GlProgram<InstanceShader> program = this.linkProgram(fogFactory, glint);
+        program.bind();
+        try {
+            program.getInterface().initialize();
+        } catch (RuntimeException exception) {
+            program.delete();
+            throw exception;
+        } finally {
+            program.unbind();
+        }
+        return program;
+    }
+
+    private GlProgram<InstanceShader> linkProgram(ChunkShaderComponent.Factory<?> fogFactory, boolean glint) {
         ShaderConstants.Builder constants = ShaderConstants.builder().addAll(fogFactory.getDefines());
+        if (glint) {
+            constants.add("GLINT");
+        }
         if (this.textureArraysSupported) {
             constants.add("TEXTURE_ARRAY");
         }

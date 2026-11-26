@@ -11,10 +11,8 @@ uniform sampler2D uTexture;
 uniform sampler2DArray uTextureArray;
 uniform bool uTextureArrayEnabled;
 #endif
-uniform int uAlphaPass;
-uniform int uGlintPass;
-uniform int uItemGlintPass;
-#define ALPHA_OPAQUE_CUTOFF (254.0 / 255.0)
+uniform float uAlphaMin;
+uniform float uAlphaMax;
 
 in vec2 vTexCoord;
 in vec2 vGlintCoord;
@@ -60,23 +58,16 @@ vec4 shaded(vec4 color) {
 
 void main() {
     vec4 color = tinted(vTexCoord);
-    if (uGlintPass != -1 || uItemGlintPass == 1) {
-        // both layers blend with (SRC_COLOR, ONE), each adding its square, so one pass adds the sum of squares
-        vec4 second = tinted(vGlintCoord);
-        color = color.a <= 0.1 ? vec4(0.0) : shaded(color);
-        second = second.a <= 0.1 ? vec4(0.0) : shaded(second);
-        fragColor = sqrt(color * color + second * second);
-        return;
-    }
-    if (color.a <= 0.1) {
+#ifdef GLINT
+    // both layers blend with (SRC_COLOR, ONE), each adding its square, so one pass adds the sum of squares
+    vec4 second = tinted(vGlintCoord);
+    color = color.a <= 0.1 ? vec4(0.0) : shaded(color);
+    second = second.a <= 0.1 ? vec4(0.0) : shaded(second);
+    fragColor = sqrt(color * color + second * second);
+#else
+    if (color.a <= 0.1 || color.a < uAlphaMin || color.a >= uAlphaMax) {
         discard;
     }
-    if (uAlphaPass == 1 && color.a >= ALPHA_OPAQUE_CUTOFF) {
-        discard;
-    }
-    if (uAlphaPass == 2 && color.a < ALPHA_OPAQUE_CUTOFF) {
-        discard;
-    }
-
     fragColor = shaded(color);
+#endif
 }
