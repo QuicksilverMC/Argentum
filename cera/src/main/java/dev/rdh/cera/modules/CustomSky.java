@@ -19,12 +19,17 @@ import net.minecraft.world.biome.Biome;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.ornithemc.osl.core.api.util.NamespacedIdentifier;
 import net.ornithemc.osl.resource.loader.api.resource.Resource;
 import net.ornithemc.osl.resource.loader.api.resource.manager.ResourceManager;
 import net.ornithemc.osl.resource.loader.api.resource.reload.ResourceReloadListener;
+import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
+import org.lwjgl.opengl.GL30;
 import org.lwjgl.util.vector.Vector3f;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -124,6 +129,7 @@ public final class CustomSky implements ResourceReloadListener {
     }
 
     public void texturesReloading(TextureManager textureManager) {
+        MIPMAPPED.clear();
         layers.values().forEach(sky -> sky.forEach(layer -> textureManager.close(layer.layer.source)));
         celestials.values().forEach(celestial -> {
             if (celestial.sun != null) textureManager.close(celestial.sun.source);
@@ -260,6 +266,7 @@ public final class CustomSky implements ResourceReloadListener {
     }
 
     private static final VertexFormat FORMAT = DefaultVertexFormat.POSITION_TEX;
+    private static final IntSet MIPMAPPED = new IntOpenHashSet();
     private static VertexBuffer geometry;
 
     private record Layer(
@@ -349,6 +356,7 @@ public final class CustomSky implements ResourceReloadListener {
             }
             blend.apply(brightness);
             Minecraft.getInstance().getTextureManager().bind(source);
+            mipmap(source);
             draw();
             GlStateManager.popMatrix();
         }
@@ -374,6 +382,17 @@ public final class CustomSky implements ResourceReloadListener {
 
         private static boolean between(int time, int start, int end) {
             return start <= end ? time >= start && time <= end : time >= start || time <= end;
+        }
+
+        private static void mipmap(Identifier source) {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (!MIPMAPPED.add(minecraft.getTextureManager().get(source).getGlId()) || !GL.getCapabilities().OpenGL30) return;
+            int height = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
+            int maxLevel = 31 - Integer.numberOfLeadingZeros(Math.max(1, 2 * height / Math.max(1, minecraft.height)));
+            if (maxLevel == 0) return;
+            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL12.GL_TEXTURE_MAX_LEVEL, maxLevel);
+            GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
+            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST_MIPMAP_NEAREST);
         }
 
         private static void draw() {
