@@ -1,5 +1,7 @@
 package dev.rdh.argentum.mixin.features.blockentity.baking;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import dev.rdh.argentum.impl.ext.TextureAtlasExtension;
 import dev.rdh.argentum.impl.render.blockentity.BakedBlockEntities;
@@ -9,6 +11,7 @@ import net.minecraft.client.render.texture.Stitcher;
 import net.minecraft.client.render.texture.TextureAtlas;
 import net.minecraft.client.render.texture.TextureAtlasSprite;
 import net.minecraft.client.resource.manager.ResourceManager;
+import net.minecraft.resource.Identifier;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -67,6 +70,11 @@ public abstract class TextureAtlasMixin implements TextureAtlasExtension {
         if ("textures".equals(this.path) && BakedBlockEntities.enabled()) {
             BakedBlockEntities.registerSprites(this.sourcedSprites);
         }
+    }
+
+    @WrapOperation(method = "loadAndStitch", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/texture/TextureAtlas;getResourceId(Lnet/minecraft/resource/Identifier;I)Lnet/minecraft/resource/Identifier;"))
+    private Identifier argentum$loadFontFromItsLocation(TextureAtlas atlas, Identifier sprite, int mipLevel, Operation<Identifier> original) {
+        return sprite.getPath().endsWith(".png") ? sprite : original.call(atlas, sprite, mipLevel);
     }
 
     @Inject(method = "loadAndStitch", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/texture/Stitcher;stitch()V"))

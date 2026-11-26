@@ -152,12 +152,7 @@ public final class BakedBlockEntities {
         TextRenderer textRenderer = Minecraft.getInstance().textRenderer;
         if (textRenderer == null) return null;
         Identifier location = textRenderer.argentum$getFontLocation();
-        String path = location.getPath();
-        if (!path.endsWith(".png")) return null;
-        path = path.substring(0, path.length() - ".png".length());
-        if (!path.startsWith("textures/")) return null;
-        path = path.substring("textures/".length());
-        return new Identifier(location.getNamespace(), path).toString();
+        return location.getPath().endsWith(".png") ? location.toString() : null;
     }
 
     public static List<TextureAtlasSprite> slotSheets(int mipLevels) {
