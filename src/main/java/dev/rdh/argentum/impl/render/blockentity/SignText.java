@@ -48,7 +48,7 @@ public record SignText(Text[] lines, String font, BakedBlockEntities.Region regi
         Text[] lines = sign.lines.clone();
         boolean unicode = textRenderer.getUnicode();
         TextBatcher batcher = textRenderer.argentum$getBatcher();
-        if (region == null || textRenderer.isBidirectional() || batcher.isBlending()) {
+        if (region == null || textRenderer.isBidirectional()) {
             return new SignText(lines, font, region, unicode, List.of(), null, null, null);
         }
 
