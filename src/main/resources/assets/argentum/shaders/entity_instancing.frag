@@ -7,13 +7,10 @@
 #import <sodium:include/fog.glsl>
 
 uniform sampler2D uTexture;
-uniform sampler2D uLightmap;
 #ifdef TEXTURE_ARRAY
 uniform sampler2DArray uTextureArray;
 uniform bool uTextureArrayEnabled;
 #endif
-uniform bool uLit;
-uniform bool uLightmapped;
 uniform int uAlphaPass;
 uniform int uGlintPass;
 uniform int uItemGlintPass;
@@ -21,13 +18,11 @@ uniform int uItemGlintPass;
 
 in vec2 vTexCoord;
 in vec2 vGlintCoord;
-in vec2 vLightCoord;
 in float vTextureLayer;
-in float vLighting;
 #ifdef USE_FOG
 in float vFogDistance;
 #endif
-in vec4 vColor;
+in vec4 vTint;
 in vec4 vOverlay;
 
 #ifndef LEGACY
@@ -43,20 +38,16 @@ out vec4 fragColor;
 #endif
 
 vec4 tinted(vec2 texCoord) {
-    vec4 color = texture(uTexture, texCoord);
 #ifdef TEXTURE_ARRAY
-    if (uTextureArrayEnabled) {
-        color = textureArray(uTextureArray, vec3(texCoord, vTextureLayer));
-    }
+    vec4 color = uTextureArrayEnabled ? textureArray(uTextureArray, vec3(texCoord, vTextureLayer)) : texture(uTexture, texCoord);
+#else
+    vec4 color = texture(uTexture, texCoord);
 #endif
-    return color * (uLit ? vec4(min(vColor.rgb * vLighting, 1.0), vColor.a) : vColor);
+    return color * vTint;
 }
 
 vec4 shaded(vec4 color) {
     color.rgb = mix(color.rgb, vOverlay.rgb, vOverlay.a);
-    if (uLightmapped) {
-        color.rgb *= texture(uLightmap, vLightCoord).rgb;
-    }
 #ifdef USE_FOG_EXP2
     color = _exp2Fog(color, vFogDistance, u_FogColor, u_FogDensity);
 #elif defined(USE_FOG_EXP)

@@ -26,16 +26,17 @@ uniform vec3 uLightDirection0;
 uniform vec3 uLightDirection1;
 uniform bool uEyeLight;
 uniform bool uFullBlockLight;
+uniform bool uLit;
+uniform bool uLightmapped;
+uniform sampler2D uLightmap;
 
 out vec2 vTexCoord;
 out vec2 vGlintCoord;
-out vec2 vLightCoord;
 out float vTextureLayer;
-out float vLighting;
 #ifdef USE_FOG
 out float vFogDistance;
 #endif
-out vec4 vColor;
+out vec4 vTint;
 out vec4 vOverlay;
 
 vec2 glintCoord(vec2 texCoord, float layer) {
@@ -101,12 +102,15 @@ void main() {
     }
     vec2 lightCoord = uEyeLight ? vec2(61680.0, 0.0) : aLightCoord.xy;
     if (uFullBlockLight) lightCoord.x = 240.0;
-    vLightCoord = (gl_TextureMatrix[1] * vec4(lightCoord, 0.0, 1.0)).xy;
     vTextureLayer = aLightCoord.z;
-    vLighting = (light0 + light1) * 0.6 + 0.4;
+    vec4 tint = aColor * vertexColor;
+    if (uLit) {
+        tint.rgb = min(tint.rgb * ((light0 + light1) * 0.6 + 0.4), 1.0);
+    }
+    vec3 light = uLightmapped ? textureLod(uLightmap, (gl_TextureMatrix[1] * vec4(lightCoord, 0.0, 1.0)).xy, 0.0).rgb : vec3(1.0);
+    vTint = vec4(tint.rgb * light, tint.a);
+    vOverlay = vec4(aOverlay.rgb * light, aOverlay.a);
 #ifdef USE_FOG
     vFogDistance = getFragDistance(u_FogShape, eyePosition.xyz);
 #endif
-    vColor = aColor * vertexColor;
-    vOverlay = aOverlay;
 }
