@@ -26,6 +26,7 @@
     "shaders.LivingEntityRendererMixin",
     "shaders.MinecraftMixin",
     "shaders.MobRendererMixin",
+    "shaders.SignRendererMixin",
     "shaders.TextRendererMixin",
     "shaders.VideoOptionsControllerMixin",
     "shaders.WorldRendererMixin",
