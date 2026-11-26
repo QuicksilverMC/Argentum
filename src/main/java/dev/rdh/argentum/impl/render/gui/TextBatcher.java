@@ -33,6 +33,7 @@ import java.nio.IntBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.random.RandomGenerator;
 import java.util.stream.IntStream;
 
 public final class TextBatcher {
@@ -310,7 +311,7 @@ public final class TextBatcher {
 
             int codepoint = text.codePointAt(i);
             i += Character.charCount(codepoint) - 1;
-            if ((style & OBFUSCATED) != 0) codepoint = this.obfuscate(codepoint, unicode);
+            if ((style & OBFUSCATED) != 0) codepoint = this.obfuscate(codepoint, unicode, this.random);
             Glyph glyph = this.fonts.glyph(codepoint, unicode);
             boolean bold = (style & BOLD) != 0;
             float advance = glyph.advance(bold);
@@ -330,7 +331,7 @@ public final class TextBatcher {
         return pen - x;
     }
 
-    private int obfuscate(int codepoint, boolean unicode) {
+    public int obfuscate(int codepoint, boolean unicode, RandomGenerator random) {
         if (codepoint >= Character.MIN_SUPPLEMENTARY_CODE_POINT) return codepoint;
 
         if (this.obfuscationUnicode != unicode) {
@@ -350,7 +351,7 @@ public final class TextBatcher {
             buckets = this.unicodeObfuscation;
         }
         int[] candidates = buckets.get(Math.round(this.charWidth(codepoint, unicode)));
-        return candidates == null ? codepoint : candidates[this.random.nextInt(candidates.length)];
+        return candidates == null ? codepoint : candidates[random.nextInt(candidates.length)];
     }
 
     private Int2ObjectMap<int[]> byWidth(IntStream codepoints, boolean unicode) {
@@ -368,7 +369,7 @@ public final class TextBatcher {
         this.useTexture(textureManager, page);
         float top = y + glyph.top;
         float bottom = top + glyph.height - 0.01F;
-        float right = x + glyph.width;
+        float right = x + glyph.width - 0.01F;
         float topSlant = glyph.topSlant(italic);
         float bottomSlant = glyph.bottomSlant(italic);
         this.quad(

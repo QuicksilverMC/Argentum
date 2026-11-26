@@ -75,7 +75,7 @@ final class UnihexFont implements IntFunction<Glyph> {
                 if (bit >= 0 && bit < 32 && (lines[row] >>> bit & 1) != 0) pixels[row * width + column] = 0xFFFFFFFF;
             }
         }
-        return new Glyph(width / 2 + 1, (width - 0.02F) / 2.0F, 0.0F, 8.0F, 2.0F, true,
+        return new Glyph(width / 2 + 1, width / 2.0F, 0.0F, 8.0F, 2.0F, true,
                 new Glyph.Sheet(this.file, pixels, width), 0, 0, width, 16);
     }
 

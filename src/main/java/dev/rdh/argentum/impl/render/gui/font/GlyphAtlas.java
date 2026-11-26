@@ -50,7 +50,7 @@ final class GlyphAtlas {
         glyph.page = page.id;
         glyph.u0 = this.x / (float) SIZE;
         glyph.v0 = this.y / (float) SIZE;
-        glyph.u1 = (this.x + glyph.width * glyph.oversample * scale) / SIZE;
+        glyph.u1 = (this.x + (glyph.width - 0.01F) * glyph.oversample * scale) / SIZE;
         glyph.v1 = (this.y + (glyph.height - 0.01F) * glyph.oversample * scale) / SIZE;
 
         this.x += width;
