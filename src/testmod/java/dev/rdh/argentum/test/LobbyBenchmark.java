@@ -234,6 +234,7 @@ public final class LobbyBenchmark {
         this.variant = this.variants.get(this.phaseIndex % this.variants.size());
         Argentum.CONFIG.fastParticles = !this.variant.equals("cpuParticles");
         Argentum.CONFIG.particleCulling = !this.variant.equals("noCulling");
+        Argentum.CONFIG.entityInstancing = !this.variant.equals("noInstancing");
         this.phases.add(new Phase(this.variant, this.phaseIndex / this.variants.size()));
         this.phaseStart = now;
     }
@@ -296,6 +297,12 @@ public final class LobbyBenchmark {
                 ZombieEntity zombie = new ZombieEntity(world);
                 zombie.setInvisible(true);
                 this.place(world, id--, zombie, (i % 16) * 2.5 - 18.75, GROUND_Y + 1, (i / 16) * 2.5 + 6.0, 180.0F + i * 7);
+            }
+        }
+        if (this.scene.contains("inside")) {
+            int count = this.scene.contains("insideCrowd") ? 16 : 1;
+            for (int i = 0; i < count; i++) {
+                this.place(world, id--, new ZombieEntity(world), CAMERA_X, CAMERA_Y, CAMERA_Z, i * 22.5F);
             }
         }
         if (this.scene.contains("visible")) {
