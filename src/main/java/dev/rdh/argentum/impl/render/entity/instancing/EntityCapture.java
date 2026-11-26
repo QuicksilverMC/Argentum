@@ -54,6 +54,7 @@ public final class EntityCapture implements AutoCloseable {
     private int itemGlintPass;
     private boolean glintActive;
     private final Vector4f color = new Vector4f();
+    private float modelAlpha;
     private float effectTime;
     private final Vector4f overlayColor = new Vector4f();
     private final Vector4f currentOverlayColor = new Vector4f();
@@ -139,6 +140,7 @@ public final class EntityCapture implements AutoCloseable {
         this.itemGlintPass = 0;
         this.glintActive = false;
         this.color.set(1);
+        this.modelAlpha = 1.0F;
         GlStateManager.Color current = GlStateManager.COLOR;
         if (current.r >= 0.0F) {
             this.color.set(current.r, current.g, current.b, current.a);
@@ -167,6 +169,12 @@ public final class EntityCapture implements AutoCloseable {
         this.model.begin();
         this.modelActive = true;
         this.currentOverlayColor.set(this.overlayColor);
+        if (this.color.w < 1.0F && GlStateManager.BLEND.state.enabled) {
+            this.modelAlpha = this.color.w;
+            if (this.pass.isBase()) {
+                this.pass = InstanceRenderPass.TRANSLUCENT;
+            }
+        }
     }
 
     public void endModel() {
@@ -178,14 +186,14 @@ public final class EntityCapture implements AutoCloseable {
         if (this.finished || layerPass == null || !this.modelPassSeen) {
             return false;
         }
-        this.pass = layerPass;
+        this.pass = this.modelAlpha < 1.0F && isOpaqueBase(layerPass) ? InstanceRenderPass.TRANSLUCENT : layerPass;
         this.armorLayer = layer instanceof AbstractArmorLayer;
         this.currentOverlayColor.set(this.overlayColor);
         this.glintParts.clear();
         this.itemGlintPass = 0;
         this.model.begin();
         this.modelActive = true;
-        this.color.set(1);
+        this.color.set(1.0F, 1.0F, 1.0F, this.modelAlpha);
         return true;
     }
 
@@ -465,6 +473,11 @@ public final class EntityCapture implements AutoCloseable {
             this.submit(this.owner.backend().boxGeometry(template.flipped()), this.boxMatrix, template);
         }
         return true;
+    }
+
+    private static boolean isOpaqueBase(InstanceRenderPass pass) {
+        return pass == InstanceRenderPass.NORMAL || pass == InstanceRenderPass.NO_CULL
+                || pass == InstanceRenderPass.CULL_FRONT || pass == InstanceRenderPass.CULL_BACK;
     }
 
     private static boolean isSimilarity(Matrix4f m) {
