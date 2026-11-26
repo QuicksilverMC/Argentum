@@ -136,6 +136,14 @@ public abstract class TextRendererMixin implements TextRendererExtension {
         return this.fontLocation;
     }
 
+    @Shadow
+    protected abstract String bidirectionalShaping(String text);
+
+    @Override
+    public String argentum$shapeBidirectional(String text) {
+        return this.bidirectionalShaping(text);
+    }
+
     @Override
     public void argentum$invalidateTextCache() {
         this.argentum$batcher.invalidateGeometry();

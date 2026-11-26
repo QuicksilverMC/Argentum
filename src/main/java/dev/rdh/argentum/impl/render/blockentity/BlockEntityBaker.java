@@ -320,7 +320,7 @@ public final class BlockEntityBaker {
 
     private boolean signText(SignBlockEntity sign) {
         SignText text = ((SignBlockEntityExtension)sign).argentum$getBakedText();
-        if (text == null || !text.bakeable() || !text.current(sign.lines, text.region(), Minecraft.getInstance().textRenderer.getUnicode())
+        if (text == null || !text.bakeable() || !text.current(sign.lines, text.region(), Minecraft.getInstance().textRenderer)
                 || this.atlas.argentum$getEntityTextureRegion(text.font()) != text.region()
                 || !(this.buffers.getSectionContextBundle() instanceof PrimitiveBuiltRenderSectionData data)) {
             return false;

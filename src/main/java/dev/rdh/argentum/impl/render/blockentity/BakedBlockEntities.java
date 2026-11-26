@@ -142,7 +142,7 @@ public final class BakedBlockEntities {
         SignBlockEntityExtension state = (SignBlockEntityExtension)sign;
         TextRenderer textRenderer = Minecraft.getInstance().textRenderer;
         SignText text = state.argentum$getBakedText();
-        if (text != null && text.current(sign.lines, region, textRenderer.getUnicode())) return;
+        if (text != null && text.current(sign.lines, region, textRenderer)) return;
         text = SignText.of(sign, textRenderer, font, region, atlas.argentum$getFontPages());
         state.argentum$setBakedText(text);
         if (text.bakeable()) rebuild(sign.getWorld(), sign.getPos());

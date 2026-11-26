@@ -16,16 +16,16 @@ import net.minecraft.text.Text;
 import java.util.ArrayList;
 import java.util.List;
 
-public record SignText(Text[] lines, String font, BakedBlockEntities.Region region, boolean unicode, List<SlotSheet.Entry> pages,
-        float[] vertices, int[] colors, byte[] textures) {
+public record SignText(Text[] lines, String font, BakedBlockEntities.Region region, boolean unicode, boolean bidirectional,
+        List<SlotSheet.Entry> pages, float[] vertices, int[] colors, byte[] textures) {
     private static final int UNSUPPORTED = TextBatcher.OBFUSCATED | TextBatcher.STRIKETHROUGH | TextBatcher.UNDERLINED;
 
     private static int baseColor() {
         return 0;
     }
 
-    public boolean current(Text[] lines, BakedBlockEntities.Region region, boolean unicode) {
-        if (this.region != region || this.unicode != unicode) return false;
+    public boolean current(Text[] lines, BakedBlockEntities.Region region, TextRenderer textRenderer) {
+        if (this.region != region || this.unicode != textRenderer.getUnicode() || this.bidirectional != textRenderer.isBidirectional()) return false;
         for (int i = 0; i < this.lines.length; i++) {
             if (this.lines[i] != lines[i]) return false;
         }
@@ -47,9 +47,10 @@ public record SignText(Text[] lines, String font, BakedBlockEntities.Region regi
     static SignText of(SignBlockEntity sign, TextRenderer textRenderer, String font, BakedBlockEntities.Region region, SlotSheet pages) {
         Text[] lines = sign.lines.clone();
         boolean unicode = textRenderer.getUnicode();
+        boolean bidirectional = textRenderer.isBidirectional();
         TextBatcher batcher = textRenderer.argentum$getBatcher();
-        if (region == null || textRenderer.isBidirectional()) {
-            return new SignText(lines, font, region, unicode, List.of(), null, null, null);
+        if (region == null) {
+            return new SignText(lines, font, region, unicode, bidirectional, List.of(), null, null, null);
         }
 
         Layout layout = new Layout(textRenderer, batcher, region, pages, unicode);
@@ -57,11 +58,12 @@ public record SignText(Text[] lines, String font, BakedBlockEntities.Region regi
             if (lines[row] == null) continue;
             List<Text> wrapped = TextRenderUtils.wrapText(lines[row], 90, textRenderer, false, true);
             String text = !wrapped.isEmpty() ? wrapped.getFirst().getFormattedString() : "";
-            if (!layout.line(text, -textRenderer.getWidth(text) / 2, row * 10 - lines.length * 5)) {
-                return new SignText(lines, font, region, unicode, List.of(), null, null, null);
+            String shaped = bidirectional ? textRenderer.argentum$shapeBidirectional(text) : text;
+            if (!layout.line(shaped, -textRenderer.getWidth(text) / 2, row * 10 - lines.length * 5)) {
+                return new SignText(lines, font, region, unicode, bidirectional, List.of(), null, null, null);
             }
         }
-        return new SignText(lines, font, region, unicode, List.copyOf(layout.pages), layout.vertices.toFloatArray(),
+        return new SignText(lines, font, region, unicode, bidirectional, List.copyOf(layout.pages), layout.vertices.toFloatArray(),
                 layout.colors.toIntArray(), layout.textures.toByteArray());
     }
 

@@ -21,6 +21,10 @@ public interface TextRendererExtension {
         throw new UnsupportedOperationException();
     }
 
+    default String argentum$shapeBidirectional(String text) {
+        throw new UnsupportedOperationException();
+    }
+
     /** Drops cached text geometry so it re-bakes (e.g. after the §-code color palette changes). */
     default void argentum$invalidateTextCache() {
         throw new UnsupportedOperationException();
