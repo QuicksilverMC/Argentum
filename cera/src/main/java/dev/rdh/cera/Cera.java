@@ -7,9 +7,11 @@ import net.ornithemc.osl.lifecycle.api.client.MinecraftClientEvents;
 import net.ornithemc.osl.resource.loader.api.client.ClientResourceLoaderEvents;
 import net.ornithemc.osl.resource.loader.api.resource.repository.ResourcePackRepository;
 import dev.rdh.argentum.api.config.JsonOptionStorage;
+import dev.rdh.cera.modules.shaders.ShaderRender;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import java.util.function.BooleanSupplier;
 import org.taumc.celeritas.api.OptionGUIConstructionEvent;
 import net.minecraft.util.math.BlockPos;
 
@@ -26,6 +28,7 @@ public class Cera implements ClientModInitializer {
         );
         CONFIG_STORAGE = JsonOptionStorage.load(FabricLoader.getInstance().getConfigDir().resolve("cera.json"), CeraConfig.class, CeraConfig::new, CeraConfig::validate);
         CONFIG = CONFIG_STORAGE.getData();
+        FabricLoader.getInstance().getObjectShare().put("cera:shaders", (BooleanSupplier) ShaderRender::isManaged);
         OptionGUIConstructionEvent.BUS.addListener(event -> CeraOptionPages.create().forEach(event::addPage));
         MinecraftClientEvents.READY.register(minecraft -> minecraft.cera$getShaderEngine().start());
         ClientResourceLoaderEvents.INIT_RESOURCE_MANAGER.register(resources -> {
