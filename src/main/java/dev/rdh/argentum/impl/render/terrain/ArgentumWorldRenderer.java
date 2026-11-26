@@ -8,7 +8,6 @@ import org.embeddedt.embeddium.impl.render.chunk.ChunkRenderMatrices;
 import org.embeddedt.embeddium.impl.render.chunk.vertex.format.ChunkVertexType;
 import org.embeddedt.embeddium.impl.render.chunk.map.ChunkTrackerHolder;
 import org.embeddedt.embeddium.impl.render.terrain.SimpleWorldRenderer;
-import org.joml.Matrix4f;
 
 import dev.rdh.argentum.api.render.terrain.TerrainDrawTarget;
 import dev.rdh.argentum.impl.Argentum;
@@ -44,6 +43,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraft.util.math.Box;
 
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -64,6 +64,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     private final ChunkProgramCache chunkPrograms = new ChunkProgramCache();
 
     private ChunkRenderMatrices matrices = null;
+    private boolean freshMatrices;
     private boolean renderingBlockEntities;
     private final List<BlockEntity> bakeCandidates = new ArrayList<>();
 
@@ -245,8 +246,17 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
                 this.world, this.renderDistance, commandList, this.chunkPrograms);
     }
 
-    public void captureMatrices(float[] projection, float[] modelView) {
-        matrices = new ChunkRenderMatrices(new Matrix4f().set(projection), new Matrix4f().set(modelView));
+    public void captureMatrices(FloatBuffer projection, FloatBuffer modelView) {
+        this.matrices = new ChunkRenderMatrices(projection, modelView);
+        this.freshMatrices = true;
+    }
+
+    public ChunkRenderMatrices takeFreshMatrices() {
+        if (!this.freshMatrices) {
+            return null;
+        }
+        this.freshMatrices = false;
+        return this.matrices;
     }
 
     public boolean isEntityVisible(Entity entity) {
