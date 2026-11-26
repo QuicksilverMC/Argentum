@@ -104,15 +104,15 @@ public abstract class WorldRendererMixin implements WorldRendererExtension {
 
         Lighting.turnOff();
 
-        double d3 = viewEntity.prevX + (viewEntity.x - viewEntity.prevX) * ticks;
+        double x = viewEntity.prevX + (viewEntity.x - viewEntity.prevX) * ticks;
         // Do not apply eye height here or weird offsets will happen
-        double d4 = viewEntity.prevY + (viewEntity.y - viewEntity.prevY) * ticks;
-        double d5 = viewEntity.prevZ + (viewEntity.z - viewEntity.prevZ) * ticks;
+        double y = viewEntity.prevY + (viewEntity.y - viewEntity.prevY) * ticks;
+        double z = viewEntity.prevZ + (viewEntity.z - viewEntity.prevZ) * ticks;
 
         this.minecraft.gameRenderer.enableLightMap();
 
         try {
-            this.renderer.drawChunkLayer(layer, d3, d4, d5);
+            this.renderer.drawChunkLayer(layer, x, y, z);
         } finally {
             RenderDevice.exitManagedCode();
         }
