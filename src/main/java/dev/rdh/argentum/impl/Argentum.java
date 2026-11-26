@@ -34,10 +34,17 @@ public class Argentum implements ClientModInitializer {
         }
         FabricLoader loader = FabricLoader.getInstance();
         VERSION = loader.getModContainer(ID).orElseThrow().getMetadata().getVersion().toString();
-        CONFIG_STORAGE = JsonOptionStorage.load(getConfigPath(loader.getConfigDir()), ArgentumConfig.class, ArgentumConfig::new, ArgentumConfig::validate);
-        CONFIG = CONFIG_STORAGE.getData();
+        config();
 
         LOGGER.info("Argentum v{}", VERSION);
+    }
+
+    public static ArgentumConfig config() {
+        if (CONFIG == null) {
+            CONFIG_STORAGE = JsonOptionStorage.load(getConfigPath(FabricLoader.getInstance().getConfigDir()), ArgentumConfig.class, ArgentumConfig::new, ArgentumConfig::validate);
+            CONFIG = CONFIG_STORAGE.getData();
+        }
+        return CONFIG;
     }
 
     public static boolean renderAheadSupported() {
@@ -54,7 +61,7 @@ public class Argentum implements ClientModInitializer {
         return RenderDevice.INSTANCE.getDeviceFunctions().textureBufferFunctions().isSupported();
     }
 
-    private Path getConfigPath(Path c) {
+    private static Path getConfigPath(Path c) {
         Path celery = c.resolve("celeritas.json");
         Path argentum = c.resolve("argentum.json");
         if (Files.exists(celery)) {

@@ -1,6 +1,7 @@
 package dev.rdh.argentum.impl.gui;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.options.GameOptions;
 import net.minecraft.client.render.Window;
 import net.minecraft.client.render.texture.TextureAtlas;
 import org.embeddedt.embeddium.impl.gui.framework.TextComponent;
@@ -34,9 +35,11 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 public final class ArgentumOptionPages {
-    private static final GameOptionsStorage VANILLA = new GameOptionsStorage();
+    static final GameOptionsStorage VANILLA = new GameOptionsStorage();
     private static final ArgentumConfig CONFIG = Argentum.CONFIG;
     private static final JsonOptionStorage<ArgentumConfig> CONFIG_STORAGE = Argentum.CONFIG_STORAGE;
+    private static final FullscreenOptionStorage<GameOptions> VANILLA_FULLSCREEN = new FullscreenOptionStorage<>(VANILLA);
+    private static final FullscreenOptionStorage<ArgentumConfig> CONFIG_FULLSCREEN = new FullscreenOptionStorage<>(CONFIG_STORAGE);
 
     public static List<OptionPage> create() {
         return List.of(
@@ -122,19 +125,19 @@ public final class ArgentumOptionPages {
                             minecraft.screen.resize(minecraft, scaledWindow.getWidth(), scaledWindow.getHeight());
                         }, options -> options.guiScale)
                         .build())
-                .add(option(boolean.class, VANILLA, StandardOptions.Option.FULLSCREEN)
+                .add(option(boolean.class, VANILLA_FULLSCREEN, StandardOptions.Option.FULLSCREEN)
                         .setName(vanilla("options.fullscreen"))
                         .setControl(TickBoxControl::new)
                         .setBinding((options, value) -> options.fullscreen = value, options -> options.fullscreen)
                         .build())
-                .addConditionally(PylonFullscreen.SUPPORTED, () -> option(boolean.class, CONFIG_STORAGE, Option.FULLSCREEN_MODE)
+                .addConditionally(PylonFullscreen.SUPPORTED, () -> option(boolean.class, CONFIG_FULLSCREEN, Option.FULLSCREEN_MODE)
 						.setControl(option1 -> new CyclingControl<>(option1, new Boolean[]{false, true},
 								new TextComponent[]{text("value.borderless"), text("value.exclusive")}))
 						.setBinding((config1, value1) -> config1.exclusiveFullscreen = value1, config1 -> config1.exclusiveFullscreen)
 						.build())
                 .addConditionally(PylonFullscreen.SUPPORTED, () -> {
                     DisplayMode[] modes = PylonFullscreen.displayModes();
-                    return option(int.class, CONFIG_STORAGE, Option.FULLSCREEN_RESOLUTION)
+                    return option(int.class, CONFIG_FULLSCREEN, Option.FULLSCREEN_RESOLUTION)
                             .setControl(option -> new SliderControl(option, 0, Math.max(1, modes.length), 1, value -> {
                                 if (value == 0 || value > modes.length) return text("value.desktop");
                                 DisplayMode mode = modes[value - 1];
