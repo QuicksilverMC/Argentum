@@ -20,6 +20,7 @@ public class DebugStrings {
         stringsToRender.add(Pair.of("", Formatting.RESET));
 
         stringsToRender.add(Pair.of("Argentum Renderer (%s)".formatted(Argentum.VERSION), Formatting.GREEN));
+        stringsToRender.add(Pair.of("Chunk Draws: " + (Argentum.indirectChunkDraws() ? "Indirect" : "Direct"), Formatting.RESET));
         stringsToRender.add(Pair.of("", Formatting.RESET));
 
         var renderer = ArgentumWorldRenderer.instanceNullable();

@@ -31,7 +31,7 @@
     "features.blockentity.baking.TextureAtlasMixin", "features.blockentity.baking.WorldMixin",
     "features.terrain.BakedQuadMixin", "features.terrain.BlockModelRendererMixin",
     "features.text.SignRendererMixin",
-    "features.terrain.FaceBakeryMixin", "features.terrain.FlatLightPipelineMixin",
+    "features.terrain.FaceBakeryMixin", "features.terrain.FlatLightPipelineMixin", "features.terrain.BatchAssemblerMixin",
     "features.terrain.BiomeColorsMixin",
     "features.texture.ItemRendererMixin",
     "features.texture.TextureAtlasMixin", "features.texture.TextureAtlasSpriteMixin",

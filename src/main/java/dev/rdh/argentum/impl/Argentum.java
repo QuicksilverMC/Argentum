@@ -52,6 +52,11 @@ public class Argentum implements ClientModInitializer {
         return caps.OpenGL32 || caps.GL_ARB_sync;
     }
 
+    public static boolean indirectChunkDraws() {
+        GLCapabilities caps = GL.getCapabilities();
+        return caps.OpenGL43 || caps.GL_ARB_multi_draw_indirect;
+    }
+
     public static boolean rgssFilteringSupported() {
         GLCapabilities caps = GL.getCapabilities();
         return !ShaderLoader.useLegacyGlsl() && (caps.OpenGL33 || caps.GL_ARB_sampler_objects);
