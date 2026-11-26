@@ -21,6 +21,7 @@ import dev.rdh.argentum.impl.render.entity.NameTagBatch;
 import dev.rdh.argentum.impl.render.particle.ParticleCapture;
 import dev.rdh.argentum.impl.render.entity.instancing.EntityInstancing;
 import dev.rdh.argentum.impl.render.entity.instancing.ModelInstancer;
+import dev.rdh.argentum.impl.render.environment.ArgentumCloudRenderer;
 import dev.rdh.argentum.impl.render.environment.WeatherRenderer;
 import dev.rdh.argentum.impl.render.environment.EndPortalRenderer;
 import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
@@ -60,6 +61,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     private final ModelInstancer modelInstancer = new ModelInstancer();
     private final EntityInstancing entityInstancing = new EntityInstancing(this.modelInstancer);
     private final WeatherRenderer weatherRenderer = new WeatherRenderer();
+    private final ArgentumCloudRenderer cloudRenderer = new ArgentumCloudRenderer(this);
     private final EndPortalRenderer endPortalRenderer = new EndPortalRenderer();
     private final ChunkProgramCache chunkPrograms = new ChunkProgramCache();
 
@@ -176,6 +178,10 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
 
     public ModelInstancer getModelInstancer() {
         return this.modelInstancer;
+    }
+
+    public ArgentumCloudRenderer getCloudRenderer() {
+        return this.cloudRenderer;
     }
 
     public EndPortalRenderer getEndPortalRenderer() {

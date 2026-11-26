@@ -3,8 +3,8 @@ package dev.rdh.argentum.impl.render.environment;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.ext.MinecraftExtension;
 import dev.rdh.argentum.impl.render.ArgentumGlStateService;
+import dev.rdh.argentum.impl.render.terrain.ArgentumWorldRenderer;
 import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
-import dev.rdh.argentum.mixin.features.cloud.CameraAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.texture.TextureUtil;
@@ -16,15 +16,13 @@ import org.embeddedt.embeddium.impl.render.clouds.CloudFrame;
 import org.embeddedt.embeddium.impl.render.clouds.CloudRenderState;
 import org.embeddedt.embeddium.impl.render.clouds.CloudRenderer;
 import org.embeddedt.embeddium.impl.render.clouds.CloudTexture;
-import org.joml.Matrix4f;
-import org.lwjgl.BufferUtils;
+import org.embeddedt.embeddium.impl.render.chunk.ChunkRenderMatrices;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.FloatBuffer;
 
 public final class ArgentumCloudRenderer {
     private static final Identifier CLOUDS_TEXTURE = new Identifier("textures/environment/clouds.png");
@@ -59,11 +57,14 @@ public final class ArgentumCloudRenderer {
         }
     };
 
-    private final Matrix4f modelView = new Matrix4f();
-    private final Matrix4f projection = new Matrix4f();
-    private final FloatBuffer projectionBuffer = BufferUtils.createFloatBuffer(16);
+    private final ArgentumWorldRenderer worldRenderer;
     private CloudRenderer renderer;
     private boolean failed;
+    private float range;
+
+    public ArgentumCloudRenderer(ArgentumWorldRenderer worldRenderer) {
+        this.worldRenderer = worldRenderer;
+    }
 
     public static boolean isEnabled() {
         var target = ((MinecraftExtension) Minecraft.getInstance()).argentum$getInstanceDrawTarget();
@@ -72,7 +73,12 @@ public final class ArgentumCloudRenderer {
                 && (target == null || !target.active());
     }
 
+    public float farPlane(float far) {
+        return isEnabled() && Minecraft.getInstance().options.getCloudRenderMode() != 0 ? Math.max(far, this.range) : far;
+    }
+
     public boolean render(double x, double z, float relativeHeight, float red, float green, float blue, boolean fancy, float range) {
+        this.range = range;
         if (this.failed) {
             return false;
         }
@@ -81,10 +87,8 @@ public final class ArgentumCloudRenderer {
             return true;
         }
 
-        this.modelView.set(CameraAccessor.argentum$getModelView());
-        GL11.glGetFloatv(GL11.GL_PROJECTION_MATRIX, this.projectionBuffer);
-        this.projection.set(this.projectionBuffer);
-        CloudFrame frame = new CloudFrame(this.modelView, this.projection, x, 0.0, z, relativeHeight - 0.33F, 0.0,
+        ChunkRenderMatrices matrices = this.worldRenderer.createChunkRenderMatrices();
+        CloudFrame frame = new CloudFrame(matrices.modelView(), matrices.projection(), x, 0.0, z, relativeHeight - 0.33F, 0.0,
                 red, green, blue, fancy, range, fogEnd,
                 fancy ? CloudFrame.DEFAULT_TEXTURE_SIZE : 2048.0F,
                 fancy ? CloudFrame.DEFAULT_TEXTURE_OFFSET_Z : 0.0F);

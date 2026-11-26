@@ -2,6 +2,8 @@ package dev.rdh.argentum.mixin.features.cloud;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
+
+import dev.rdh.argentum.impl.ext.WorldRendererExtension;
 import dev.rdh.argentum.impl.render.environment.ArgentumCloudRenderer;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.world.WorldRenderer;
@@ -13,9 +15,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = WorldRenderer.class, priority = 100)
-public abstract class WorldRendererMixin {
-    @Unique
-    private final ArgentumCloudRenderer celeritas$cloudRenderer = new ArgentumCloudRenderer();
+public abstract class WorldRendererMixin implements WorldRendererExtension {
     @Unique
     private int celeritas$firstCloudCell;
 
@@ -54,7 +54,7 @@ public abstract class WorldRendererMixin {
             @Local(ordinal = 3) float green, @Local(ordinal = 4) float blue,
             @Local BufferBuilder buffer) {
         if (ArgentumCloudRenderer.isEnabled()) {
-            if (this.celeritas$cloudRenderer.render(x + wrapX * 2048.0, z + wrapZ * 2048.0, height, red, green, blue, false,
+            if (this.celeritas$clouds().render(x + wrapX * 2048.0, z + wrapZ * 2048.0, height, red, green, blue, false,
                     Math.max(-this.celeritas$firstCloudCell, this.celeritas$lastCloudCell))) {
                 buffer.end();
                 celeritas$finishClouds(ci);
@@ -77,13 +77,18 @@ public abstract class WorldRendererMixin {
         float range = Math.max(-this.celeritas$firstCloudCell, this.celeritas$lastCloudCell + 1) * 96.0F;
         GlStateManager.colorMask(pass != 0, pass != 1, pass != 1, true);
 
-        if (this.celeritas$cloudRenderer.render(x * 12.0, z * 12.0 - 3.96, height, red, green, blue, true, range)) {
+        if (this.celeritas$clouds().render(x * 12.0, z * 12.0 - 3.96, height, red, green, blue, true, range)) {
             celeritas$finishClouds(ci);
         } else {
             GlStateManager.colorMask(false, false, false, false);
             GlStateManager.enableBlend();
             GlStateManager.disableCull();
         }
+    }
+
+    @Unique
+    private ArgentumCloudRenderer celeritas$clouds() {
+        return this.argentum$getWorldRenderer().getCloudRenderer();
     }
 
     @Unique
@@ -96,6 +101,6 @@ public abstract class WorldRendererMixin {
 
     @Inject(method = {"reload()V", "reload(Lnet/minecraft/client/resource/manager/ResourceManager;)V", "releaseGlLists"}, at = @At("HEAD"))
     private void celeritas$deleteCloudBuffers(CallbackInfo ci) {
-        this.celeritas$cloudRenderer.delete();
+        this.celeritas$clouds().delete();
     }
 }
