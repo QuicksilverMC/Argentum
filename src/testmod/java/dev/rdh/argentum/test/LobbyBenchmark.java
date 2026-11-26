@@ -78,6 +78,8 @@ public final class LobbyBenchmark {
     private long frameStart;
     private long frameInterval;
     private long frameEntityNanos;
+    private long gpuEntityNanos = -1;
+    private long entitySamples = -1;
     private long frameParticleNanos;
     private long warmupStart;
     private int phaseIndex = -1;
@@ -117,6 +119,14 @@ public final class LobbyBenchmark {
 
     public static void frameEnd() {
         if (instance != null) instance.endFrame();
+    }
+
+    public static void recordEntitySamples(long samples) {
+        if (instance != null) instance.entitySamples = samples;
+    }
+
+    public static void recordGpuEntities(long nanos) {
+        if (instance != null) instance.gpuEntityNanos = nanos;
     }
 
     public static void recordEntities(long nanos) {
@@ -194,6 +204,8 @@ public final class LobbyBenchmark {
             if (now - this.phaseStart >= this.settleNanos) {
                 phase.frames.add(this.frameInterval);
                 phase.entities.add(this.frameEntityNanos);
+                if (this.gpuEntityNanos >= 0) phase.gpuEntities.add(this.gpuEntityNanos);
+                if (this.entitySamples >= 0) phase.samples.add(this.entitySamples);
                 phase.particles.add(this.frameParticleNanos);
             }
             if (now - this.phaseStart >= this.settleNanos + this.phaseNanos) {
@@ -371,11 +383,13 @@ public final class LobbyBenchmark {
     }
 
     private void writeResults() {
-        StringBuilder csv = new StringBuilder("variant,round,frames,frameMedianMs,frameMeanMs,frameP95Ms,entitiesMedianMs,particlesMedianMs,liveParticles\n");
+        StringBuilder csv = new StringBuilder("variant,round,frames,frameMedianMs,frameMeanMs,frameP95Ms,entitiesMedianMs,gpuEntitiesMedianMs,entitySamples,particlesMedianMs,liveParticles\n");
         for (Phase phase : this.phases) {
             csv.append(phase.variant).append(',').append(phase.round).append(',').append(phase.frames.size()).append(',')
                     .append(ms(percentile(phase.frames, 0.50))).append(',').append(ms(mean(phase.frames))).append(',')
                     .append(ms(percentile(phase.frames, 0.95))).append(',').append(ms(percentile(phase.entities, 0.50))).append(',')
+                    .append(phase.gpuEntities.isEmpty() ? "" : ms(percentile(phase.gpuEntities, 0.50))).append(',')
+                    .append(phase.samples.isEmpty() ? "" : String.valueOf(percentile(phase.samples, 0.50))).append(',')
                     .append(ms(percentile(phase.particles, 0.50))).append(',').append(phase.liveParticles).append('\n');
         }
 
@@ -438,6 +452,8 @@ public final class LobbyBenchmark {
         final int round;
         final List<Long> frames = new ArrayList<>();
         final List<Long> entities = new ArrayList<>();
+        final List<Long> gpuEntities = new ArrayList<>();
+        final List<Long> samples = new ArrayList<>();
         final List<Long> particles = new ArrayList<>();
         int liveParticles;
 
