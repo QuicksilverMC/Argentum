@@ -13,4 +13,9 @@ public class GameRendererMixin {
     private void argentum$invalidateSkyTexture(CallbackInfo ci) {
         ArgentumFogService.INSTANCE.invalidateSkyTexture();
     }
+
+    @Inject(method = "render(IFJ)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/world/WorldRenderer;renderSky(FI)V", shift = At.Shift.AFTER))
+    private void argentum$captureSkyTexture(CallbackInfo ci) {
+        ArgentumFogService.INSTANCE.captureSkyTexture();
+    }
 }
