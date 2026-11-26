@@ -33,6 +33,11 @@ public class ArgentumExtrasConfig {
     public boolean leashes = true;
     public boolean nameTags = true;
     public boolean secondNameTagLayer = true;
+    public boolean beaconBeam = true;
+    public boolean enchantingTableBook = true;
+    public boolean pistons = true;
+    public boolean itemFrames = true;
+    public boolean paintings = true;
     public boolean sky = true;
     public boolean forceSky = false;
     public boolean lowerSky = true;
