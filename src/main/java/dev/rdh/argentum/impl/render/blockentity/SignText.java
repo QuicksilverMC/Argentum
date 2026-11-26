@@ -16,9 +16,9 @@ import net.minecraft.text.Text;
 import java.util.ArrayList;
 import java.util.List;
 
-public record SignText(Text[] lines, String font, BakedBlockEntities.Region region, boolean unicode, boolean bidirectional,
-        List<SlotSheet.Entry> pages, float[] vertices, int[] colors, byte[] textures) {
-    private static final int UNSUPPORTED = TextBatcher.OBFUSCATED | TextBatcher.STRIKETHROUGH | TextBatcher.UNDERLINED;
+public record SignText(Text[] lines, String font, BakedBlockEntities.Region region, BakedBlockEntities.Region white, boolean unicode,
+        boolean bidirectional, List<SlotSheet.Entry> pages, float[] vertices, int[] colors, byte[] textures) {
+    private static final byte WHITE = -1;
 
     private static int baseColor() {
         return 0;
@@ -41,29 +41,31 @@ public record SignText(Text[] lines, String font, BakedBlockEntities.Region regi
 
     public BakedBlockEntities.Region texture(int glyph) {
         int texture = this.textures[glyph];
+        if (texture == WHITE) return this.white;
         return texture == 0 ? this.region : this.pages.get(texture - 1).region();
     }
 
-    static SignText of(SignBlockEntity sign, TextRenderer textRenderer, String font, BakedBlockEntities.Region region, SlotSheet pages) {
+    static SignText of(SignBlockEntity sign, TextRenderer textRenderer, String font, BakedBlockEntities.Region region,
+            BakedBlockEntities.Region white, SlotSheet pages) {
         Text[] lines = sign.lines.clone();
         boolean unicode = textRenderer.getUnicode();
         boolean bidirectional = textRenderer.isBidirectional();
         TextBatcher batcher = textRenderer.argentum$getBatcher();
         if (region == null) {
-            return new SignText(lines, font, region, unicode, bidirectional, List.of(), null, null, null);
+            return new SignText(lines, font, region, white, unicode, bidirectional, List.of(), null, null, null);
         }
 
-        Layout layout = new Layout(textRenderer, batcher, region, pages, unicode);
+        Layout layout = new Layout(textRenderer, batcher, region, white != null, pages, unicode);
         for (int row = 0; row < lines.length; row++) {
             if (lines[row] == null) continue;
             List<Text> wrapped = TextRenderUtils.wrapText(lines[row], 90, textRenderer, false, true);
             String text = !wrapped.isEmpty() ? wrapped.getFirst().getFormattedString() : "";
             String shaped = bidirectional ? textRenderer.argentum$shapeBidirectional(text) : text;
             if (!layout.line(shaped, -textRenderer.getWidth(text) / 2, row * 10 - lines.length * 5)) {
-                return new SignText(lines, font, region, unicode, bidirectional, List.of(), null, null, null);
+                return new SignText(lines, font, region, white, unicode, bidirectional, List.of(), null, null, null);
             }
         }
-        return new SignText(lines, font, region, unicode, bidirectional, List.copyOf(layout.pages), layout.vertices.toFloatArray(),
+        return new SignText(lines, font, region, white, unicode, bidirectional, List.copyOf(layout.pages), layout.vertices.toFloatArray(),
                 layout.colors.toIntArray(), layout.textures.toByteArray());
     }
 
@@ -72,6 +74,7 @@ public record SignText(Text[] lines, String font, BakedBlockEntities.Region regi
         private final FontSet fonts;
         private final Identifier fontLocation;
         private final BakedBlockEntities.Region region;
+        private final boolean decorations;
         private final SlotSheet sheet;
         private final boolean unicode;
         private final List<SlotSheet.Entry> pages = new ArrayList<>();
@@ -79,11 +82,13 @@ public record SignText(Text[] lines, String font, BakedBlockEntities.Region regi
         private final IntArrayList colors = new IntArrayList();
         private final ByteArrayList textures = new ByteArrayList();
 
-        private Layout(TextRenderer textRenderer, TextBatcher batcher, BakedBlockEntities.Region region, SlotSheet sheet, boolean unicode) {
+        private Layout(TextRenderer textRenderer, TextBatcher batcher, BakedBlockEntities.Region region, boolean decorations,
+                SlotSheet sheet, boolean unicode) {
             this.textRenderer = textRenderer;
             this.fonts = batcher.fonts();
             this.fontLocation = textRenderer.argentum$getFontLocation();
             this.region = region;
+            this.decorations = decorations;
             this.sheet = sheet;
             this.unicode = unicode;
         }
@@ -102,7 +107,8 @@ public record SignText(Text[] lines, String font, BakedBlockEntities.Region regi
                         color = baseColor();
                     } else {
                         style |= 1 << (code - 16);
-                        if ((style & UNSUPPORTED) != 0) return false;
+                        if ((style & TextBatcher.OBFUSCATED) != 0) return false;
+                        if ((style & (TextBatcher.STRIKETHROUGH | TextBatcher.UNDERLINED)) != 0 && !this.decorations) return false;
                     }
                     continue;
                 }
@@ -116,7 +122,10 @@ public record SignText(Text[] lines, String font, BakedBlockEntities.Region regi
                     if (!this.glyph(glyph, italic, x, y, color)) return false;
                     if (bold) this.glyph(glyph, italic, x + glyph.boldOffset(this.unicode), y, color);
                 }
-                x += glyph.advance(bold);
+                float advance = glyph.advance(bold);
+                if ((style & TextBatcher.STRIKETHROUGH) != 0) this.decoration(x, y + 3.0F, x + advance, y + 4.0F, color);
+                if ((style & TextBatcher.UNDERLINED) != 0) this.decoration(x - 1.0F, y + 8.0F, x + advance, y + 9.0F, color);
+                x += advance;
             }
             return true;
         }
@@ -155,6 +164,15 @@ public record SignText(Text[] lines, String font, BakedBlockEntities.Region regi
             this.colors.add(color);
             this.textures.add((byte) index);
             return true;
+        }
+
+        private void decoration(float left, float top, float right, float bottom, int color) {
+            this.vertex(left, top, 0.5F, 0.5F);
+            this.vertex(left, bottom, 0.5F, 0.5F);
+            this.vertex(right, bottom, 0.5F, 0.5F);
+            this.vertex(right, top, 0.5F, 0.5F);
+            this.colors.add(color);
+            this.textures.add(WHITE);
         }
 
         private void vertex(float x, float y, float u, float v) {

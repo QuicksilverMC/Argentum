@@ -49,6 +49,7 @@ public final class BakedBlockEntities {
     static final String PLAYER_HEADS = "argentum:entity/player_heads";
     static final String FONT_PAGES = "argentum:entity/font_pages";
     static final String MAPS = "argentum:entity/maps";
+    static final String WHITE = "argentum:entity/white";
     private static final int SKIN_WIDTH = 64;
     private static final int HEAD_HEIGHT = 16;
     private static final int FONT_PAGE_SIZE = 256;
@@ -85,6 +86,9 @@ public final class BakedBlockEntities {
         String font = fontSprite();
         if (font != null && atlas.getSprite(font) instanceof EntityTextureSprite sprite) {
             regions.put(font, Region.of(sprite));
+        }
+        if (atlas.getSprite(WHITE) instanceof EntityTextureSprite sprite) {
+            regions.put(WHITE, Region.of(sprite));
         }
         return Map.copyOf(regions);
     }
@@ -143,7 +147,7 @@ public final class BakedBlockEntities {
         TextRenderer textRenderer = Minecraft.getInstance().textRenderer;
         SignText text = state.argentum$getBakedText();
         if (text != null && text.current(sign.lines, region, textRenderer)) return;
-        text = SignText.of(sign, textRenderer, font, region, atlas.argentum$getFontPages());
+        text = SignText.of(sign, textRenderer, font, region, atlas.argentum$getEntityTextureRegion(WHITE), atlas.argentum$getFontPages());
         state.argentum$setBakedText(text);
         if (text.bakeable()) rebuild(sign.getWorld(), sign.getPos());
     }
@@ -158,7 +162,8 @@ public final class BakedBlockEntities {
     public static List<TextureAtlasSprite> slotSheets(int mipLevels) {
         return List.of(EntityTextureSprite.blank(PLAYER_HEADS, 512, 256, mipLevels),
                 EntityTextureSprite.blank(FONT_PAGES, 1024, 512, mipLevels),
-                EntityTextureSprite.blank(MAPS, 1024, 1024, mipLevels));
+                EntityTextureSprite.blank(MAPS, 1024, 1024, mipLevels),
+                EntityTextureSprite.filled(WHITE, 16, 16, mipLevels, 0xFFFFFFFF));
     }
 
     public static SlotSheet playerHeads(TextureAtlas atlas, int mipLevels) {

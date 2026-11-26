@@ -6,6 +6,7 @@ import net.minecraft.client.resource.metadata.AnimationMetadata;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public final class EntityTextureSprite extends TextureAtlasSprite {
     EntityTextureSprite(String name) {
@@ -13,11 +14,16 @@ public final class EntityTextureSprite extends TextureAtlasSprite {
     }
 
     static EntityTextureSprite blank(String name, int width, int height, int mipLevels) {
+        return filled(name, width, height, mipLevels, 0);
+    }
+
+    static EntityTextureSprite filled(String name, int width, int height, int mipLevels, int color) {
         EntityTextureSprite sprite = new EntityTextureSprite(name);
         sprite.width = width;
         sprite.height = height;
         int[][] levels = new int[mipLevels + 1][];
         levels[0] = new int[width * height];
+        Arrays.fill(levels[0], color);
         sprite.frames.add(levels);
         sprite.applyMipmaps(mipLevels);
         return sprite;
