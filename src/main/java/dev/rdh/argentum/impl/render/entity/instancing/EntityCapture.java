@@ -138,11 +138,7 @@ public final class EntityCapture implements AutoCloseable {
         this.itemInstanced = false;
         this.itemGlintPass = 0;
         this.glintActive = false;
-        this.color.set(1);
-        GlStateManager.Color current = GlStateManager.COLOR;
-        if (current.r >= 0.0F) {
-            this.color.set(current.r, current.g, current.b, current.a);
-        }
+        this.syncColor();
         this.currentOverlayColor.set(this.overlayColor);
     }
 
@@ -167,6 +163,7 @@ public final class EntityCapture implements AutoCloseable {
         this.model.begin();
         this.modelActive = true;
         this.currentOverlayColor.set(this.overlayColor);
+        this.pass = this.fade(this.pass);
     }
 
     public void endModel() {
@@ -178,15 +175,28 @@ public final class EntityCapture implements AutoCloseable {
         if (this.finished || layerPass == null || !this.modelPassSeen) {
             return false;
         }
-        this.pass = layerPass;
+        this.syncColor();
+        this.pass = this.fade(layerPass);
         this.armorLayer = layer instanceof AbstractArmorLayer;
         this.currentOverlayColor.set(this.overlayColor);
         this.glintParts.clear();
         this.itemGlintPass = 0;
         this.model.begin();
         this.modelActive = true;
-        this.color.set(1);
         return true;
+    }
+
+    private void syncColor() {
+        GlStateManager.Color current = GlStateManager.COLOR;
+        if (current.r >= 0.0F) {
+            this.color.set(current.r, current.g, current.b, current.a);
+        } else {
+            this.color.set(1);
+        }
+    }
+
+    private InstanceRenderPass fade(InstanceRenderPass pass) {
+        return pass.isBase() && this.color.w < 1.0F && GlStateManager.BLEND.state.enabled ? InstanceRenderPass.TRANSLUCENT : pass;
     }
 
     public void endLayer() {
