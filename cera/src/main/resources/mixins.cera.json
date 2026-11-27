@@ -9,6 +9,7 @@
     "shaders.ArgentumShadowBatchMixin",
     "shaders.ArgentumWeatherMixin",
     "shaders.BeaconRendererMixin",
+    "shaders.BlockEntityBakerMixin",
     "shaders.BlockEntityRenderDispatcherMixin",
     "shaders.DebugOverlayMixin",
     "shaders.EnchantmentGlintMixin",
