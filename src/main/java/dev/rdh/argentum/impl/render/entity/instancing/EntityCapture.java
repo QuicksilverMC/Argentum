@@ -29,6 +29,7 @@ public final class EntityCapture implements AutoCloseable {
     private final Matrix4f arrowMatrix = new Matrix4f();
     private final Matrix4f boxMatrix = new Matrix4f();
     private final ReferenceOpenHashSet<ModelPart> glintParts = new ReferenceOpenHashSet<>();
+    private final CapturedOverlay overlay = new CapturedOverlay();
     private final ObjectArrayList<ArmorPart> armorParts = new ObjectArrayList<>();
     private int armorPartCount;
 
@@ -143,6 +144,11 @@ public final class EntityCapture implements AutoCloseable {
         this.glintActive = false;
         this.syncColor();
         this.currentOverlayColor.set(this.overlayColor);
+        this.overlay.reset();
+    }
+
+    public CapturedOverlay overlay() {
+        return this.overlay;
     }
 
     public void setOverlayColor(float red, float green, float blue, float alpha) {

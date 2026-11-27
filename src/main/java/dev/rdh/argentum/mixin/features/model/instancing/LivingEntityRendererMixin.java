@@ -18,6 +18,8 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import dev.rdh.argentum.impl.render.entity.instancing.CapturedOverlay;
 import dev.rdh.argentum.impl.render.entity.instancing.EntityCapture;
 import dev.rdh.argentum.impl.render.entity.instancing.EntityInstancing;
 
@@ -26,6 +28,9 @@ import java.util.List;
 
 @Mixin(LivingEntityRenderer.class)
 public abstract class LivingEntityRendererMixin {
+    @Unique
+    private boolean argentum$overlayMuted;
+
     @Shadow
     protected Model model;
 
@@ -40,6 +45,9 @@ public abstract class LivingEntityRendererMixin {
 
     @Shadow
     protected abstract int getOverlayColor(LivingEntity entity, float brightness, float tickDelta);
+
+    @Shadow
+    protected abstract boolean setupOverlayColor(LivingEntity entity, float tickDelta, boolean alwaysRender);
 
     @WrapMethod(method = "render(Lnet/minecraft/entity/living/LivingEntity;DDDFF)V")
     private void celeritas$captureEntity(LivingEntity entity, double x, double y, double z, float yaw,
@@ -81,7 +89,67 @@ public abstract class LivingEntityRendererMixin {
         } else if (capture != null) {
             capture.setOverlayColor(0.0F, 0.0F, 0.0F, 0.0F);
         }
+        if (capture != null) capture.overlay().endSetup(this.argentum$overlayMuted, overlay);
+        this.argentum$overlayMuted = false;
         return overlay;
+    }
+
+    @Inject(method = "setupOverlayColor(Lnet/minecraft/entity/living/LivingEntity;FZ)Z", at = @At("HEAD"))
+    private void argentum$beginOverlaySetup(LivingEntity entity, float tickDelta, boolean alwaysRender, CallbackInfoReturnable<Boolean> cir) {
+        EntityCapture capture = EntityCapture.current();
+        this.argentum$overlayMuted = capture != null && capture.overlay().beginSetup(tickDelta, alwaysRender);
+    }
+
+    @Inject(method = "tearDownOverlayColor", at = @At("HEAD"))
+    private void argentum$beginOverlayTeardown(CallbackInfo ci) {
+        EntityCapture capture = EntityCapture.current();
+        this.argentum$overlayMuted = capture != null && capture.overlay().beginTeardown();
+    }
+
+    @Inject(method = "tearDownOverlayColor", at = @At("RETURN"))
+    private void argentum$endOverlayTeardown(CallbackInfo ci) {
+        EntityCapture capture = EntityCapture.current();
+        if (capture != null) capture.overlay().endTeardown();
+        this.argentum$overlayMuted = false;
+    }
+
+    @WrapOperation(method = {
+            "setupOverlayColor(Lnet/minecraft/entity/living/LivingEntity;FZ)Z", "tearDownOverlayColor"
+    }, at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glTexEnvi(III)V", remap = false))
+    private void argentum$texEnvi(int target, int name, int value, Operation<Void> original) {
+        if (!this.argentum$overlayMuted) original.call(target, name, value);
+    }
+
+    @WrapOperation(method = "setupOverlayColor(Lnet/minecraft/entity/living/LivingEntity;FZ)Z",
+            at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glTexEnv(IILjava/nio/FloatBuffer;)V", remap = false))
+    private void argentum$texEnv(int target, int name, FloatBuffer params, Operation<Void> original) {
+        if (!this.argentum$overlayMuted) original.call(target, name, params);
+    }
+
+    @WrapOperation(method = {
+            "setupOverlayColor(Lnet/minecraft/entity/living/LivingEntity;FZ)Z", "tearDownOverlayColor"
+    }, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;activeTexture(I)V"))
+    private void argentum$activeTexture(int unit, Operation<Void> original) {
+        if (!this.argentum$overlayMuted) original.call(unit);
+    }
+
+    @WrapOperation(method = {
+            "setupOverlayColor(Lnet/minecraft/entity/living/LivingEntity;FZ)Z", "tearDownOverlayColor"
+    }, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;enableTexture()V"))
+    private void argentum$enableTexture(Operation<Void> original) {
+        if (!this.argentum$overlayMuted) original.call();
+    }
+
+    @WrapOperation(method = "tearDownOverlayColor", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;disableTexture()V"))
+    private void argentum$disableTexture(Operation<Void> original) {
+        if (!this.argentum$overlayMuted) original.call();
+    }
+
+    @WrapOperation(method = {
+            "setupOverlayColor(Lnet/minecraft/entity/living/LivingEntity;FZ)Z", "tearDownOverlayColor"
+    }, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/platform/GlStateManager;bindTexture(I)V"))
+    private void argentum$bindTexture(int texture, Operation<Void> original) {
+        if (!this.argentum$overlayMuted) original.call(texture);
     }
 
     @Inject(method = "renderNameTag(Lnet/minecraft/entity/living/LivingEntity;DDD)V", at = @At("HEAD"), cancellable = true)
@@ -109,9 +177,12 @@ public abstract class LivingEntityRendererMixin {
             }
             capture.beginModel();
         }
+        boolean immediate = capture != null && !capture.isModelActive();
+        if (immediate) this.argentum$beginImmediate(capture.overlay(), entity);
         try {
             original.call(entity, walkAnimationProgress, walkAnimationSpeed, bob, yaw, pitch, scale);
         } finally {
+            if (immediate) capture.overlay().endImmediate();
             if (capture != null) {
                 capture.endModel();
             }
@@ -124,15 +195,23 @@ public abstract class LivingEntityRendererMixin {
             float yaw, float pitch, float scale, Operation<Void> original) {
         EntityCapture active = EntityCapture.current();
         boolean capture = active != null && active.beginLayer(layer, entity);
+        boolean immediate = active != null && !capture;
+        if (immediate) this.argentum$beginImmediate(active.overlay(), entity);
         EntityInstancing instancing = EntityInstancing.current();
         if (instancing != null) instancing.beginLayerRender();
         try {
             original.call(layer, entity, walkAnimationProgress, walkAnimationSpeed, tickDelta, bob, yaw, pitch, scale);
         } finally {
+            if (immediate) active.overlay().endImmediate();
             if (instancing != null) instancing.endLayerRender();
             if (capture) {
                 active.endLayer();
             }
         }
+    }
+
+    @Unique
+    private void argentum$beginImmediate(CapturedOverlay overlay, LivingEntity entity) {
+        if (overlay.beginImmediate()) this.setupOverlayColor(entity, overlay.tickDelta(), overlay.combine());
     }
 }
