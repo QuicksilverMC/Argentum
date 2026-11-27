@@ -48,6 +48,15 @@ public final class BakedItemFrames {
     }
 
     public record Baked(ItemFrameEntity entity, long state) {
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof Baked other && this.entity == other.entity && this.state == other.state;
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * System.identityHashCode(this.entity) + Long.hashCode(this.state);
+        }
     }
 
     public static boolean frameBaked(ItemFrameEntity frame) {
