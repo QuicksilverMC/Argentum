@@ -27,6 +27,7 @@
     "shaders.LivingEntityRendererMixin",
     "shaders.MinecraftMixin",
     "shaders.MobRendererMixin",
+    "shaders.NameTagBatchMixin",
     "shaders.SignRendererMixin",
     "shaders.TextRendererMixin",
     "shaders.VideoOptionsControllerMixin",
