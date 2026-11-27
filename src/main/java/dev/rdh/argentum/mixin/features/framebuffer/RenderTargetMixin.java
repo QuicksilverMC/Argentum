@@ -6,7 +6,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import dev.rdh.argentum.impl.ext.MinecraftExtension;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.pipeline.RenderTarget;
@@ -37,7 +36,7 @@ public abstract class RenderTargetMixin {
 
     @Unique
     private boolean argentum$isDirectMain() {
-        Minecraft minecraft = Minecraft.getInstance();
-        return ((MinecraftExtension) minecraft).argentum$isRenderingDirect() && minecraft.getRenderTarget() == (Object) this;
+        Minecraft mc = Minecraft.getInstance();
+        return mc.argentum$isRenderingDirect() && mc.getRenderTarget() == (Object) this;
     }
 }

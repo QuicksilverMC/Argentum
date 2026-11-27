@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Minecraft.class)
-public abstract class MinecraftMixin {
+public abstract class MinecraftMixin implements MinecraftExtension {
     @Unique
     private CeraShaderEngine cera$engine() {
         return ((Minecraft)(Object)this).cera$getShaderEngine();
@@ -25,7 +25,7 @@ public abstract class MinecraftMixin {
     @Inject(method = "runGame", at = @At("HEAD"))
     private void cera$keepFramebuffer(CallbackInfo ci) {
         if (cera$engine().isInitializedImpl()) {
-            ((MinecraftExtension) this).argentum$requestFramebuffer();
+            this.argentum$requestFramebuffer();
         }
     }
 

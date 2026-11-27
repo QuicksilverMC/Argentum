@@ -6,7 +6,6 @@ import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkFogMode;
 import org.embeddedt.embeddium.impl.render.chunk.shader.ChunkShaderEnvironment;
 
 import dev.rdh.argentum.impl.Argentum;
-import dev.rdh.argentum.impl.ext.MinecraftExtension;
 import dev.rdh.argentum.impl.render.ArgentumGlStateService;
 
 import java.util.List;
@@ -72,7 +71,7 @@ public class ArgentumFogService implements FogService {
     }
 
     private boolean useSkyFog() {
-        var target = ((MinecraftExtension) Minecraft.getInstance()).argentum$getTerrainDrawTarget();
+        var target = Minecraft.getInstance().argentum$getTerrainDrawTarget();
         return Argentum.CONFIG.useSkyFog && (target == null || target.vertexType() == null);
     }
 

@@ -11,7 +11,6 @@ import org.embeddedt.embeddium.impl.render.terrain.SimpleWorldRenderer;
 
 import dev.rdh.argentum.api.render.terrain.TerrainDrawTarget;
 import dev.rdh.argentum.impl.Argentum;
-import dev.rdh.argentum.impl.ext.MinecraftExtension;
 import dev.rdh.argentum.impl.render.blockentity.BakedBlockEntities;
 import dev.rdh.argentum.impl.render.blockentity.BakedItemFrames;
 import dev.rdh.argentum.impl.render.entity.EntityOcclusionCuller;
@@ -245,7 +244,7 @@ public class ArgentumWorldRenderer extends SimpleWorldRenderer<World, ArgentumRe
     @Override
     protected ArgentumRenderSectionManager createRenderSectionManager(CommandList commandList) {
         ChunkTrackerHolder.get(this.world).setRequiredNeighborRadius(Argentum.CONFIG.safeChunkEdges ? 1 : 0);
-        TerrainDrawTarget target = ((MinecraftExtension)Minecraft.getInstance()).argentum$getTerrainDrawTarget();
+        TerrainDrawTarget target = Minecraft.getInstance().argentum$getTerrainDrawTarget();
         ChunkVertexType targetType = target == null ? null : target.vertexType();
         ChunkVertexType vertexType = targetType != null ? targetType : Argentum.CONFIG.vertexFormat.fallback().type;
         return ArgentumRenderSectionManager.create(vertexType, targetType != null, targetType != null && target.hasShadowPass(),

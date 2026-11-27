@@ -6,7 +6,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import dev.rdh.argentum.impl.ext.MinecraftExtension;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.PostPass;
@@ -24,8 +23,8 @@ public abstract class PostPassMixin {
 
     @Inject(method = "process", at = @At("HEAD"))
     private void argentum$requestMainFramebuffer(float tickDelta, CallbackInfo ci) {
-        Minecraft minecraft = Minecraft.getInstance();
-        RenderTarget main = minecraft.getRenderTarget();
-        if (this.inTarget == main || this.outTarget == main) ((MinecraftExtension) minecraft).argentum$requestFramebuffer();
+        Minecraft mc = Minecraft.getInstance();
+        RenderTarget main = mc.getRenderTarget();
+        if (this.inTarget == main || this.outTarget == main) mc.argentum$requestFramebuffer();
     }
 }

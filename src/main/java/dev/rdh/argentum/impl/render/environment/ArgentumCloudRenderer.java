@@ -1,7 +1,6 @@
 package dev.rdh.argentum.impl.render.environment;
 
 import dev.rdh.argentum.impl.Argentum;
-import dev.rdh.argentum.impl.ext.MinecraftExtension;
 import dev.rdh.argentum.impl.render.ArgentumGlStateService;
 import dev.rdh.argentum.impl.render.terrain.ArgentumWorldRenderer;
 import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
@@ -67,7 +66,7 @@ public final class ArgentumCloudRenderer {
     }
 
     public static boolean isEnabled() {
-        var target = ((MinecraftExtension) Minecraft.getInstance()).argentum$getInstanceDrawTarget();
+        var target = Minecraft.getInstance().argentum$getInstanceDrawTarget();
         return Argentum.CONFIG.fasterClouds
                 && CloudRenderer.isSupported()
                 && (target == null || !target.active());

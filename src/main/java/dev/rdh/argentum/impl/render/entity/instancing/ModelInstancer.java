@@ -6,7 +6,6 @@ import dev.rdh.argentum.api.render.instancing.BoxTemplate;
 import dev.rdh.argentum.api.render.instancing.InstanceDrawTarget;
 import dev.rdh.argentum.api.render.instancing.TextureArrayManager;
 import dev.rdh.argentum.impl.Argentum;
-import dev.rdh.argentum.impl.ext.MinecraftExtension;
 import dev.rdh.argentum.impl.render.terrain.fog.ArgentumFogService;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.minecraft.client.Minecraft;
@@ -68,7 +67,7 @@ public final class ModelInstancer {
         this.instanceCount = 0;
         this.frame++;
         this.batchActive = true;
-        this.drawTarget = ((MinecraftExtension)Minecraft.getInstance()).argentum$getInstanceDrawTarget();
+        this.drawTarget = Minecraft.getInstance().argentum$getInstanceDrawTarget();
         this.standardAttributes = this.drawTarget != null && this.drawTarget.active();
         return true;
     }

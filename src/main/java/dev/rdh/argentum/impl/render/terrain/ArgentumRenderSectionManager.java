@@ -26,7 +26,6 @@ import org.jetbrains.annotations.Nullable;
 import dev.rdh.argentum.api.render.terrain.TerrainDrawTarget;
 import dev.rdh.argentum.impl.Argentum;
 import dev.rdh.argentum.impl.ext.ItemFrameEntityExtension;
-import dev.rdh.argentum.impl.ext.MinecraftExtension;
 import dev.rdh.argentum.impl.render.ArgentumGlStateService;
 import dev.rdh.argentum.impl.render.blockentity.BakedItemFrames;
 import dev.rdh.argentum.impl.render.blockentity.SlotSheet;
@@ -57,7 +56,7 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
     }
 
     private static DefaultChunkRenderer createChunkRenderer(RenderDevice device, RenderPassConfiguration<?> configuration, ChunkProgramCache programs) {
-        TerrainDrawTarget target = ((MinecraftExtension)Minecraft.getInstance()).argentum$getTerrainDrawTarget();
+        TerrainDrawTarget target = Minecraft.getInstance().argentum$getTerrainDrawTarget();
         return target != null && target.vertexType() != null
                 ? new TargetChunkRenderer(device, configuration, target)
                 : new ChunkRenderer(device, configuration, programs);
@@ -74,7 +73,7 @@ public class ArgentumRenderSectionManager extends RenderSectionManager {
 
     @Override
     public boolean isInShadowPass() {
-        return this.hasShadowPass() && ((MinecraftExtension)Minecraft.getInstance()).argentum$getTerrainDrawTarget().isShadowPass();
+        return this.hasShadowPass() && Minecraft.getInstance().argentum$getTerrainDrawTarget().isShadowPass();
     }
 
     @Override
