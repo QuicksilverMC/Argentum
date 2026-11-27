@@ -104,10 +104,14 @@ public class RenderPassConfigurationBuilder {
             GlStateManager.disableAlphaTest();
             GlStateManager.enablePolygonOffset();
             GlStateManager.polygonOffset(-1.0F, -1.0F);
+            TextureManager textureManager = Minecraft.getInstance().getTextureManager();
+            textureManager.bind(TextureAtlas.BLOCKS_LOCATION);
+            textureManager.get(TextureAtlas.BLOCKS_LOCATION).pushFilter(false, false);
         }
 
         @Override
         public void clear() {
+            Minecraft.getInstance().getTextureManager().get(TextureAtlas.BLOCKS_LOCATION).popFilter();
             GlStateManager.disablePolygonOffset();
             GlStateManager.enableAlphaTest();
         }
