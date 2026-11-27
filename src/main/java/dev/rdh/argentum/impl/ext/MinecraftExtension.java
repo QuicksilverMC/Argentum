@@ -12,6 +12,10 @@ public interface MinecraftExtension {
         throw new UnsupportedOperationException();
     }
 
+    default void argentum$runAfterFramebufferFrame(Runnable task) {
+        throw new UnsupportedOperationException();
+    }
+
     default InstanceDrawTarget argentum$getInstanceDrawTarget() {
         throw new UnsupportedOperationException();
     }

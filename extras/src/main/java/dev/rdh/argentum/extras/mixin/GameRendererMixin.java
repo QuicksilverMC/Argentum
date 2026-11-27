@@ -3,9 +3,10 @@ package dev.rdh.argentum.extras.mixin;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+
+import dev.rdh.argentum.api.render.framebuffer.MainFramebuffer;
 import dev.rdh.argentum.extras.ArgentumExtras;
 import dev.rdh.argentum.extras.FxaaRenderer;
-import dev.rdh.argentum.impl.ext.MinecraftExtension;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.platform.GlStateManager;
@@ -146,7 +147,7 @@ public class GameRendererMixin {
 
     @Inject(method = "render(FJ)V", at = @At("HEAD"))
     private void argentumExtras$requestFxaaFramebuffer(float tickDelta, long startTime, CallbackInfo ci) {
-        if (ArgentumExtras.CONFIG.fxaa) ((MinecraftExtension) this.minecraft).argentum$requestFramebuffer();
+        if (ArgentumExtras.CONFIG.fxaa) MainFramebuffer.request();
     }
 
     @Inject(method = "render(FJ)V",

@@ -3,6 +3,7 @@ package dev.rdh.argentum.mixin.features.framebuffer;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -25,6 +26,7 @@ import net.minecraft.client.render.world.WorldRenderer;
 import net.minecraft.text.Text;
 
 import java.io.File;
+import java.util.List;
 
 @Mixin(Minecraft.class)
 public abstract class MinecraftMixin implements MinecraftExtension {
@@ -60,7 +62,7 @@ public abstract class MinecraftMixin implements MinecraftExtension {
     private boolean argentum$framebufferRequested;
 
     @Unique
-    private boolean argentum$screenshotRequested;
+    private final List<Runnable> argentum$framebufferFrameTasks = new ObjectArrayList<>();
 
     @Override
     public boolean argentum$isRenderingDirect() {
@@ -72,6 +74,11 @@ public abstract class MinecraftMixin implements MinecraftExtension {
         this.argentum$framebufferRequested = true;
     }
 
+    @Override
+    public void argentum$runAfterFramebufferFrame(Runnable task) {
+        this.argentum$framebufferFrameTasks.add(task);
+    }
+
     @Inject(method = "runGame", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/pipeline/RenderTarget;bindWrite(Z)V"))
     private void argentum$chooseFramebuffer(CallbackInfo ci) {
         this.argentum$renderingDirect = Argentum.CONFIG.directRendering && GLX.useFbo()
@@ -79,13 +86,13 @@ public abstract class MinecraftMixin implements MinecraftExtension {
                 && !this.gameRenderer.hasShader()
                 && !((WorldRendererInvoker) this.worldRenderer).invokeShouldRenderEntityOutlines()
                 && !this.argentum$framebufferRequested
-                && !this.argentum$screenshotRequested;
+                && this.argentum$framebufferFrameTasks.isEmpty();
         this.argentum$framebufferRequested = false;
     }
 
     @WrapOperation(method = "handleGuiKeyBindings", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Screenshot;take(Ljava/io/File;IILnet/minecraft/client/render/pipeline/RenderTarget;)Lnet/minecraft/text/Text;"))
     private Text argentum$deferScreenshot(File gameDir, int width, int height, RenderTarget target, Operation<Text> original) {
-        this.argentum$screenshotRequested = true;
+        this.argentum$runAfterFramebufferFrame(() -> this.gui.getChat().addMessage(Screenshot.take(this.gameDir, this.width, this.height, this.renderTarget)));
         return null;
     }
 
@@ -95,10 +102,11 @@ public abstract class MinecraftMixin implements MinecraftExtension {
     }
 
     @Inject(method = "runGame", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;updateDisplay()V"))
-    private void argentum$takeScreenshot(CallbackInfo ci) {
-        if (!this.argentum$screenshotRequested || this.argentum$renderingDirect) return;
-        this.argentum$screenshotRequested = false;
+    private void argentum$runFramebufferFrameTasks(CallbackInfo ci) {
+        if (this.argentum$framebufferFrameTasks.isEmpty() || this.argentum$renderingDirect) return;
+        List<Runnable> tasks = List.copyOf(this.argentum$framebufferFrameTasks);
+        this.argentum$framebufferFrameTasks.clear();
         GLX.bindFramebuffer(GLX.GL_FRAMEBUFFER, 0);
-        this.gui.getChat().addMessage(Screenshot.take(this.gameDir, this.width, this.height, this.renderTarget));
+        tasks.forEach(Runnable::run);
     }
 }
