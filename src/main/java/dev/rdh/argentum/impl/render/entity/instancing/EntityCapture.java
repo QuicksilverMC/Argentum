@@ -1,5 +1,6 @@
 package dev.rdh.argentum.impl.render.entity.instancing;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.layer.AbstractArmorLayer;
@@ -28,6 +29,8 @@ public final class EntityCapture implements AutoCloseable {
     private final Matrix4f arrowMatrix = new Matrix4f();
     private final Matrix4f boxMatrix = new Matrix4f();
     private final ReferenceOpenHashSet<ModelPart> glintParts = new ReferenceOpenHashSet<>();
+    private final ObjectArrayList<ArmorPart> armorParts = new ObjectArrayList<>();
+    private int armorPartCount;
 
     private final Matrix4fStack matrices = new Matrix4fStack(64);
     private final Matrix4fStack textureMatrices = new Matrix4fStack(8);
@@ -178,6 +181,7 @@ public final class EntityCapture implements AutoCloseable {
         this.syncColor();
         this.pass = this.fade(layerPass);
         this.armorLayer = layer instanceof AbstractArmorLayer;
+        this.armorPartCount = 0;
         this.currentOverlayColor.set(this.overlayColor);
         this.glintParts.clear();
         this.itemGlintPass = 0;
@@ -358,7 +362,20 @@ public final class EntityCapture implements AutoCloseable {
         if (this.modelActive && this.armorLayer) {
             this.pass = ENCHANTMENT_GLINT_TEXTURE.equals(texture)
                     ? InstanceRenderPass.GLINT : InstanceRenderPass.NORMAL;
+            if (this.pass != InstanceRenderPass.GLINT) this.armorPartCount = 0;
         }
+    }
+
+    public boolean replayArmorGlint() {
+        if (!this.modelActive || !this.armorLayer || this.pass != InstanceRenderPass.GLINT || this.armorPartCount == 0) {
+            return false;
+        }
+        for (int i = 0; i < this.armorPartCount; i++) {
+            ArmorPart part = this.armorParts.get(i);
+            this.submit(part.geometry, part.matrix, part.box);
+        }
+        this.armorPartCount = 0;
+        return true;
     }
 
     public void finish() {
@@ -414,6 +431,10 @@ public final class EntityCapture implements AutoCloseable {
     }
 
     private boolean submit(InstanceGeometry geometry, Matrix4f matrix, BoxTemplate box) {
+        if (this.armorLayer && this.pass != InstanceRenderPass.GLINT) {
+            if (this.armorPartCount == this.armorParts.size()) this.armorParts.add(new ArmorPart());
+            this.armorParts.get(this.armorPartCount++).set(geometry, matrix, box);
+        }
         boolean submitted = this.owner.backend().submit(geometry, this.boundTexture, this.pass, matrix,
                 this.packedLight, this.color, this.effectTime, this.currentOverlayColor, box, this.kind, this.id
         );
@@ -494,5 +515,17 @@ public final class EntityCapture implements AutoCloseable {
 
     private boolean tracksTexture() {
         return !this.finished && this.matrixMode == GL11.GL_TEXTURE;
+    }
+
+    private static final class ArmorPart {
+        private final Matrix4f matrix = new Matrix4f();
+        private InstanceGeometry geometry;
+        private BoxTemplate box;
+
+        private void set(InstanceGeometry geometry, Matrix4f matrix, BoxTemplate box) {
+            this.geometry = geometry;
+            this.matrix.set(matrix);
+            this.box = box;
+        }
     }
 }
