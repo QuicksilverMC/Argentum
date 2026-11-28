@@ -6,6 +6,7 @@ import dev.rdh.cera.props.NumberList;
 import dev.rdh.cera.props.Props;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.platform.GlStateManager;
+import net.minecraft.client.render.texture.Texture;
 import net.minecraft.client.render.texture.TextureManager;
 import net.minecraft.client.render.vertex.BufferBuilder;
 import net.minecraft.client.render.vertex.DefaultVertexFormat;
@@ -26,6 +27,7 @@ import net.ornithemc.osl.core.api.util.NamespacedIdentifier;
 import net.ornithemc.osl.resource.loader.api.resource.Resource;
 import net.ornithemc.osl.resource.loader.api.resource.manager.ResourceManager;
 import net.ornithemc.osl.resource.loader.api.resource.reload.ResourceReloadListener;
+import org.lwjgl.opengl.EXTFramebufferObject;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
@@ -267,6 +269,7 @@ public final class CustomSky implements ResourceReloadListener {
 
     private static final VertexFormat FORMAT = DefaultVertexFormat.POSITION_TEX;
     private static final IntSet MIPMAPPED = new IntOpenHashSet();
+    private static int mipmappedHeight;
     private static VertexBuffer geometry;
 
     private record Layer(
@@ -386,13 +389,25 @@ public final class CustomSky implements ResourceReloadListener {
 
         private static void mipmap(Identifier source) {
             Minecraft minecraft = Minecraft.getInstance();
-            if (!MIPMAPPED.add(minecraft.getTextureManager().get(source).getGlId()) || !GL.getCapabilities().OpenGL30) return;
+            Texture texture = minecraft.getTextureManager().get(source);
+            if (texture == null || texture.getGlId() != GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D)) return;
+            var caps = GL.getCapabilities();
+            boolean core = caps.OpenGL30 || caps.GL_ARB_framebuffer_object;
+            if (!core && !caps.GL_EXT_framebuffer_object) return;
+            if (minecraft.height != mipmappedHeight) {
+                MIPMAPPED.clear();
+                mipmappedHeight = minecraft.height;
+            }
+            if (!MIPMAPPED.add(texture.getGlId())) return;
             int height = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
             int maxLevel = 31 - Integer.numberOfLeadingZeros(Math.max(1, 2 * height / Math.max(1, minecraft.height)));
-            if (maxLevel == 0) return;
             GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL12.GL_TEXTURE_MAX_LEVEL, maxLevel);
-            GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
-            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST_MIPMAP_NEAREST);
+            if (maxLevel == 0) return;
+            if (core) GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
+            else EXTFramebufferObject.glGenerateMipmapEXT(GL11.GL_TEXTURE_2D);
+            int min = GL11.glGetTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER) == GL11.GL_LINEAR
+                    ? GL11.GL_LINEAR_MIPMAP_NEAREST : GL11.GL_NEAREST_MIPMAP_NEAREST;
+            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, min);
         }
 
         private static void draw() {
